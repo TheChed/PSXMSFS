@@ -1,4 +1,3 @@
-#-static  main.cpp -L. -lSimConnect  -mwindows
 CC = x86_64-w64-mingw32-gcc  
 CFLAGS = -IInclude -Wall -Wextra -pedantic
 
