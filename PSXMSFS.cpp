@@ -117,7 +117,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             printf("\nEVENT_INIT received and data sent");
         } break;
 
-        case EVENT_QUIT: {
+case EVENT_QUIT: {
             quit = 1;
             printf("\nEVENT_QUIT received and data sent");
         } break;
