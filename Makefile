@@ -5,7 +5,6 @@ CFLAGS = -IInclude -Wall -Wextra -pedantic
 DEPS = PSXMSFS.h
 OBJ = PSXMSFS.o PSX.o connect.o
 
-#all: testMSFS move
 all: PSXMSFS move
 
 
