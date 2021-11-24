@@ -18,19 +18,19 @@ void Qformat(QPSX *Q, const char *s) {
     strcpy(Q->name, s);
 }
 
-void state(void) {
+void state(Target *T) {
     char *Lat, *Long;
 
-    Lat = convert(T.latitude, 1);
-    Long = convert(T.longitude, 0);
+    Lat = convert(T->latitude, 1);
+    Long = convert(T->longitude, 0);
     printf("PSX:  ");
-    printf("Alt: %.0f ", T.altitude / 1000.0);
-    printf("Head: %.2f ", T.heading * 180.0 / M_PI);
-    printf("Lat: %.4f ",  T.latitude *180 / M_PI);
-    printf("Long: %.4f ", T.longitude*180 / M_PI);
-    printf("Pitch: %.4f ", T.pitch * 180 / M_PI / 100000.0);
-    printf("Bank: %.4f ", T.bank * 180.0 / M_PI / 100000.0);
-    printf("TAS: %.1f\n", T.TAS / 1000.0);
+    printf("Alt: %.0f ", T->altitude / 1000.0);
+    printf("Head: %.2f ", T->heading * 180.0 / M_PI);
+    printf("Lat: %.4f ",  T->latitude *180 / M_PI);
+    printf("Long: %.4f ", T->longitude*180 / M_PI);
+    printf("Pitch: %.4f ", T->pitch * 180 / M_PI / 100000.0);
+    printf("Bank: %.4f ", T->bank * 180.0 / M_PI / 100000.0);
+    printf("TAS: %.1f\n", T->TAS / 1000.0);
     printf("\n");
 
     free(Lat);

@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <math.h>
+#include <assert.h>
 #include <stdio.h>
 #include <windows.h>
 #include "PSXMSFS.h"
@@ -7,7 +8,6 @@
 
 int quit = 0;
 HRESULT hr;
-target T;
 
 #define max_send_records 20
 
@@ -47,6 +47,8 @@ QPSX **Q;
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
     HRESULT hr;
+    Target *T;
+    T=(Target *)pContext;
     //   printf("pData->dwID: %d received\n",pData->dwID);
     switch (pData->dwID) {
 
@@ -65,7 +67,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_ONE_SEC: {
-            state();
+            //state(T);
 
             SimResponse SR;
             // SR.altitude = 1179;
@@ -78,39 +80,38 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             // SR.IAS = 0.0;
             // SR.VS = 0.0;
 
-            SR.altitude = T.altitude / 1000.0;
-            SR.latitude = T.latitude;
-            SR.longitude = T.longitude;
+            SR.altitude =T->altitude / 1000.0;
+            SR.latitude = T->latitude / M_PI *180.0;
+            SR.longitude = T->longitude / M_PI *180.0;
             SR.pitch = 0.0;
             SR.bank = 0.0;
             SR.VS = 0.0;
             SR.IAS = 0.0;
             SR.TAS = 0.0;
-            SR.heading = T.heading * 180.0 / M_PI;
+            SR.heading = T->heading * 180.0 / M_PI;
 
-            //    hr = SimConnect_SetDataOnSimObject(hSimConnect,
-            //    DATA_PSX_TO_MSFS,SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR), &SR);
+                hr = SimConnect_SetDataOnSimObject(hSimConnect,DATA_PSX_TO_MSFS,SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR), &SR);
         } break;
 
         case EVENT_INIT: {
 
             printf("Inside EVENT_INIT\n");
             SIMCONNECT_DATA_INITPOSITION Init;
-            printf("A:%f\n", (float)T.altitude);
-            printf("Lat:%f\n", T.latitude / M_PI * 180.0);
-            printf("Long:%f\n", T.longitude / M_PI * 180);
-            printf("P:%f\n", T.pitch * 1000);
-            printf("B:%f\n", T.bank * 1000);
-            printf("H:%f\n", T.heading * 180.0 / M_PI);
+            printf("A:%f\n", (float)T->altitude);
+            printf("Lat:%f\n", T->latitude / M_PI * 180.0);
+            printf("Long:%f\n", T->longitude / M_PI * 180.0);
+            printf("P:%f\n", T->pitch * 1000);
+            printf("B:%f\n", T->bank * 1000);
+            printf("H:%f\n", T->heading * 180.0 / M_PI);
 
-            Init.Altitude = T.altitude / 1000.0;
-            Init.Latitude = T.latitude / M_PI * 180.0;
-            Init.Longitude = T.longitude / M_PI * 180.0;
+            Init.Altitude = T->altitude / 1000.0;
+            Init.Latitude = T->latitude / M_PI * 180.0;
+            Init.Longitude = T->longitude / M_PI * 180.0;
             Init.Pitch = 0.0;
             Init.Bank = 0.0;
-            Init.Heading = T.heading * 180.0 / M_PI;
+            Init.Heading = T->heading * 180.0 / M_PI;
             Init.OnGround = 1;
-            Init.Airspeed = INITPOSITION_AIRSPEED_KEEP;
+            Init.Airspeed = 0;
             hr = SimConnect_SetDataOnSimObject(
                 hSimConnect, DEFINITION_INIT, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(Init), &Init);
 
@@ -189,7 +190,7 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "Plane Longitude", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "PLANE HEADING DEGREES TRUE","degree");
 
-    SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_3, DATA_DEFINITION,SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SECOND);
+    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_3, DATA_DEFINITION,SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
@@ -217,7 +218,7 @@ int init_MS_data(void) {
     hr = SimConnect_SetInputGroupState(hSimConnect, INPUT_INIT, SIMCONNECT_STATE_ON);
 
     // Sign up for notifications for EVENT_INIT
-    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_INIT);
+    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP1, EVENT_INIT);
 
     return hr;
 }
@@ -225,7 +226,9 @@ int init_MS_data(void) {
 int main(int argc, char **argv) {
 
     QPSX **Q;
-
+    
+    Target *T;
+    T = (Target *)malloc(sizeof(T));
     if (argc != 3) {
         printf("Usage: %s IP:port\n", argv[0]);
         exit(EXIT_FAILURE);
@@ -253,9 +256,8 @@ int main(int argc, char **argv) {
 
     // main loop;
     while (!quit) {
-        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
+        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
         umain();
-        // state();
     };
     hr = SimConnect_Close(hSimConnect);
 

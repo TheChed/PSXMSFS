@@ -57,6 +57,7 @@ struct SimResponse {
 
 enum GROUP_ID {
     GROUP0,
+    GROUP1,
 };
 
 enum INPUT_ID {
@@ -90,10 +91,10 @@ typedef struct {
     int altitude; // x 1000
     int TAS;      // x1000
     double latitude, longitude;
-} target;
+} Target;
 
 
-extern target T;
+//extern target T;
 
 // Function definitions
 int init_connect_PSX(const char *, int);
@@ -101,7 +102,7 @@ int init_connect_MSFS(HANDLE *);
 int check_param(const char *);
 void Qformat(QPSX *, const char *);
 char *Decode(int, char, char *);
-void state(); // prints aircraft position
+void state(Target *T); // prints aircraft position
 char *convert(double, int);
 int umain(void);
 void init_Q_variables(int, QPSX**);
