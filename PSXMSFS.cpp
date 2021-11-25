@@ -11,45 +11,15 @@ HRESULT hr;
 
 #define max_send_records 20
 
-struct record_struct {
-    char call[256];
-    DWORD sendid;
-};
-
-int record_count = 0;
-struct record_struct send_record[max_send_records];
-
-void addSendRecord(char *c) {
-    DWORD id;
-
-    if (record_count < max_send_records) {
-        int hr = SimConnect_GetLastSentPacketID(hSimConnect, &id);
-
-        strncpy_s(send_record[record_count].call, 255, c, 255);
-        send_record[record_count].sendid = id;
-        ++record_count;
-    }
-}
-
-char *findSendRecord(DWORD id) {
-    bool found = false;
-    int count = 0;
-    while (!found && count < record_count) {
-        if (id == send_record[count].sendid)
-            return send_record[count].call;
-        ++count;
-    }
-    return "Send Record not found";
-}
 
 QPSX **Q;
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
-    HRESULT hr;
     Target *T;
     T=(Target *)pContext;
-    //   printf("pData->dwID: %d received\n",pData->dwID);
+    (void ) cbData;
+    T->altitude+=1000;
     switch (pData->dwID) {
 
     case SIMCONNECT_RECV_ID_OPEN: {
@@ -70,39 +40,24 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             //state(T);
 
             SimResponse SR;
-            // SR.altitude = 1179;
-            // SR.heading = 58;
-            // SR.latitude = 50.1;
-            // SR.longitude = -14.26;
-            // SR.pitch = 0.0;
-            // SR.bank = 0.0;
-            // SR.TAS = 0.0;
-            // SR.IAS = 0.0;
-            // SR.VS = 0.0;
 
-            SR.altitude =T->altitude / 1000.0;
-            SR.latitude = T->latitude / M_PI *180.0;
-            SR.longitude = T->longitude / M_PI *180.0;
+            SR.altitude = 1179;
+            SR.latitude = 0.87455;
+            SR.longitude = 0.24891;
             SR.pitch = 0.0;
             SR.bank = 0.0;
             SR.VS = 0.0;
             SR.IAS = 0.0;
             SR.TAS = 0.0;
-            SR.heading = T->heading * 180.0 / M_PI;
+            SR.heading = 58;
 
-                hr = SimConnect_SetDataOnSimObject(hSimConnect,DATA_PSX_TO_MSFS,SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR), &SR);
+              //  SimConnect_SetDataOnSimObject(hSimConnect,DATA_PSX_TO_MSFS,SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR), &SR);
         } break;
 
         case EVENT_INIT: {
 
             printf("Inside EVENT_INIT\n");
             SIMCONNECT_DATA_INITPOSITION Init;
-            printf("A:%f\n", (float)T->altitude);
-            printf("Lat:%f\n", T->latitude / M_PI * 180.0);
-            printf("Long:%f\n", T->longitude / M_PI * 180.0);
-            printf("P:%f\n", T->pitch * 1000);
-            printf("B:%f\n", T->bank * 1000);
-            printf("H:%f\n", T->heading * 180.0 / M_PI);
 
             Init.Altitude = T->altitude / 1000.0;
             Init.Latitude = T->latitude / M_PI * 180.0;
@@ -112,7 +67,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             Init.Heading = T->heading * 180.0 / M_PI;
             Init.OnGround = 1;
             Init.Airspeed = 0;
-            hr = SimConnect_SetDataOnSimObject(
+            SimConnect_SetDataOnSimObject(
                 hSimConnect, DEFINITION_INIT, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(Init), &Init);
 
             printf("\nEVENT_INIT received and data sent");
@@ -136,11 +91,11 @@ case EVENT_QUIT: {
 
         case DATA_DEFINITION: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
-            printf("MSFS: Alt:%f, Head:%f, Lat:%f, Long:%f, mmHG=%f\n", pS->altitude,pS->heading, pS->latitude,pS->longitude,pS->kohlsmann);
+            //printf("MSFS: Alt:%f, Head:%f, Lat:%f, Long:%f, mmHG=%f\n", pS->altitude,pS->heading, pS->latitude,pS->longitude,pS->kohlsmann);
         } break;
 
         default:
-            printf("dwRequestID: %d received\n", pObjData->dwRequestID);
+            printf("dwRequestID: %lu received\n", pObjData->dwRequestID);
             break;
         }
         break;
@@ -153,17 +108,6 @@ case EVENT_QUIT: {
         printf("\nSIMCONNECT_RECV_ID_QUIT received and data sent");
         quit = 1;
     } break;
-
-    case SIMCONNECT_RECV_ID_EXCEPTION: {
-        SIMCONNECT_RECV_EXCEPTION *except = (SIMCONNECT_RECV_EXCEPTION *)pData;
-        printf("\n\n***** EXCEPTION=%d  SendID=%d  Index=%d  cbData=%d\n", except->dwException,
-               except->dwSendID, except->dwIndex, cbData);
-
-        // Locate the bad call and print it out
-        char *s = findSendRecord(except->dwSendID);
-        printf("\n%s", s);
-        break;
-    }
 
     default:
         break;
@@ -225,7 +169,6 @@ int init_MS_data(void) {
 
 int main(int argc, char **argv) {
 
-    QPSX **Q;
     
     Target *T;
     T = (Target *)malloc(sizeof(T));
@@ -239,32 +182,29 @@ int main(int argc, char **argv) {
     init_connect_MSFS(&hSimConnect);
 
     // initialize the data to be received
-    hr = init_MS_data();
+     init_MS_data();
 
     // initialize the PSX variables
 
-    Q = (QPSX **)malloc(NB_Q_VAR * sizeof(QPSX));
-
-    init_Q_variables(NB_Q_VAR, Q);
-
-    for (int i = 0; i < NB_Q_VAR; i++) {
-        if (Qvariables[i] == NULL) {
-            printf("No Variables, exiting...\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-
     // main loop;
-    while (!quit) {
-        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
-        umain();
-    };
-    hr = SimConnect_Close(hSimConnect);
+    //
+    //
 
-    for (int i = 0; i < NB_Q_VAR; i++) {
-        free(Q[i]);
-    }
-    free(Q);
+            T->altitude = 100179;
+            T->latitude = 0.87455;
+            T->longitude = 0.24891;
+            T->pitch = 0.0;
+            T->bank = 0.0;
+            T->TAS = 0.0;
+            T->heading = 58;
+            state(T);
+    while (!quit) {
+        SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, T);
+        umain(T);
+    };
+    
+    SimConnect_Close(hSimConnect);
+
 
     printf("Normal exit\n");
     return 0;

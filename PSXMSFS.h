@@ -21,13 +21,6 @@ typedef struct {
 extern int sockfdPSX, sockfdFS;
 extern SOCKET sPSX;
 
-extern int boucle;
-extern char *Qvariables[NB_Q_VAR];
-// functions to read PSX info
-//
-//
-
-extern QPSX **Q;
 
 extern HANDLE hSimConnect ;
 extern HRESULT hr;
@@ -94,17 +87,16 @@ typedef struct {
 } Target;
 
 
-//extern target T;
 
 // Function definitions
 int init_connect_PSX(const char *, int);
 int init_connect_MSFS(HANDLE *);
 int check_param(const char *);
 void Qformat(QPSX *, const char *);
-char *Decode(int, char, char *);
+void Decode(int, char, char *, Target *);
 void state(Target *T); // prints aircraft position
 char *convert(double, int);
-int umain(void);
+int umain(Target *T);
 void init_Q_variables(int, QPSX**);
 
 #endif

@@ -8,15 +8,7 @@
 #include "PSXMSFS.h"
 // Global variables
 
-char *Qvariables[NB_Q_VAR] = {"Qs121", "Qs123", "Qs145"};
 
-void Qformat(QPSX *Q, const char *s) {
-    char *ptr;
-
-    Q->type = s[1];
-    Q->index = strtol(s + 2, &ptr, 10);
-    strcpy(Q->name, s);
-}
 
 void state(Target *T) {
     char *Lat, *Long;
@@ -37,59 +29,43 @@ void state(Target *T) {
     free(Long);
 }
 
-void S121(char *s) {
+void S121(char *s, Target *T) {
 
     const char delim[2] = ";";
     char *token, *ptr;
+
+
     /* get the first token */
     token = strtok(s + 6, delim);
     /* walk through other tokens */
     while (token != NULL) {
 
-        T.pitch = strtol(token, &ptr, 10);
+        T->pitch = strtol(token, &ptr, 10);
         token = strtok(NULL, delim);
 
-        T.bank = strtol(token, &ptr, 10);
+        T->bank = strtol(token, &ptr, 10);
         token = strtok(NULL, delim);
 
-        T.heading = strtod(token, &ptr);
+        T->heading = strtod(token, &ptr);
         token = strtok(NULL, delim);
 
-        T.altitude = strtol(token, &ptr, 10);
+        T->altitude = strtol(token, &ptr, 10);
         token = strtok(NULL, delim);
 
-        T.TAS = strtol(token, &ptr, 10);
+        T->TAS = strtol(token, &ptr, 10);
         token = strtok(NULL, delim);
 
-        T.latitude = strtod(token, &ptr);
+        T->latitude = strtod(token, &ptr);
         token = strtok(NULL, delim);
 
-        T.longitude = strtod(token, &ptr);
+        T->longitude = strtod(token, &ptr);
         token = strtok(NULL, delim);
     }
 }
 
-char *S123(const char *s) {
-    char *ptr;
-    static char res[20];
 
-    // Qs123= => s+6th position of the string
-    //time_t t = strtol(s + 6, &ptr, 10) / 1000;
-
-  //  struct tm lt;
-
-    //    localtime_r(&t, &lt);
-
-    //strftime(res, sizeof(res), "%X", &lt);
-    strcpy(ptr,"not implemented");
-    return ptr;
-
-}
-
-char *Decode(int prefix, char type, char *buffer) {
-    char resu[50];
-    char tmp[MAXLEN];
-    strcpy(tmp, buffer);
+void Decode( char **resultat, int prefix, char type, char *buffer, Target *T) {
+    char resu[50]={0};
 
     switch (type) {
     case 's':
@@ -97,14 +73,9 @@ char *Decode(int prefix, char type, char *buffer) {
         case 1:
             strcpy(resu, buffer);
             break;
-        case 123:
-            strcpy(resu, S123(tmp));
-            break;
-        case 124:
-            strcpy(resu, S123(tmp));
-            break;
         case 121:
-            S121(tmp);
+            S121(buffer,T);
+            strcpy(resu, "121 done");
             break;
         default:
             strcpy(resu, buffer);
@@ -116,8 +87,11 @@ char *Decode(int prefix, char type, char *buffer) {
     default:
         strcpy(resu, "Variable not found");
     }
-    return resu;
+    state(T);
+   *resultat=resu; 
+    printf("Decode: %s\n",resu);
 }
+
 
 // Checks validity of input
 int check_param(const char *s) {
@@ -155,29 +129,12 @@ char *convert(double d, int Lat) {
     return resu;
 }
 
-void init_Q_variables(int nb, QPSX **p) {
-
-    QPSX **tmp;
-    // Store the Variables Q conveniently
-    tmp = p;
-    if (tmp == NULL) {
-        printf("Error allocation memory to QPSX**\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // Putting the variables in structures
-    for (int i = 0; i < nb; i++) {
-        p[i] = (QPSX *)malloc(sizeof(QPSX));
-        Qformat(p[i], Qvariables[i]);
-    }
-}
-int umain(void) {
+int umain(Target *T) {
     char chaine[MAXLEN]={0};
     char cBuf;
+    char *VarDecoded;
     int boucle = 1;
     int pos=0;
-
-       // chaine = (char *)calloc(MAXLEN , sizeof(char));
 
     while (boucle) {
         int nbread = recv(sPSX, &cBuf, 1, 0);
@@ -185,27 +142,22 @@ int umain(void) {
             if (cBuf == '\n' || cBuf == '\r')  {
                 boucle = 0;
             } else {
-              //  strcat(chaine, &cBuf);
               chaine[pos]=cBuf;
               pos++;
             }
         }
     }
+
+    printf("Chaine: %s\n",chaine);
     chaine[pos]='\0';            
-   // printf("chaine: %s\n", chaine);
     for (int i = 0; i < NB_Q_VAR; i++) {
 
-        //strcpy(ptr, Qvariables[i]);
-       // strcat(ptr, "=");
 
         // We found the Variable in the stream
         if (strstr(chaine, "Qs121=")) {
-     //       printf("Variable %s: %s\n", Q[i]->name, Decode(Q[i]->index, Q[i]->type, chaine));
-            //Decode(Q[i]->index, Q[i]->type, chaine);
-            Decode(121, 's', chaine);
-//     printf("PSX chaine: %s\n",chaine);
+            Decode(&VarDecoded,121, 's', chaine, T);
+            printf("vardecoded: %s\n",VarDecoded);
         }
     }
-    //free(chaine);
     return 0;
 }
