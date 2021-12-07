@@ -16,14 +16,13 @@ void state(Target *T) {
     Lat = convert(T->latitude, 1);
     Long = convert(T->longitude, 0);
     printf("PSX:  ");
-    printf("Alt: %.0f ", T->altitude / 1000.0);
-    printf("Head: %.2f ", T->heading * 180.0 / M_PI);
-    printf("Lat: %.4f ",  T->latitude *180 / M_PI);
-    printf("Long: %.4f ", T->longitude*180 / M_PI);
-    printf("Pitch: %.4f ", T->pitch * 180 / M_PI / 100000.0);
-    printf("Bank: %.4f ", T->bank * 180.0 / M_PI / 100000.0);
+    printf("Alt: %.0f\t", T->altitude / 1000.0);
+    printf("Head: %.2f\t", T->heading * 180.0 / M_PI);
+    printf("Lat: %.4f\t",  T->latitude *180 / M_PI);
+    printf("Long: %.4f\t", T->longitude*180 / M_PI);
+    printf("Pitch: %.4f\t", T->pitch * 180 / M_PI / 100000.0);
+    printf("Bank: %.4f\t", T->bank * 180.0 / M_PI / 100000.0);
     printf("TAS: %.1f\n", T->TAS / 1000.0);
-    printf("\n");
 
     free(Lat);
     free(Long);
@@ -64,7 +63,7 @@ void S121(char *s, Target *T) {
 }
 
 
-void Decode( char **resultat, int prefix, char type, char *buffer, Target *T) {
+void Decode( char *resultat, int prefix, char type, char *buffer, Target *T) {
     char resu[50]={0};
 
     switch (type) {
@@ -87,9 +86,7 @@ void Decode( char **resultat, int prefix, char type, char *buffer, Target *T) {
     default:
         strcpy(resu, "Variable not found");
     }
-    state(T);
-   *resultat=resu; 
-    printf("Decode: %s\n",resu);
+   strcpy(resultat,resu); 
 }
 
 
@@ -132,7 +129,7 @@ char *convert(double d, int Lat) {
 int umain(Target *T) {
     char chaine[MAXLEN]={0};
     char cBuf;
-    char *VarDecoded;
+    char VarDecoded[MAXLEN];
     int boucle = 1;
     int pos=0;
 
@@ -148,16 +145,10 @@ int umain(Target *T) {
         }
     }
 
-    printf("Chaine: %s\n",chaine);
     chaine[pos]='\0';            
-    for (int i = 0; i < NB_Q_VAR; i++) {
-
-
         // We found the Variable in the stream
         if (strstr(chaine, "Qs121=")) {
-            Decode(&VarDecoded,121, 's', chaine, T);
-            printf("vardecoded: %s\n",VarDecoded);
-        }
+            Decode(VarDecoded,121, 's', chaine, T);
     }
     return 0;
 }

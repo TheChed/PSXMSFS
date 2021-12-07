@@ -19,11 +19,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     Target *T;
     T=(Target *)pContext;
     (void ) cbData;
-    T->altitude+=1000;
     switch (pData->dwID) {
 
     case SIMCONNECT_RECV_ID_OPEN: {
-        // Turn the input events on now
         printf("inside SIMCONNECT_RECV_ID_OPEN\n");
     } break;
 
@@ -32,43 +30,38 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         switch (evt->uEventID) {
         case EVENT_SIM_START: {
-            // Turn the input events on now
             printf("Inside EVENT_SIM_START\n");
         } break;
 
         case EVENT_ONE_SEC: {
-            //state(T);
+
+
+        } break;
+        
+        case EVENT_6_HZ: {
 
             SimResponse SR;
-
-            SR.altitude = 1179;
-            SR.latitude = 0.87455;
-            SR.longitude = 0.24891;
-            SR.pitch = 0.0;
-            SR.bank = 0.0;
-            SR.VS = 0.0;
-            SR.IAS = 0.0;
-            SR.TAS = 0.0;
-            SR.heading = 58;
-
-              //  SimConnect_SetDataOnSimObject(hSimConnect,DATA_PSX_TO_MSFS,SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR), &SR);
+            SR.altitude = (double) T->altitude/1000.0;
+            SR.latitude = T->latitude ;
+            SR.longitude = T->longitude;
+            SR.pitch = (double) T->pitch/100000.0;
+            SR.bank = (double) T->bank/100000.0;
+            SR.heading = T->heading ;
+            SR.pos= 1 ;
+            SR.alt= 1 ;
+            SR.att= 1 ;
+            SimConnect_SetDataOnSimObject(hSimConnect,DATA_PSX_TO_MSFS,SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR), &SR);
         } break;
+
+        case EVENT_FREEZE: {
+            printf("Inside EVENT_FREEZE\n");
+                         } break;
+
 
         case EVENT_INIT: {
 
             printf("Inside EVENT_INIT\n");
-            SIMCONNECT_DATA_INITPOSITION Init;
-
-            Init.Altitude = T->altitude / 1000.0;
-            Init.Latitude = T->latitude / M_PI * 180.0;
-            Init.Longitude = T->longitude / M_PI * 180.0;
-            Init.Pitch = 0.0;
-            Init.Bank = 0.0;
-            Init.Heading = T->heading * 180.0 / M_PI;
-            Init.OnGround = 1;
-            Init.Airspeed = 0;
-            SimConnect_SetDataOnSimObject(
-                hSimConnect, DEFINITION_INIT, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(Init), &Init);
+            
 
             printf("\nEVENT_INIT received and data sent");
         } break;
@@ -91,7 +84,9 @@ case EVENT_QUIT: {
 
         case DATA_DEFINITION: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
-            //printf("MSFS: Alt:%f, Head:%f, Lat:%f, Long:%f, mmHG=%f\n", pS->altitude,pS->heading, pS->latitude,pS->longitude,pS->kohlsmann);
+            printf("MSFS: Alt: %.0f\tHead: %.2f\tLat: %.4f\tLong: %.4f\tpitch: %.4f\tbank: %.4f\talt: %d\tatt: %d\tpos: %d\n", pS->altitude,pS->heading*180/M_PI, pS->latitude*180/M_PI,pS->longitude*180/M_PI,pS->pitch*180/M_PI, pS->bank*180/M_PI,  pS->alt, pS->att, pS->pos);
+            state(T);
+            printf("\n");
         } break;
 
         default:
@@ -115,30 +110,33 @@ case EVENT_QUIT: {
 }
 
 int init_MS_data(void) {
-    hr =
-        SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "INDICATED ALTITUDE", "Feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE","degree");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "INDICATED ALTITUDE", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "radian");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES","degree");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES","degree");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knots");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED INDICATED","knots");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "VERTICAL SPEED","Feet per second");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE","radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES","radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES","radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "IS ALTITUDE FREEZE ON","Bool");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "IS ATTITUDE FREEZE ON","Bool");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "IS POSITION FREZE ON","Bool");
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DEFINITION_INIT, "Initial Position", NULL,SIMCONNECT_DATATYPE_INITPOSITION);
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "Kohlsman setting hg", "mbar");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "Indicated Altitude", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "Plane Latitude", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "Plane Longitude", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "PLANE HEADING DEGREES TRUE","degree");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "Plane Latitude", "radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "Plane Longitude", "radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "PLANE HEADING DEGREES TRUE","radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "PLANE PITCH DEGREES","radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "PLANE BANK DEGREES","radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "IS ALTITUDE FREEZE ON",NULL,SIMCONNECT_DATATYPE_INT32);
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "IS ATTITUDE FREEZE ON","Bool");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_DEFINITION, "IS POSITION FREZE ON","Bool");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_3, DATA_DEFINITION,SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
+    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
 
     /////////////////////////////////////////////////////
     //
@@ -148,10 +146,11 @@ int init_MS_data(void) {
 
     // Link the custom event to some keyboard keys, and turn the input event off
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "Q", EVENT_QUIT);
-    hr = SimConnect_SetInputGroupState(hSimConnect, INPUT_QUIT, SIMCONNECT_STATE_ON);
 
     // Sign up for notifications for EVENT_QUIT
-    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT);
+    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT,TRUE);
+    hr = SimConnect_SetNotificationGroupPriority(hSimConnect, GROUP0, SIMCONNECT_GROUP_PRIORITY_HIGHEST);
+    hr = SimConnect_SetInputGroupState(hSimConnect, INPUT_QUIT, SIMCONNECT_STATE_ON);
     //
     //////////////////////////////////////////////////////
     // Create custom events. Needs to have a "." in the name to be a custom event
@@ -163,13 +162,14 @@ int init_MS_data(void) {
 
     // Sign up for notifications for EVENT_INIT
     hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP1, EVENT_INIT);
+    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP1, EVENT_FREEZE);
+
 
     return hr;
 }
 
 int main(int argc, char **argv) {
 
-    
     Target *T;
     T = (Target *)malloc(sizeof(T));
     if (argc != 3) {
@@ -190,14 +190,6 @@ int main(int argc, char **argv) {
     //
     //
 
-            T->altitude = 100179;
-            T->latitude = 0.87455;
-            T->longitude = 0.24891;
-            T->pitch = 0.0;
-            T->bank = 0.0;
-            T->TAS = 0.0;
-            T->heading = 58;
-            state(T);
     while (!quit) {
         SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, T);
         umain(T);

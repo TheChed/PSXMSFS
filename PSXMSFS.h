@@ -27,25 +27,28 @@ extern HRESULT hr;
 
 struct Struct_MSFS
 {
-    double  kohlsmann;
     double  altitude;
     double  latitude;
     double  longitude;
     double heading;
+    double pitch;
+    double bank;
+    BOOL alt;
+    BOOL att;
+    BOOL pos;
 }; 
 
 
 struct SimResponse {
     double altitude;
-    double heading;
     double latitude;
     double longitude;
+    double heading;
     double pitch;
     double bank;
-    double TAS;
-    double IAS;
-    double VS;
-//    double mach;
+    BOOL alt;
+    BOOL att;
+    BOOL pos;
 };
 
 enum GROUP_ID {
@@ -61,8 +64,12 @@ enum INPUT_ID {
 enum EVENT_ID {
     EVENT_SIM_START,
     EVENT_ONE_SEC,
+    EVENT_6_HZ,
     EVENT_QUIT,
     EVENT_INIT,
+    EVENT_FREEZE,
+    ATTITUDE_EVENT_FREEZE,
+    ALTITUDE_EVENT_FREEZE,
 };
  enum DATA_DEFINE_ID {
      DATA_PSX_TO_MSFS,
