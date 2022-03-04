@@ -31,33 +31,28 @@ struct Struct_MSFS
     double  latitude;
     double  longitude;
     double heading;
+    double trueheading;
     double pitch;
     double bank;
-    BOOL alt;
-    BOOL att;
-    BOOL pos;
+    BOOL freeze;
 }; 
 
 
-struct SimResponse {
-    double altitude;
-    double latitude;
-    double longitude;
+struct SimResponse
+{
+    double  altitude;
+    double  latitude;
+    double  longitude;
     double heading;
     double pitch;
     double bank;
-    BOOL alt;
-    BOOL att;
-    BOOL pos;
-};
-
+}; 
 enum GROUP_ID {
     GROUP0,
     GROUP1,
 };
 
 enum INPUT_ID {
-    INPUT_QUIT,
     INPUT_INIT,
 };
 
@@ -65,23 +60,19 @@ enum EVENT_ID {
     EVENT_SIM_START,
     EVENT_ONE_SEC,
     EVENT_6_HZ,
+    EVENT_FREEZE_ALT,
+    EVENT_FREEZE_ATT,
+    EVENT_FREEZE_LAT_LONG,
     EVENT_QUIT,
     EVENT_INIT,
-    EVENT_FREEZE,
-    ATTITUDE_EVENT_FREEZE,
-    ALTITUDE_EVENT_FREEZE,
 };
  enum DATA_DEFINE_ID {
-     DATA_PSX_TO_MSFS,
-     DEFINITION_6,
-     DEFINITION_INIT,
      MSFS_CLIENT_DATA,
+     DATA_PSX_TO_MSFS,
  };
 
 enum DATA_REQUEST_ID {
      DATA_REQUEST,
-     DATA_REQUEST_2,
-     DATA_REQUEST_3
  };
 
 
