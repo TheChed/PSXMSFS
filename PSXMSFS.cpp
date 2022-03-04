@@ -6,7 +6,6 @@
 #include "PSXMSFS.h"
 #include "SimConnect.h"
 
-#define PRINT 1
 float alt, lat, longi, head,pitch,bank;
 int quit = 0;
 HRESULT hr;
@@ -46,19 +45,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_ONE_SEC: {
             //    printf("Inside EVENT_ONE_SEC\n");
-            alt = alt + 200;
-            head = head + 0.01;
-            pitch=pitch+0.01;
-            bank=bank+0.01;
-            SimResponse SR;
-            SR.altitude = alt;
-            SR.latitude = 0;
-            SR.longitude = 0;
-            SR.pitch = pitch;
-            SR.bank = bank;
-            SR.heading = head;
-            SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR),
-                                          &SR);
+            
         } break;
 
         case EVENT_6_HZ: {
@@ -95,13 +82,22 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case MSFS_CLIENT_DATA: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
-            if (!PRINT) {
+            SimResponse SR;
+            SR.altitude = (double)T->altitude / 1000.0;
+            SR.latitude = T->latitude;
+            SR.longitude = T->longitude;
+            SR.pitch = (double)T->pitch / 100000.0;
+            SR.bank = (double)T->bank / 100000.0;
+            SR.heading = T->heading;
+            SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR),
+                                          &SR);
+            if (PRINT) {
                 printf("MSFS: Alt: %.0f\tTrueHead: %.2f\tHead: %.2f\tLat: %.4f\tLong: %.4f\tpitch: %.4f\tbank: "
                        "%.4f\tfreeze: %d\n",
                        pS->altitude, pS->trueheading * 180 / M_PI, pS->heading * 180 / M_PI, pS->latitude * 180 / M_PI,
                        pS->longitude * 180 / M_PI, pS->pitch * 180 / M_PI, pS->bank * 180 / M_PI, pS->freeze);
-                //            state(T);
-                // printf("\n");
+                            state(T);
+                 printf("\n");
             }
         } break;
 
@@ -142,7 +138,7 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "IS ALTITUDE ON", "Bool");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_SECOND);
+                                           SIMCONNECT_PERIOD_VISUAL_FRAME);
 
     // Request a simulation start event:w
     //
@@ -152,11 +148,9 @@ int init_MS_data(void) {
     // hr = SimConnect_SetSystemEventState(hSimConnect, EVENT_FRAME, SIMCONNECT_STATE_ON);
     hr = SimConnect_AIReleaseControl(hSimConnect, SIMCONNECT_OBJECT_ID_USER, DATA_REQUEST);
 
-    printf("OK: %ld FAIL: %ld hr: %ld\n", S_OK, E_FAIL, hr);
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
      hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
      hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
-    printf("Map Client OK: %ld FAIL: %ld hr: %ld\n", S_OK, E_FAIL, hr);
 
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_QUIT, "My.CTRLQ");
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_INIT, "Q", EVENT_QUIT);
@@ -167,8 +161,8 @@ int init_MS_data(void) {
 
 int main(int argc, char **argv) {
 
-    Target *T;
-    T = (Target *)malloc(sizeof(T));
+    Target *T=NULL;
+    T=(Target *) malloc(sizeof(T));
     if (argc != 3) {
         printf("Usage: %s IP:port\n", argv[0]);
         exit(EXIT_FAILURE);
@@ -187,15 +181,9 @@ int main(int argc, char **argv) {
     //
     //
 
-    lat = 19.4416;
-    longi = -99.0712;
-    head = M_PI;
-    alt = 100;
-    pitch=0;
-    bank=0;
     while (!quit) {
+                umain(T);
         SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, T);
-                //umain(T);
     };
 
     SimConnect_Close(hSimConnect);

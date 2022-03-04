@@ -8,31 +8,28 @@
 #include "PSXMSFS.h"
 // Global variables
 
-
-
 void state(Target *T) {
     char *Lat, *Long;
 
-    Lat = convert(T->latitude, 1);
-    Long = convert(T->longitude, 0);
-    printf("PSX:  ");
+     Lat = convert(T->latitude, 1);
+      Long = convert(T->longitude, 0);
+if(PRINT) {   printf("PSX:  ");
     printf("Alt: %.0f\t", T->altitude / 1000.0);
     printf("Head: %.2f\t", T->heading * 180.0 / M_PI);
-    printf("Lat: %.4f\t",  T->latitude *180 / M_PI);
-    printf("Long: %.4f\t", T->longitude*180 / M_PI);
+    printf("Lat: %.4f\t", T->latitude * 180 / M_PI);
+    printf("Long: %.4f\t", T->longitude * 180 / M_PI);
     printf("Pitch: %.4f\t", T->pitch * 180 / M_PI / 100000.0);
     printf("Bank: %.4f\t", T->bank * 180.0 / M_PI / 100000.0);
     printf("TAS: %.1f\n", T->TAS / 1000.0);
-
-    free(Lat);
-    free(Long);
+}
+      free(Lat);
+      free(Long);
 }
 
 void S121(char *s, Target *T) {
 
     const char delim[2] = ";";
     char *token, *ptr;
-
 
     /* get the first token */
     token = strtok(s + 6, delim);
@@ -62,9 +59,8 @@ void S121(char *s, Target *T) {
     }
 }
 
-
-void Decode( char *resultat, int prefix, char type, char *buffer, Target *T) {
-    char resu[50]={0};
+void Decode(char *resultat, int prefix, char type, char *buffer, Target *T) {
+    char resu[50] = {0};
 
     switch (type) {
     case 's':
@@ -73,7 +69,7 @@ void Decode( char *resultat, int prefix, char type, char *buffer, Target *T) {
             strcpy(resu, buffer);
             break;
         case 121:
-            S121(buffer,T);
+            S121(buffer, T);
             strcpy(resu, "121 done");
             break;
         default:
@@ -86,9 +82,8 @@ void Decode( char *resultat, int prefix, char type, char *buffer, Target *T) {
     default:
         strcpy(resu, "Variable not found");
     }
-   strcpy(resultat,resu); 
+    strcpy(resultat, resu);
 }
-
 
 // Checks validity of input
 int check_param(const char *s) {
@@ -127,28 +122,34 @@ char *convert(double d, int Lat) {
 }
 
 int umain(Target *T) {
-    char chaine[MAXLEN]={0};
+    char chaine[MAXLEN] = {0};
     char cBuf;
     char VarDecoded[MAXLEN];
     int boucle = 1;
-    int pos=0;
+    int pos = 0;
 
     while (boucle) {
         int nbread = recv(sPSX, &cBuf, 1, 0);
         if (nbread > 0) {
-            if (cBuf == '\n' || cBuf == '\r')  {
+            if (pos > MAXLEN) {
+                boucle = 0;
+                printf("Lenght >MAXLEN\n");
+            }
+
+            if (cBuf == '\n' || cBuf == '\r' || cBuf == 10) {
                 boucle = 0;
             } else {
-              chaine[pos]=cBuf;
-              pos++;
+                chaine[pos] = cBuf;
+                pos++;
             }
         }
     }
 
-    chaine[pos]='\0';            
-        // We found the Variable in the stream
-        if (strstr(chaine, "Qs121=")) {
-            Decode(VarDecoded,121, 's', chaine, T);
-    }
+    chaine[pos] = '\0';
+
+   //  We found the Variable in the stream
+          if (strstr(chaine, "Qs121=")) {
+              Decode(VarDecoded,121, 's', chaine, T);
+      }
     return 0;
 }

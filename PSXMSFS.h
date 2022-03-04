@@ -8,7 +8,8 @@
 #define LENGTH(X) (sizeof X / sizeof X[0])
 
 #define NB_Q_VAR 3 // number of PSZ Q Variables to read
-#define MAXLEN 4096
+#define MAXLEN 8192
+#define PRINT 0
 
 typedef struct {
     char type;     // i, s or h
