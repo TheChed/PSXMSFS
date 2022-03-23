@@ -9,7 +9,7 @@
 
 #define NB_Q_VAR 3 // number of PSZ Q Variables to read
 #define MAXLEN 8192
-#define PRINT 0
+#define PRINT 1
 
 typedef struct {
     char type;     // i, s or h
@@ -35,7 +35,10 @@ struct Struct_MSFS
     double trueheading;
     double pitch;
     double bank;
-    BOOL freeze;
+    double ground; //ground altitude
+    double plane_alt; //
+    double plane_alt_above_gnd; //ground altitude
+    double plane_alt_above_gnd_minus_cg; //ground altitude
 }; 
 
 
@@ -47,6 +50,8 @@ struct SimResponse
     double heading;
     double pitch;
     double bank;
+    double tas;
+    double altitude_cg;
 }; 
 enum GROUP_ID {
     GROUP0,

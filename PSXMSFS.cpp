@@ -8,6 +8,9 @@
 
 float alt, lat, longi, head,pitch,bank;
 int quit = 0;
+int airborne=1;
+    float hCorr=0;
+#define STEP 0.001
 HRESULT hr;
 
 #define max_send_records 20
@@ -83,21 +86,27 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         case MSFS_CLIENT_DATA: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
             SimResponse SR;
-            SR.altitude = (double)T->altitude / 1000.0;
             SR.latitude = T->latitude;
             SR.longitude = T->longitude;
-            SR.pitch = (double)T->pitch / 100000.0;
+            //SR.pitch = -M_PI/4;
+            SR.pitch = -T->pitch / 100000.0;
             SR.bank = (double)T->bank / 100000.0;
             SR.heading = T->heading;
-            SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR),
-                                          &SR);
-            if (PRINT) {
-                printf("MSFS: Alt: %.0f\tTrueHead: %.2f\tHead: %.2f\tLat: %.4f\tLong: %.4f\tpitch: %.4f\tbank: "
-                       "%.4f\tfreeze: %d\n",
-                       pS->altitude, pS->trueheading * 180 / M_PI, pS->heading * 180 / M_PI, pS->latitude * 180 / M_PI,
-                       pS->longitude * 180 / M_PI, pS->pitch * 180 / M_PI, pS->bank * 180 / M_PI, pS->freeze);
+            SR.tas= T->TAS/1000;
+            SR.altitude = pS->ground+hCorr;
+            SR.altitude_cg=0;
+           // SR.altitude = -95.45;
+
+
+            if (pS->plane_alt_above_gnd_minus_cg>1){hCorr -= STEP*10;} else if (pS->plane_alt_above_gnd_minus_cg>0){hCorr -= STEP;}
+            if (pS->plane_alt_above_gnd_minus_cg<-1){hCorr += STEP*10;} else if (pS->plane_alt_above_gnd_minus_cg<0){hCorr += STEP;}
+            
+            SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(SR),&SR);
+
+            if (1) {
+                printf("Pitch: %.4f\tHcorr: %.4f\tSR.altitude: %.4f\t Plane alt: %.4f\tPlane alt abv gnd: %.4f\tPlane altmin cg: %.4f\tGround elev: %.4f\r",SR.pitch*180/M_PI, hCorr,SR.altitude,pS->plane_alt ,pS->plane_alt_above_gnd,pS->plane_alt_above_gnd_minus_cg,pS->ground);
                             state(T);
-                 printf("\n");
+                // printf("\n");
             }
         } break;
 
@@ -120,22 +129,27 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 }
 
 int init_MS_data(void) {
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "INDICATED ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knots");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALT ABOVE GROUND MINUS CG", "feet");
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Indicated Altitude", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Plane Latitude", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Plane Longitude", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES MAGNETIC", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "radian");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES", "radian");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Plane Latitude", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Plane Longitude", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES MAGNETIC", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND MINUS CG", "feet");
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "IS ALTITUDE ON", "Bool");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_VISUAL_FRAME);

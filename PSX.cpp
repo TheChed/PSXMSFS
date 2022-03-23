@@ -18,9 +18,9 @@ if(PRINT) {   printf("PSX:  ");
     printf("Head: %.2f\t", T->heading * 180.0 / M_PI);
     printf("Lat: %.4f\t", T->latitude * 180 / M_PI);
     printf("Long: %.4f\t", T->longitude * 180 / M_PI);
-    printf("Pitch: %.4f\t", T->pitch * 180 / M_PI / 100000.0);
+    printf("Pitch in deg: %.6f\t", T->pitch * 180 / M_PI / 100000.0);
     printf("Bank: %.4f\t", T->bank * 180.0 / M_PI / 100000.0);
-    printf("TAS: %.1f\n", T->TAS / 1000.0);
+    printf("TAS: %.1f\t", T->TAS / 1000.0);
 }
       free(Lat);
       free(Long);
