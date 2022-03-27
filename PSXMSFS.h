@@ -4,7 +4,6 @@
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 #define bcopy(b1, b2, len) (memmove((b2), (b1), (len)), (void)0)
 #define position 1 // do we want to print the acft posotion
-
 #define LENGTH(X) (sizeof X / sizeof X[0])
 
 #define NB_Q_VAR 3 // number of PSZ Q Variables to read
@@ -19,8 +18,8 @@ typedef struct {
     int min, max;  // maximum and minimum values for the Variable
 } QPSX;
 
-extern int sockfdPSX, sockfdFS;
-extern SOCKET sPSX;
+//extern int sockfdPSX, sockfdFS;
+extern SOCKET sPSX, sPSXBOOST;
 
 
 extern HANDLE hSimConnect ;
@@ -39,10 +38,11 @@ struct Struct_MSFS
     double plane_alt; //
     double plane_alt_above_gnd; //ground altitude
     double plane_alt_above_gnd_minus_cg; //ground altitude
+    double Flaps;
 }; 
 
 
-struct SimResponse
+struct AcftPosition
 {
     double  altitude;
     double  latitude;
@@ -51,7 +51,9 @@ struct SimResponse
     double pitch;
     double bank;
     double tas;
-    double altitude_cg;
+    double vertical_speed;
+    int GearDown;
+    //int FlapsPosition;
 }; 
 enum GROUP_ID {
     GROUP0,
@@ -71,6 +73,7 @@ enum EVENT_ID {
     EVENT_FREEZE_LAT_LONG,
     EVENT_QUIT,
     EVENT_INIT,
+    EVENT_FRAME,
 };
  enum DATA_DEFINE_ID {
      MSFS_CLIENT_DATA,
@@ -83,18 +86,22 @@ enum DATA_REQUEST_ID {
 
 
 typedef struct {
-    int pitch; // x 100 000
-    int bank;  // x 100 000
+    double pitch; 
+    double bank;  
     double heading;
-    int altitude; // x 1000
-    int TAS;      // x1000
+    float altitude; 
     double latitude, longitude;
+    double TAS;
+    double VerticalSpeed;
+    int onGround;   //1 if PSX is on groud, 0 otherwise
+    int GearDown=1; //Gear down =1, gear up =0;
 } Target;
 
 
 
 // Function definitions
 int init_connect_PSX(const char *, int);
+int init_connect_PSX_Boost(const char *, int);
 int init_connect_MSFS(HANDLE *);
 int check_param(const char *);
 void Qformat(QPSX *, const char *);
@@ -102,6 +109,9 @@ void Decode(int, char, char *, Target *);
 void state(Target *T); // prints aircraft position
 char *convert(double, int);
 int umain(Target *T);
+int umainBoost(Target *T);
+int umainBoost2(Target *T);
 void init_Q_variables(int, QPSX**);
+      int SetMSFSPos(Target *T);
 
 #endif

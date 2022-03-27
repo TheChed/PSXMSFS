@@ -8,10 +8,10 @@ all: PSXMSFS move
 
 
 testMSFS: testMSFS.o
-		$(CC) -static testMSFS.o -o testMSFS.exe -LInclude -lSimConnect -lwsock32
+		$(CC) -static testMSFS.o -o testMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthreadGC2
 
 PSXMSFS: $(OBJ) $(DEPS)
-	$(CC) -static $(OBJ) -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32
+	$(CC) -static $(OBJ) -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthreadGC2
 
 %.o : %.cpp
 	$(CC) $(CFLAGS) -c $<

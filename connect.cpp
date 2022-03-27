@@ -9,9 +9,39 @@
 //
 //
 
-SOCKET sPSX;
+SOCKET sPSX, sPSXBOOST;
 HANDLE hSimConnect = NULL;
 
+int init_connect_PSX_Boost(const char *hostname, int portboost) {
+
+    WSADATA wsa;
+    struct sockaddr_in server;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        printf("Initialzation Failed. Error Code : %d. Exiting...\n", WSAGetLastError());
+        exit(EXIT_FAILURE);
+    }
+
+    // Create a socket
+    if ((sPSXBOOST = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
+        printf("Could not create socket. Error: %d", WSAGetLastError());
+        exit(EXIT_FAILURE);
+    }
+
+    // Connect to PSX
+    printf("Trying to connect to PSX Boost on %s:%d\n", hostname, portboost);
+    server.sin_addr.s_addr = inet_addr(hostname);
+    server.sin_family = AF_INET;
+    server.sin_port = htons(portboost);
+
+    if (connect(sPSXBOOST, (struct sockaddr *)&server, sizeof(server)) < 0) {
+        printf("Connection error to boost server\n");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Connected to PSX Boost Server\n");
+    return 1;
+}
 int init_connect_PSX(const char *hostname, int portno) {
 
     WSADATA wsa;
