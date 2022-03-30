@@ -10,16 +10,9 @@
 #define MAXLEN 8192
 #define PRINT 1
 
-typedef struct {
-    char type;     // i, s or h
-    int index;     // variable index
-    char name[30]; // name of variable
-    char *Mode;    // Variable mode ECON
-    int min, max;  // maximum and minimum values for the Variable
-} QPSX;
 
 //extern int sockfdPSX, sockfdFS;
-extern SOCKET sPSX, sPSXBOOST;
+extern int sPSX, sPSXBOOST;
 
 
 extern HANDLE hSimConnect ;
@@ -39,6 +32,8 @@ struct Struct_MSFS
     double plane_alt_above_gnd; //ground altitude
     double plane_alt_above_gnd_minus_cg; //ground altitude
     double Flaps;
+    double Speedbrake;
+    double GearDown;
 }; 
 
 
@@ -52,8 +47,9 @@ struct AcftPosition
     double bank;
     double tas;
     double vertical_speed;
-    int GearDown;
-    //int FlapsPosition;
+    double GearDown;
+   double FlapsPosition;
+   double Speedbrake;
 }; 
 enum GROUP_ID {
     GROUP0,
@@ -61,19 +57,21 @@ enum GROUP_ID {
 };
 
 enum INPUT_ID {
-    INPUT_INIT,
+    INPUT_PRINT,
+    INPUT_QUIT,
 };
 
 enum EVENT_ID {
     EVENT_SIM_START,
     EVENT_ONE_SEC,
     EVENT_6_HZ,
+    EVENT_FRAME,
+    EVENT_PRINT,
     EVENT_FREEZE_ALT,
     EVENT_FREEZE_ATT,
     EVENT_FREEZE_LAT_LONG,
-    EVENT_QUIT,
     EVENT_INIT,
-    EVENT_FRAME,
+    EVENT_QUIT,
 };
  enum DATA_DEFINE_ID {
      MSFS_CLIENT_DATA,
@@ -91,10 +89,14 @@ typedef struct {
     double heading;
     float altitude; 
     double latitude, longitude;
+
     double TAS;
     double VerticalSpeed;
     int onGround;   //1 if PSX is on groud, 0 otherwise
-    int GearDown=1; //Gear down =1, gear up =0;
+    double GearDown=0.0; //Gear down =1, gear up =0;
+    int GearLever=3.0; // 1=up, 2=off, 3=down
+    int FlapLever=0.0; // 0 (up) to 6 (30)
+    int SpdBrkLever=0.0; // 0 (up) to 800 max deployed
 } Target;
 
 
@@ -104,14 +106,13 @@ int init_connect_PSX(const char *, int);
 int init_connect_PSX_Boost(const char *, int);
 int init_connect_MSFS(HANDLE *);
 int check_param(const char *);
-void Qformat(QPSX *, const char *);
 void Decode(int, char, char *, Target *);
 void state(Target *T); // prints aircraft position
 char *convert(double, int);
 int umain(Target *T);
 int umainBoost(Target *T);
 int umainBoost2(Target *T);
-void init_Q_variables(int, QPSX**);
+void err_n_die(const char *fmt, ...);
       int SetMSFSPos(Target *T);
 
 #endif

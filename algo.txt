@@ -1,40 +1,12 @@
-3 events:
-
-4s : mapped 0
-  requests: 
-    WINDOAT
-    AITRAFFIC
-    USER_ACFT_ATC_ID
-    FUEL_TANK_CTR_LEVEL
-
-1s: mapped 24
-  requests: 
-    LIGHT_STATE
-    PARK_BRK_STATE
-    SIM_ON_GROUND
-    SIM_GMT_YEAR
-    SIM_GMT_MONTH_OF_YEAR
-    SIM_GMT_DAY_OF_MONTH
-    SIM_GMT_TIME
-    GEAR_POSITION
-    ENGINE_1_STARTER
-    ENGINE_1_STARTER
-    ENGINE_1_STARTER
-    ENGINE_1_STARTER
-    DOORS
-    DOORS_PAX
-
-  6Hz: mapped 7
-    requests:
-      SIM_POS_ELT_ATT
-      SIN_GND_ALT
+TODO:
+Cold and dark start in MSFS neesd to be updated if loading a situ
 
 
-  SetDataonSim:
-  Lines:
-  268: HandleOpen Set DEFINITION_FUEL_TANK_CTR
-  389: if Request=FUEL_TANLK_CTR then set FUEL_TANK_CTR
-  539: if not airborne set AIR_POS_UPDATE
-  580: if airborne set AIR_POS_UPDATE
-  658: 724, 886, 889
+to create custoim event:
+     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
+     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
+     hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_PRINT);
+
+     The last line is needed !
+
 

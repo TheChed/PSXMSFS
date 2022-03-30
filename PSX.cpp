@@ -3,57 +3,102 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <time.h>
+#include <sys/time.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 // Global variables
-int print=1;
+int print = 1;
+
+const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
 void state(Target *T) {
 
+    struct timeval start;
+    double msecs = 0;
+
+    gettimeofday(&start, NULL);
+
+    // Do stuff  here
+
+    msecs = (double)start.tv_usec / 1000;
+
     if (print) {
-        printf("PSX:  ");
-        printf("Alt: %.0f\t", T->altitude );
-        printf("Head: %.2f\t", T->heading );
-        printf("Lat: %.4f\t", T->latitude );
-        printf("Long: %.4f\t", T->longitude );
-        printf("Pitch in deg: %.6f\t", T->pitch );
-        printf("Bank: %.4f\t", T->bank );
+        //   asctime_s(stime, sizeof(stime),&result);
+        printf("PSX: |%f|\t  ", msecs);
+        printf("Alt: %.0f\t", T->altitude);
+        printf("Head: %.2f\t", T->heading);
+        printf("Lat: %.4f\t", T->latitude);
+        printf("Long: %.4f\t", T->longitude);
+        printf("Pitch in deg: %.6f\t", T->pitch);
+        printf("Bank: %.4f\t", T->bank);
         printf("TAS: %.1f\t", T->TAS);
         printf("\r");
     }
 }
 
+//Position of Gear
+void H170(char *s, Target *T) {
+
+    if (strlen(s) != 7) {
+        printf("Wrong Qh170 code\n");
+        exit(-1);
+    }
+
+    T->GearLever = (int)(s[6] - '0');
+    printf("s: %s\t T->GearLever: %d\n", s, T->GearLever);
+}
+
+// Flap lever variable Qh389
+void H389(char *s, Target *T) {
+
+    if (strlen(s) != 7) {
+        printf("Wrong Qh389 code\n");
+        exit(-1);
+    }
+
+    T->FlapLever = (int)(s[6] - '0');
+    printf("s: %s\t T->FlapLever: %d\n", s, T->FlapLever);
+}
+
+// Speedbrake lever variable Qh389
+void H388(char *s, Target *T) {
+
+    char *token, *ptr;
+    token = strtok(s + 6, delim);
+
+    T->SpdBrkLever = strtol(token, &ptr, 10);
+    printf("s: %s\t T->SpdBrkLever: %d\n", s, T->SpdBrkLever);
+}
+
+
 void S121(char *s, Target *T) {
 
-    const char delim[2] = ";";
     char *token, *ptr;
-
-
 
     /* get the first token */
     token = strtok(s + 6, delim);
     /* walk through other tokens */
-        T->pitch = strtol(token, &ptr, 10)*180.0/M_PI/100000.0;
-        token = strtok(NULL, delim);
+    T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
+    token = strtok(NULL, delim);
 
-        T->bank = strtol(token, &ptr, 10)*180.0/M_PI/100000.0;;
-        token = strtok(NULL, delim);
+    T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
+    ;
+    token = strtok(NULL, delim);
 
-        T->heading = strtod(token, &ptr);
-        token = strtok(NULL, delim);
+    T->heading = strtod(token, &ptr);
+    token = strtok(NULL, delim);
 
-        T->altitude = strtol(token, &ptr, 10)/1000.0;
-        token = strtok(NULL, delim);
+    T->altitude = strtol(token, &ptr, 10) / 1000.0;
+    token = strtok(NULL, delim);
 
-        T->TAS = strtol(token, &ptr, 10)/1000.0;
-        token = strtok(NULL, delim);
+    T->TAS = strtol(token, &ptr, 10) / 1000.0;
+    token = strtok(NULL, delim);
 
-        T->latitude = strtod(token, &ptr);
-        token = strtok(NULL, delim);
+    T->latitude = strtod(token, &ptr);
+    token = strtok(NULL, delim);
 
-        T->longitude = strtod(token, &ptr);
-        token = strtok(NULL, delim);
+    T->longitude = strtod(token, &ptr);
+    token = strtok(NULL, delim);
 }
 
 void S122(char *s, Target *T) {
@@ -63,34 +108,34 @@ void S122(char *s, Target *T) {
     int PosUpdated;
     /* get the first token */
     token = strtok(s + 6, delim);
-    PosUpdated=(int)(token[0]-'0');
+    PosUpdated = (int)(token[0] - '0');
     /* walk through other tokens */
-    
-        token = strtok(NULL, delim);
-        T->pitch = strtol(token, &ptr, 10)*180.0/M_PI/1000.0;
-        
-        token = strtok(NULL, delim);
-        T->bank = strtol(token, &ptr, 10)*180.0/M_PI/1000.0;;
 
-        token = strtok(NULL, delim);
-        T->heading = strtod(token, &ptr)*180/M_PI/1000.0;
+    token = strtok(NULL, delim);
+    T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
 
-        token = strtok(NULL, delim);
-        T->altitude = strtol(token, &ptr, 10);
+    token = strtok(NULL, delim);
+    T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
+    ;
 
-        token = strtok(NULL, delim);
-        T->VerticalSpeed=strtol(token, &ptr,10);
-        
-        token = strtok(NULL, delim);
-        T->TAS = strtol(token, &ptr, 10);
-        
-        token = strtok(NULL, delim); //YAW is not needed
-        token = strtok(NULL, delim);
-        T->latitude = strtod(token, &ptr)*180.0/M_PI;
+    token = strtok(NULL, delim);
+    T->heading = strtod(token, &ptr) * 180 / M_PI / 1000.0;
 
-        token = strtok(NULL, delim);
-        T->longitude = strtod(token, &ptr)*180/M_PI;
+    token = strtok(NULL, delim);
+    T->altitude = strtol(token, &ptr, 10);
 
+    token = strtok(NULL, delim);
+    T->VerticalSpeed = strtol(token, &ptr, 10);
+
+    token = strtok(NULL, delim);
+    T->TAS = strtol(token, &ptr, 10);
+
+    token = strtok(NULL, delim); // YAW is not needed
+    token = strtok(NULL, delim);
+    T->latitude = strtod(token, &ptr) * 180.0 / M_PI;
+
+    token = strtok(NULL, delim);
+    T->longitude = strtod(token, &ptr) * 180 / M_PI;
 }
 
 void I257(char *s, Target *T) {
@@ -99,61 +144,16 @@ void I257(char *s, Target *T) {
         printf("Wrong Qi257 format\n");
         exit(-1);
     }
-
     T->onGround = (int)(s[6] - '0');
+    printf("s: %s\t T->onground: %d\n", s, T->onGround);
 }
 void I129(char *s, Target *T) {
 
     if (strlen(s) != 7) {
-        printf("Wrong Qi129 format\n");
+        printf("Wrong Qi129 format\n : s=%s should be 7 char long");
     }
 
     // T->notpaused = (int)(s[6] - '0');
-}
-
-void Decode(char *resultat, int prefix, char type, char *buffer, Target *T) {
-    char resu[50] = {0};
-
-    switch (type) {
-    case 's':
-        switch (prefix) {
-        case 1:
-            strcpy(resu, buffer);
-            break;
-        case 121:
-            S121(buffer, T);
-            strcpy(resu, "121 done");
-            break;
-        case 122:
-            S122(buffer, T);
-            strcpy(resu, "121 done");
-            break;
-        default:
-            strcpy(resu, buffer);
-            printf("Variable Qs%d not decoded.\n", prefix);
-        };
-        break;
-    case 'h':
-    case 'i':
-        switch (prefix) {
-
-        case 257:
-            I257(buffer, T);
-            strcpy(resu, "Qi257 done");
-            break;
-        case 129:
-            I129(buffer, T);
-            strcpy(resu, "Qi129 done");
-            break;
-        default:
-            strcpy(resu, buffer);
-            printf("Variable Qi%d not decoded.\n", prefix);
-        };
-        break;
-    default:
-        strcpy(resu, "Variable not found");
-    }
-    strcpy(resultat, resu);
 }
 
 // Checks validity of input
@@ -200,7 +200,7 @@ void Decode_Boost(Target *T, char *s) {
 
     /* get the first token */
     token = strtok(s, delim);
-    T->onGround = strcmp(token, "F");
+    T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
 
     token = strtok(NULL, delim);
     flightDeckAlt = strtol(token, &ptr, 10) / 100.0;
@@ -220,12 +220,8 @@ void Decode_Boost(Target *T, char *s) {
     token = strtok(NULL, delim);
     T->longitude = strtod(token, &ptr);
 
-    T->altitude = flightDeckAlt -  28.412073 - 92.5 * sin( T->pitch /180.0*M_PI ) +15.63;
-
-    state(T);
+    T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch / 180.0 * M_PI) + 15.63;
 }
-
-
 
 int umainBoost(Target *T) {
     int boucle = 1;
@@ -243,26 +239,25 @@ int umainBoost(Target *T) {
             } else {
                 if (pos < MAXLEN) {
                     chaine[pos++] = cBuf;
-                } 
-                else {
-                    boucle=0; //too much data read, exiting
+                } else {
+                    boucle = 0; // too much data read, exiting
                 }
             }
-        } else boucle =0;
+        } else
+            boucle = 0;
     }
     return pos;
 }
 int umainBoost2(Target *T) {
     char chaine[MAXLEN];
 
-        int nbread = recv(sPSXBOOST, chaine,MAXLEN, 0);
-        if (nbread > 0) {
-           // printf("chaine: %s\n",chaine);
-            Decode_Boost(T, chaine);
-        } else 
-        {
-            printf("Nothing received\n");
-        }
+    int nbread = recv(sPSXBOOST, chaine, MAXLEN, 0);
+    if (nbread > 0) {
+        // printf("chaine: %s\n",chaine);
+        Decode_Boost(T, chaine);
+    } else {
+        printf("Nothing received\n");
+    }
     return nbread;
 }
 
@@ -282,26 +277,43 @@ int umain(Target *T) {
             } else {
                 if (pos < MAXLEN) {
                     chaine[pos++] = cBuf;
-                } 
-                else {
-                    boucle=0; //too much data read, exiting
+                } else {
+                    boucle = 0; // too much data read, exiting
                 }
             }
-        } else boucle =0;
+        } else
+            boucle = 0;
     }
 
     //  We found the Variable in the stream
-    //if (strstr(chaine, "Qs121=")) {
+    // if (strstr(chaine, "Qs121=")) {
     //    Decode(VarDecoded, 121, 's', chaine, T);
     //}
     if (strstr(chaine, "Qs122=")) {
-        Decode(VarDecoded, 122, 's', chaine, T);
+        S122(chaine, T);
     }
+    
+    //PSX on groud
     if (strstr(chaine, "Qi257=")) {
-        Decode(VarDecoded, 257, 'i', chaine, T);
+        I257(chaine, T);
     }
+
+    //Sim Paused or not
     if (strstr(chaine, "Qi129=")) {
-        Decode(VarDecoded, 129, 'i', chaine, T);
+        I129(chaine, T);
+    }
+
+    //Update Gear position
+    if (strstr(chaine, "Qh170=")) {
+        H170(chaine, T);
+    }
+    // Update Flap position
+    if (strstr(chaine, "Qh389=")) {
+        H389(chaine, T);
+    }
+    //Speedbrake
+    if (strstr(chaine, "Qh388=")) {
+        H388(chaine, T);
     }
 
     return pos;

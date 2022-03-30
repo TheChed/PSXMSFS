@@ -9,19 +9,18 @@
 #include "SimConnect.h"
 
 int quit = 0;
+Target T;
 float ground_elev = 0;
-static int nbmain = 0, nbboost = 0;
+pthread_mutex_t mutex;
 
 HRESULT hr;
 
-#define max_send_records 20
-
-QPSX **Q;
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
-    Target *T;
-    T = (Target *)pContext;
+    (DWORD )(cbData);
+    (void *)(pContext);
+
     switch (pData->dwID) {
 
     case SIMCONNECT_RECV_ID_OPEN: {
@@ -32,7 +31,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        // printf("inside SIMCONNECT_RECV_ID_OPEN\n");
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -50,21 +48,18 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_6_HZ: {
 
-            // printf("Inside EVENT_6Hz\n");
         } break;
         case EVENT_FREEZE_ALT: {
 
-            printf("Inside EVENT_FRAME\n");
         } break;
 
-        case EVENT_INIT: {
+        case EVENT_PRINT: {
 
-            printf("Inside EVENT_INIT\n");
         } break;
-
+        
         case EVENT_QUIT: {
-            quit = 1;
-            printf("\nEVENT_QUIT received and data sent");
+            printf("Inside QUTI\n");
+            quit=1;
         } break;
 
         default:
@@ -83,7 +78,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         case MSFS_CLIENT_DATA: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
             ground_elev = pS->ground;
-            printf("Flaps: %f\r ", pS->Flaps);
+           // printf("GearDown: %f\n",pS->GearDown);
         } break;
 
         default:
@@ -112,9 +107,10 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knots");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "VERTICAL SPEED", "feet per second");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR POSITION:1", "number");
-    // hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAP POSITION SET", "position");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "VERTICAL SPEED", "feet per minute");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR HANDLE POSITION", "percent over 100");
+     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
+     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Indicated Altitude", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Plane Latitude", "degrees");
@@ -127,7 +123,10 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND MINUS CG", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "FLAPS HANDLE PERCENT", "percent");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "FLAPS HANDLE INDEX", "number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "SPOILERS HANDLE POSITION", "position");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GEAR HANDLE POSITION", "percent over 100");
+
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_VISUAL_FRAME);
@@ -145,10 +144,15 @@ int init_MS_data(void) {
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
 
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
+    hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
+    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_PRINT);
+    
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_QUIT, "My.CTRLQ");
-    hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_INIT, "Q", EVENT_QUIT);
-    // hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP_INIT,
-    // EVENT_INIT);
+    hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
+    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT);
+    
+    hr = SimConnect_SetInputGroupPriority(hSimConnect, INPUT_PRINT, SIMCONNECT_GROUP_PRIORITY_HIGHEST);
 
     return hr;
 }
@@ -161,55 +165,39 @@ void print_state(AcftPosition *Pos, Target *T) {
     if ((T == NULL) or (Pos == NULL)) {
         return;
     }
-        printf("MSFS: ");
-        printf("Alt: %.2f\t", Pos->altitude);
-        printf("Lat: %.4f\t", Pos->latitude);
-        printf("Long: %.4f\t", Pos->longitude);
-        printf("Heading: %.2f\t", Pos->heading);
-        printf("Pitch: %.2f\t", Pos->pitch);
-        printf("Bank: %.2f\t", Pos->bank);
-        printf("TAS: %.2f\t", Pos->tas);
-        printf("VS: %.2f\t", Pos->vertical_speed);
+    printf("MSFS: ");
+    printf("Alt: %.2f\t", Pos->altitude);
+    printf("Lat: %.4f\t", Pos->latitude);
+    printf("Long: %.4f\t", Pos->longitude);
+    printf("Heading: %.2f\t", Pos->heading);
+    printf("Pitch: %.2f\t", Pos->pitch);
+    printf("Bank: %.2f\t", Pos->bank);
+    printf("TAS: %.2f\t", Pos->tas);
+    printf("VS: %.2f\t", Pos->vertical_speed);
 
-        printf("\t----- ");
-        state(T);
+    printf("-----");
+    state(T);
 
-        printf("\r");
+    printf("\n");
 }
 
-int SetMSFSPos(Target *T) {
 
-    AcftPosition APos;
-    HRESULT hr;
-
-    if (T->onGround) {
-        APos.altitude = ground_elev + 15.6;
-    } else {
-        APos.altitude = T->altitude;
+void *ptDatafromMSFS(void *Param) {
+    while (!quit){
+        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
     }
-    APos.latitude = T->latitude;
-    APos.longitude = T->longitude;
-    APos.heading = T->heading;
-    APos.pitch = -T->pitch;
-    APos.bank = T->bank;
-    APos.tas = T->TAS;
-    APos.vertical_speed = T->VerticalSpeed;
-    APos.GearDown = 1;
-    // APos.FlapsPosition=5;
-    // print_state(&APos, T);
-    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
-                                       &APos);
-
-    return hr;
+    return NULL;
 }
 
 void *ptUmainboost(void *thread_id) {
 
     Target *T;
     T = (Target *)(thread_id);
-    while (1) {
-        if (umainBoost(T)) {
-            SetMSFSPos(T);
+    while (!quit) {
+        if (umainBoost2(T)) {
+            pthread_mutex_lock(&mutex);
+                 SetMSFSPos(T);
+            pthread_mutex_unlock(&mutex);
         }
     }
 
@@ -219,67 +207,104 @@ void *ptUmainboost(void *thread_id) {
 void *ptUmain(void *thread_id) {
     Target *T;
     T = (Target *)(thread_id);
-    while (1) {
+    while (!quit){
         if (umain(T)) {
+            pthread_mutex_lock(&mutex);
             SetMSFSPos(T);
+            pthread_mutex_unlock(&mutex);
         }
     }
     return NULL;
 }
+
+void init_pos(void) {
+
+    // Setting the aircraft at LFPG gate
+    AcftPosition APos;
+
+    printf("Setting initial position at LFPG\n");
+    APos.altitude = 360.5; //358 + 15.6;
+    APos.latitude = 49.0012;
+    APos.longitude = 2.57728;
+    APos.heading = 356.0;
+    APos.pitch = -1.36;
+    APos.bank = 0.0;
+    APos.tas = 0.0;
+    APos.vertical_speed = 0.0;
+    APos.FlapsPosition = 0.0; //Flaps down
+    APos.Speedbrake=0.0;   //Spoilers down
+    APos.GearDown = 1.0;
+    if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
+                                      &APos) != S_OK) {
+        err_n_die("Could not update position");
+    };
+}
+
+int SetMSFSPos(Target *T) {
+
+    AcftPosition APos;
+    HRESULT hr;
+
+    if (T->onGround==2) {
+        APos.altitude = ground_elev + 15.6;
+        APos.GearDown = 1.0;
+    } else {
+        APos.altitude = T->altitude;
+        APos.GearDown = ((T->GearLever==3) ? 1.0 : 0.0);
+    }
+    APos.latitude = T->latitude;
+    APos.longitude = T->longitude;
+    APos.heading = T->heading;
+    APos.pitch = -T->pitch;
+    APos.bank = T->bank;
+    APos.tas = T->TAS;
+    APos.vertical_speed = T->VerticalSpeed;
+    APos.FlapsPosition= T->FlapLever;
+    APos.Speedbrake=T->SpdBrkLever/800.0;
+    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),&APos);
+
+
+
+    return hr;
+}
 int main(int argc, char **argv) {
 
-    Target *T = NULL;
-    pthread_t t1, t2;
-    int threaded = 1;
-    int nbboucle=0;
+    pthread_t t1, t2, t3;
     int rc;
-    T = (Target *)malloc(sizeof(T));
-    if (argc != 4) {
-        printf("Usage: %s IP:port threaded(0=NO, 1=YES)\n", argv[0]);
+    // T = (Target *)malloc(sizeof(T));
+    if (argc != 3) {
+        printf("Usage: %s IP:port\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    // Connect to PSX and MSFS
-    init_connect_PSX(argv[1], (int)strtol(argv[2], NULL, 0));
+    // Connect to PSX and MSFS sockets
     init_connect_PSX_Boost(argv[1], 10749);
+    init_connect_PSX(argv[1], (int)strtol(argv[2], NULL, 0));
     init_connect_MSFS(&hSimConnect);
 
-    threaded = (int)strtol(argv[3],NULL,0);
     // initialize the data to be received
     init_MS_data();
 
-    //        printf("Umain read: %d\t\t  UmainBoost:
-    //        %d\t\t\r",umain(T),umainBoost(T)); printf("UmainBoost:
-    //        %d\t\t\r",umainBoost(T));
-    //       printf("UmainBoost2: %d\t\t\r",umainBoost2(T));
-    // umain(T);
-    // umainBoost(T);
-    //
-    if (threaded) {
-        rc = pthread_create(&t1, NULL, &ptUmain, T);
-        rc = pthread_create(&t2, NULL, &ptUmainboost, T);
+    // set a default location for the plane
+    // Here at LFPG stand E22
 
-        pthread_join(t1, NULL);
-        pthread_join(t2, NULL);
-    } else {
-        while (1) {
-            umain(T);
-            umainBoost(T);
-            nbboucle++;
-            if(nbboucle % 100) state(T);
-        }
-    }
+ //   init_pos();
 
-    //    printf("inside main function\n");
-    // state(T);
-    //     SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, T);
+    pthread_mutex_init(&mutex, NULL);
+
+    rc = pthread_create(&t1, NULL, &ptUmain, &T);
+    rc = pthread_create(&t2, NULL, &ptUmainboost, &T);
+    rc = pthread_create(&t3, NULL, &ptDatafromMSFS, NULL);
+
+    pthread_join(t1, NULL);
+    pthread_join(t2, NULL);
+    pthread_join(t3, NULL);
 
     //    print_state(&APos, T);
 
-    printf("nbmain: %d, nbboost:%d\n", nbmain, nbboost);
-
     SimConnect_Close(hSimConnect);
-    free(T);
+    pthread_mutex_destroy(&mutex);
+
     printf("Normal exit\n");
     return 0;
 }
