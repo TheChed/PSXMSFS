@@ -274,17 +274,15 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // Connect to PSX and MSFS sockets
-    init_connect_PSX(argv[1], (int)strtol(argv[2], NULL, 0));
-    init_connect_PSX_Boost(argv[1], 10749);
-    init_connect_MSFS(&hSimConnect);
 
-    // initialize the data to be received
+    /* Initialise and connect to all sockets: PSX, PSX Boost and Simconnect */
+    open_connections(argv);
+
+    // initialize the data to be received as well as all EVENTS
     init_MS_data();
 
     // set a default location for the plane
     // Here at LFPG stand E22
-
     init_pos();
 
     //Sending Q423 DEMAND variable tro PSX for the winds
@@ -305,6 +303,20 @@ int main(int argc, char **argv) {
     printf("Closing MSFS connection...\n" );
     SimConnect_Close(hSimConnect);
 
-    printf("Normal exit\n");
+    //and gracefully close main + boost sockets
+    printf("Closing PSX main connection...\n" );
+    if(close_PSX_socket(sPSX)<0){
+        printf("Could not close main PSX socket...\n");
+    }
+    
+    printf("Closing PSX boost connection...\n" );
+    if(close_PSX_socket(sPSXBOOST)<0){
+        printf("Could not close boost PSX socket...\n");
+    }
+
+    //Finally clean up the Win32 sockets
+    WSACleanup();
+
+    printf("Normal exit. See you\n");
     return 0;
 }

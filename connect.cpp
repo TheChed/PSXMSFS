@@ -7,76 +7,53 @@
 #include "PSXMSFS.h"
 #include "SimConnect.h"
 
-// Connection to PSX
-//
-//
-int sPSX, sPSXBOOST;
 HANDLE hSimConnect = NULL;
 
+int sPSX, sPSXBOOST;
 
-int close_socket(int sockid) {
+int close_PSX_socket(int sockid) {
 
-    if (close(sockid) < 0) {
-        err_n_die("Could not close socket");
+    return closesocket(sockid);
+    
+}
+
+void init_socket(){
+
+    WSADATA wsa;
+    
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        printf("Initialzation Failed. Error Code : %d. Exiting...\n", WSAGetLastError());
+        exit(EXIT_FAILURE);
     }
 }
 
-int init_connect_PSX_Boost(const char *hostname, int portboost) {
 
-    struct sockaddr_in server;
-
-
-    // Create a socket
-    if ((sPSXBOOST = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-        printf("Could not create socket. Error: %d", WSAGetLastError());
-        exit(EXIT_FAILURE);
-    }
-
-    // Connect to PSX
-    printf("Trying to connect to PSX Boost on %s:%d\n", hostname, portboost);
-    server.sin_addr.s_addr = inet_addr(hostname);
-    server.sin_family = AF_INET;
-    server.sin_port = htons(portboost);
-
-    if (connect(sPSXBOOST, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        printf("Connection error to boost server\n");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("Connected to PSX Boost Server\n");
-    return 1;
-}
 int init_connect_PSX(const char *hostname, int portno) {
 
     // int sockfd ;
     struct sockaddr_in PSXmainserver;
+    int socketID;
 
     // Create a socket
-    sPSX = socket(AF_INET, SOCK_STREAM,6 );
-    printf("sPSX: %d\n",sPSX);
-    printf("errno: %d\n",errno);
-    
-    //if ((sPSX = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-   //     err_n_die("Error while creating the main PSX socket");
-   // }
+    if ((socketID= socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        err_n_die("Error while creating the main PSX socket");
+    }
 
     // Connect to PSX
-    printf("Trying to connect to PSX on %s:%d\n", hostname, portno);
     bzero(&PSXmainserver, sizeof(PSXmainserver));
 
     PSXmainserver.sin_family = AF_INET;
     PSXmainserver.sin_port = htons(portno);
     PSXmainserver.sin_addr.s_addr = inet_addr(hostname);
 
-    if (connect(sPSX, (struct sockaddr *)&PSXmainserver, sizeof(PSXmainserver)) < 0) {
-        err_n_die("Error while connecting to the main PSX socket");
+    if (connect(socketID, (struct sockaddr *)&PSXmainserver, sizeof(PSXmainserver)) < 0) {
+        err_n_die("Error while connecting to the PSX socket");
     }
 
-    printf("Connected to PSX on %s:%d\n",hostname, portno);
-    return 1;
+    return socketID;
 }
 
-int init_connect_MSFS(HANDLE *p) {
+void init_connect_MSFS(HANDLE *p) {
 
     SimConnect_Open(p, "PSX", NULL, 0, 0, 0);
     if (p) {
@@ -84,7 +61,26 @@ int init_connect_MSFS(HANDLE *p) {
     } else {
         err_n_die("Could not connect to MSFS. Exiting...");
     }
-    return 1;
+}
+
+
+void open_connections(char **s){
+
+
+    //initialise Win32 socket library
+    init_socket(); 
+
+    //connect to PSX main socket
+    sPSX=init_connect_PSX(s[1], (int)strtol(s[2], NULL, 0)); 
+    printf("Connected to PSX main server on %s:%d\n",s[1], (int)strtol(s[2],NULL,0));
+
+    //connect to boost socket
+    sPSXBOOST=init_connect_PSX(s[1], 10749); 
+    printf("Connected to PSX boost server on %s:%d\n",s[1], 10749);
+
+    //finally connect to MSFS socket
+    init_connect_MSFS(&hSimConnect); 
+
 }
 
 void err_n_die(const char *fmt, ...) {

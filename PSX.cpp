@@ -335,8 +335,8 @@ int umain(Target *T) {
         update = 1;
     }
     if (strstr(chaine, "Qs482=")) {
-        printf("Got Qs482%s\n", chaine);
-        update = 1;
+    //    printf("Got Qs482%s\n", chaine);
+    //    update = 1;
     }
     if (strstr(chaine, "Qs483=")) {
         S483(chaine,T);
@@ -344,8 +344,8 @@ int umain(Target *T) {
     }
 
     if (strstr(chaine, "Qi214=")) {
-        printf("Got Qi214:%s\n", chaine);
-        update = 1;
+    //    printf("Got Qi214:%s\n", chaine);
+    //    update = 1;
     }
     return update;
 }

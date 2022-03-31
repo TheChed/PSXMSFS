@@ -11,10 +11,7 @@
 #define PRINT 1
 
 
-//extern int sockfdPSX, sockfdFS;
 extern int sPSX, sPSXBOOST;
-
-
 extern HANDLE hSimConnect ;
 extern HRESULT hr;
 
@@ -105,11 +102,11 @@ typedef struct {
 
 
 // Function definitions
-int init_connect_PSX(const char *, int);
-int init_connect_PSX_Boost(const char *, int);
-int init_connect_MSFS(HANDLE *);
 int check_param(const char *);
+ void   init_socket();
+ int close_PSX_socket(int socket);
 void Decode(int, char, char *, Target *);
+void open_connections(char **v);
 void state(Target *T); // prints aircraft position
 char *convert(double, int);
 int umain(Target *T);
