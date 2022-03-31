@@ -36,7 +36,7 @@ void state(Target *T) {
     }
 }
 
-//Position of Gear
+// Position of Gear
 void H170(char *s, Target *T) {
 
     if (strlen(s) != 7) {
@@ -70,7 +70,6 @@ void H388(char *s, Target *T) {
     printf("s: %s\t T->SpdBrkLever: %d\n", s, T->SpdBrkLever);
 }
 
-
 void S121(char *s, Target *T) {
 
     char *token, *ptr;
@@ -101,6 +100,16 @@ void S121(char *s, Target *T) {
     token = strtok(NULL, delim);
 }
 
+void S483(char *s, Target *T) {
+
+    char *token, *ptr;
+
+    /* get the first token */
+    token = strtok(s + 6, delim);
+    
+    /* walk through other tokens */
+    T->IAS= strtol(token, &ptr, 10) / 10.0;
+}
 void S122(char *s, Target *T) {
 
     const char delim[2] = ";";
@@ -146,14 +155,6 @@ void I257(char *s, Target *T) {
     }
     T->onGround = (int)(s[6] - '0');
     printf("s: %s\t T->onground: %d\n", s, T->onGround);
-}
-void I129(char *s, Target *T) {
-
-    if (strlen(s) != 7) {
-        printf("Wrong Qi129 format\n : s=%s should be 7 char long");
-    }
-
-    // T->notpaused = (int)(s[6] - '0');
 }
 
 // Checks validity of input
@@ -261,12 +262,30 @@ int umainBoost2(Target *T) {
     return nbread;
 }
 
+int sendQPSX(const char *s) {
+
+    char *dem;
+    dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
+
+    strncpy(dem, s, strlen(s));
+    dem[strlen(s)] = 10;
+
+    int nbsend = send(sPSX, dem, strlen(dem) + 1, 0);
+
+    if (nbsend == 0) {
+        printf("Error sending variable %s to PSX\n", s);
+    }
+
+    free(dem);
+    return nbsend;
+}
+
 int umain(Target *T) {
     char chaine[MAXLEN];
     char cBuf;
-    char VarDecoded[MAXLEN];
     int boucle = 1;
     int pos = 0;
+    int update = 0; // shall we update the aircraft in MSFS ?
 
     while (boucle) {
         int nbread = recv(sPSX, &cBuf, 1, 0);
@@ -291,30 +310,42 @@ int umain(Target *T) {
     //}
     if (strstr(chaine, "Qs122=")) {
         S122(chaine, T);
+        update = 1;
     }
-    
-    //PSX on groud
+
+    // PSX on groud
     if (strstr(chaine, "Qi257=")) {
         I257(chaine, T);
+        update = 1;
     }
 
-    //Sim Paused or not
-    if (strstr(chaine, "Qi129=")) {
-        I129(chaine, T);
-    }
-
-    //Update Gear position
+    // Update Gear position
     if (strstr(chaine, "Qh170=")) {
         H170(chaine, T);
+        update = 1;
     }
     // Update Flap position
     if (strstr(chaine, "Qh389=")) {
         H389(chaine, T);
+        update = 1;
     }
-    //Speedbrake
+    // Speedbrake
     if (strstr(chaine, "Qh388=")) {
         H388(chaine, T);
+        update = 1;
+    }
+    if (strstr(chaine, "Qs482=")) {
+        printf("Got Qs482%s\n", chaine);
+        update = 1;
+    }
+    if (strstr(chaine, "Qs483=")) {
+        S483(chaine,T);
+        update = 1;
     }
 
-    return pos;
+    if (strstr(chaine, "Qi214=")) {
+        printf("Got Qi214:%s\n", chaine);
+        update = 1;
+    }
+    return update;
 }

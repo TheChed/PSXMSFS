@@ -23,13 +23,8 @@ int close_socket(int sockid) {
 
 int init_connect_PSX_Boost(const char *hostname, int portboost) {
 
-    WSADATA wsa;
     struct sockaddr_in server;
 
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-        printf("Initialzation Failed. Error Code : %d. Exiting...\n", WSAGetLastError());
-        exit(EXIT_FAILURE);
-    }
 
     // Create a socket
     if ((sPSXBOOST = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
@@ -57,9 +52,13 @@ int init_connect_PSX(const char *hostname, int portno) {
     struct sockaddr_in PSXmainserver;
 
     // Create a socket
-    if ((sPSX = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        err_n_die("Error while creating the main PSX socket");
-    }
+    sPSX = socket(AF_INET, SOCK_STREAM,6 );
+    printf("sPSX: %d\n",sPSX);
+    printf("errno: %d\n",errno);
+    
+    //if ((sPSX = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+   //     err_n_die("Error while creating the main PSX socket");
+   // }
 
     // Connect to PSX
     printf("Trying to connect to PSX on %s:%d\n", hostname, portno);
@@ -73,7 +72,7 @@ int init_connect_PSX(const char *hostname, int portno) {
         err_n_die("Error while connecting to the main PSX socket");
     }
 
-    printf("Connected to PSX\n");
+    printf("Connected to PSX on %s:%d\n",hostname, portno);
     return 1;
 }
 

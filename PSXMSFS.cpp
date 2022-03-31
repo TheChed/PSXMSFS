@@ -54,7 +54,10 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
+                printf("Inside EVENT_PRINT\n");
 
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_LIGHT, 1,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         } break;
         
         case EVENT_QUIT: {
@@ -78,7 +81,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         case MSFS_CLIENT_DATA: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
             ground_elev = pS->ground;
-           // printf("GearDown: %f\n",pS->GearDown);
         } break;
 
         default:
@@ -106,28 +108,18 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knots");
+
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knot");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED INDICATED", "knot");
+
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "VERTICAL SPEED", "feet per minute");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR HANDLE POSITION", "percent over 100");
      hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
      hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Indicated Altitude", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Plane Latitude", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "Plane Longitude", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES MAGNETIC", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND MINUS CG", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "FLAPS HANDLE INDEX", "number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "SPOILERS HANDLE POSITION", "position");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GEAR HANDLE POSITION", "percent over 100");
 
 
+    hr = SimConnect_AddToDataDefinition(hSimConnect,MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_VISUAL_FRAME);
 
@@ -143,6 +135,9 @@ int init_MS_data(void) {
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
+
+
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_LIGHT, "BEACON_LIGHTS_ON");
 
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
@@ -230,6 +225,7 @@ void init_pos(void) {
     APos.pitch = -1.36;
     APos.bank = 0.0;
     APos.tas = 0.0;
+    APos.ias = 0.0;
     APos.vertical_speed = 0.0;
     APos.FlapsPosition = 0.0; //Flaps down
     APos.Speedbrake=0.0;   //Spoilers down
@@ -258,6 +254,7 @@ int SetMSFSPos(Target *T) {
     APos.pitch = -T->pitch;
     APos.bank = T->bank;
     APos.tas = T->TAS;
+    APos.ias=T->IAS;
     APos.vertical_speed = T->VerticalSpeed;
     APos.FlapsPosition= T->FlapLever;
     APos.Speedbrake=T->SpdBrkLever/800.0;
@@ -278,8 +275,8 @@ int main(int argc, char **argv) {
     }
 
     // Connect to PSX and MSFS sockets
-    init_connect_PSX_Boost(argv[1], 10749);
     init_connect_PSX(argv[1], (int)strtol(argv[2], NULL, 0));
+    init_connect_PSX_Boost(argv[1], 10749);
     init_connect_MSFS(&hSimConnect);
 
     // initialize the data to be received
@@ -288,8 +285,11 @@ int main(int argc, char **argv) {
     // set a default location for the plane
     // Here at LFPG stand E22
 
- //   init_pos();
+    init_pos();
 
+    //Sending Q423 DEMAND variable tro PSX for the winds
+    sendQPSX("demand=Qs483");
+    
     pthread_mutex_init(&mutex, NULL);
 
     rc = pthread_create(&t1, NULL, &ptUmain, &T);
@@ -300,10 +300,10 @@ int main(int argc, char **argv) {
     pthread_join(t2, NULL);
     pthread_join(t3, NULL);
 
-    //    print_state(&APos, T);
-
-    SimConnect_Close(hSimConnect);
     pthread_mutex_destroy(&mutex);
+
+    printf("Closing MSFS connection...\n" );
+    SimConnect_Close(hSimConnect);
 
     printf("Normal exit\n");
     return 0;

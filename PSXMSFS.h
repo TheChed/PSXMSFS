@@ -20,21 +20,21 @@ extern HRESULT hr;
 
 struct Struct_MSFS
 {
-    double  altitude;
-    double  latitude;
-    double  longitude;
-    double heading;
-    double trueheading;
-    double pitch;
-    double bank;
     double ground; //ground altitude
-    double plane_alt; //
-    double plane_alt_above_gnd; //ground altitude
-    double plane_alt_above_gnd_minus_cg; //ground altitude
-    double Flaps;
-    double Speedbrake;
-    double GearDown;
-}; 
+   // double  altitude;
+   // double  latitude;
+   // double  longitude;
+   // double heading;
+   // double trueheading;
+   // double pitch;
+   // double bank;
+   // double plane_alt; //
+   // double plane_alt_above_gnd; //ground altitude
+   // double plane_alt_above_gnd_minus_cg; //ground altitude
+   // double Flaps;
+   // double Speedbrake;
+   // double GearDown;
+}; //
 
 
 struct AcftPosition
@@ -46,6 +46,7 @@ struct AcftPosition
     double pitch;
     double bank;
     double tas;
+    double ias;
     double vertical_speed;
     double GearDown;
    double FlapsPosition;
@@ -72,6 +73,7 @@ enum EVENT_ID {
     EVENT_FREEZE_LAT_LONG,
     EVENT_INIT,
     EVENT_QUIT,
+    EVENT_LIGHT,
 };
  enum DATA_DEFINE_ID {
      MSFS_CLIENT_DATA,
@@ -91,6 +93,7 @@ typedef struct {
     double latitude, longitude;
 
     double TAS;
+    double IAS;
     double VerticalSpeed;
     int onGround;   //1 if PSX is on groud, 0 otherwise
     double GearDown=0.0; //Gear down =1, gear up =0;
@@ -115,4 +118,5 @@ int umainBoost2(Target *T);
 void err_n_die(const char *fmt, ...);
       int SetMSFSPos(Target *T);
 
+int sendQPSX(const char *s);
 #endif
