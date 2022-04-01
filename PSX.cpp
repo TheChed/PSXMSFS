@@ -45,7 +45,6 @@ void H170(char *s, Target *T) {
     }
 
     T->GearLever = (int)(s[6] - '0');
-    printf("s: %s\t T->GearLever: %d\n", s, T->GearLever);
 }
 
 // Flap lever variable Qh389
@@ -57,7 +56,6 @@ void H389(char *s, Target *T) {
     }
 
     T->FlapLever = (int)(s[6] - '0');
-    printf("s: %s\t T->FlapLever: %d\n", s, T->FlapLever);
 }
 
 // Speedbrake lever variable Qh389
@@ -67,7 +65,6 @@ void H388(char *s, Target *T) {
     token = strtok(s + 6, delim);
 
     T->SpdBrkLever = strtol(token, &ptr, 10);
-    printf("s: %s\t T->SpdBrkLever: %d\n", s, T->SpdBrkLever);
 }
 
 void S121(char *s, Target *T) {
@@ -113,7 +110,7 @@ void S483(char *s, Target *T) {
 void S443(char *s, Target *T) {
 
     if(strlen(s)!=20){
-        printf("Wrong size for Qs443, should be 14 but got %d\n",strlen(s));
+        printf("Wrong size for Qs443, should be 14 but got %lld\n",strlen(s));
     } 
     else {
     updateLights=1; 
@@ -128,10 +125,8 @@ void S122(char *s, Target *T) {
 
     const char delim[2] = ";";
     char *token, *ptr;
-    int PosUpdated;
     /* get the first token */
     token = strtok(s + 6, delim);
-    PosUpdated = (int)(token[0] - '0');
     /* walk through other tokens */
 
     token = strtok(NULL, delim);
@@ -168,7 +163,6 @@ void I257(char *s, Target *T) {
         exit(-1);
     }
     T->onGround = (int)(s[6] - '0');
-    printf("s: %s\t T->onground: %d\n", s, T->onGround);
 }
 
 // Checks validity of input

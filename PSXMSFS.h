@@ -2,11 +2,7 @@
 #define __PSXMSFS_H_
 
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
-#define bcopy(b1, b2, len) (memmove((b2), (b1), (len)), (void)0)
-#define position 1 // do we want to print the acft posotion
-#define LENGTH(X) (sizeof X / sizeof X[0])
 
-#define NB_Q_VAR 3 // number of PSZ Q Variables to read
 #define MAXLEN 8192
 #define PRINT 1
 
@@ -18,20 +14,7 @@ extern int updateLights ; // has one light been toggled?
 
 struct Struct_MSFS {
     double ground; // ground altitude
-    // double  altitude;
-    // double  latitude;
-    // double  longitude;
-    // double heading;
-    // double trueheading;
-    // double pitch;
-    // double bank;
-    // double plane_alt; //
-    // double plane_alt_above_gnd; //ground altitude
-    // double plane_alt_above_gnd_minus_cg; //ground altitude
-    // double Flaps;
-    // double Speedbrake;
-    // double GearDown;
-}; //
+}; 
 
 struct AcftPosition {
     double altitude;

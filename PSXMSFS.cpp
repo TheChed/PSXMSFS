@@ -53,12 +53,10 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
-            printf("Inside EVENT_PRINT\n");
 
         } break;
 
         case EVENT_QUIT: {
-            printf("Inside QUIT\n");
             quit = 1;
         } break;
 
@@ -119,9 +117,11 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
 
-    /*Data definition for lights. Even though in the SDK documentation they are defined as non settable,
-    /*Setting them like this works just fine. Alternative is to use EVENTS, but in that case all 4 landing
-    /*light switches cannot be synchronised. */
+    /* 
+    * Data definition for lights. Even though in the SDK documentation they are defined as non settable,
+    *  Setting them like this works just fine. Alternative is to use EVENTS, but in that case all 4 landing
+    *  light switches cannot be synchronised.
+    */
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:1", "Number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:2", "Number");
@@ -265,12 +265,6 @@ int SetMSFSPos(Target *T) {
     APos.FlapsPosition = T->FlapLever;
     APos.Speedbrake = T->SpdBrkLever / 800.0;
 
-    if (updateLights) {
-        for (int i = 0; i < 14; i++) {
-            printf("T->light[%d]=%d\n", i, T->light[i]);
-        }
-        updateLights = 0;
-    }
 
     // Update lights
     APos.LandLeftOutboard = T->light[0];
@@ -321,9 +315,17 @@ int main(int argc, char **argv) {
 
     pthread_mutex_init(&mutex, NULL);
 
-    rc = pthread_create(&t1, NULL, &ptUmain, &T);
-    rc = pthread_create(&t2, NULL, &ptUmainboost, &T);
-    rc = pthread_create(&t3, NULL, &ptDatafromMSFS, NULL);
+    if (pthread_create(&t1, NULL, &ptUmain, &T) !=0) {
+        err_n_die("Error creating thread Umain");
+    }
+
+    if (pthread_create(&t2, NULL, &ptUmainboost, &T) !=0) {
+        err_n_die("Error creating thread Umainboost");
+    }
+    
+    if (pthread_create(&t3, NULL, &ptDatafromMSFS, &T) !=0) {
+        err_n_die("Error creating thread DatafromMSFS");
+    }
 
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);

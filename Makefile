@@ -24,4 +24,5 @@ clean:
 
 move:
 	cp *.exe /home/stephan/NAS/TRANSFERT/pfpx
+	cp *.exe /home/stephan/Documents/C/src/PSX/bin
 
