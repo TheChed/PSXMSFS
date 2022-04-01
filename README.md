@@ -10,7 +10,7 @@ you will need 3 dlls for windows which should be in the same directory as the ex
   * pthreadGC2.dll and pthreadVC2.dll that enable POSIX threads under Windows. Those can be found in any $
   good grocery, I use : https://sourceware.org/pub/pthreads-win32/dll-latest/dll/x64/
 
-  For convenience sake, I have included those files in the Include directory.
+  For convenience sake, I have included those files in the bin directory.
 
   USAGE:
   Once all 4 files are in the same directory, just launch the program in a cmd window by typing: PSXMSFS.exe 192.168.x.xx 10747
