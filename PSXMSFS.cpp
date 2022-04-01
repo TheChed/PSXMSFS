@@ -281,6 +281,12 @@ int SetMSFSPos(Target *T) {
     APos.LightWing = T->light[12];
     APos.LightLogo = T->light[13];
 
+    //Taxi lights disabled airborne
+    if(T->onGround != 2) {
+    APos.LeftRwyTurnoff = 0.0;
+    APos.RightRwyTurnoff = 0.0;
+            }
+   
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
