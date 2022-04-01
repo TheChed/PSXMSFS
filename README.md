@@ -3,6 +3,11 @@ Very early stage but functionnal.
 
 This started as a program to put in practice the C that I started learning a few months ago. Hence expect very ugly and non optimized code. But then, this is how you progress.
 
+This tool is intended to work with MSFS on Windows10 (other versions not tested). 
+The SDK used is very similar with the one of P3D and this might work with P3D, but I have not tested it.
+
+One main advantage of this tool, is that is does not require any configuration
+and should work out of the box.
 
 INSTALLATION:
 you will need 3 dlls for windows which should be in the same directory as the executable
@@ -18,3 +23,15 @@ you will need 3 dlls for windows which should be in the same directory as the ex
   Replacing xx.xx.xx.xx with the IP address of the computer running PSX, and 10747 being the port for the main PSX server. The port of the boost server is expected to be 10749.
 
   
+  Building from source:
+  All sources are on the githug link: https://github.com/TheChed/PSXMSFS
+
+  The executable has been compiled under Linux under a Mingw environnent so to be able to create Windows compatible executables:
+  https://en.wikipedia.org/wiki/MinGW
+
+  You will also need the following files, included in the Include directory to link the executable.
+    * Simconnect.h
+    * SimConnect.lib
+
+
+Last warning: this tool is still in a very early beta version and probably very buggy. Please feel free to report or propose any enhancement to improve its quality. 
