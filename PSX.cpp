@@ -110,6 +110,20 @@ void S483(char *s, Target *T) {
     /* walk through other tokens */
     T->IAS= strtol(token, &ptr, 10) / 10.0;
 }
+void S443(char *s, Target *T) {
+
+    if(strlen(s)!=20){
+        printf("Wrong size for Qs443, should be 14 but got %d\n",strlen(s));
+    } 
+    else {
+    updateLights=1; 
+        for(int i=0;i<14;i++){
+            T->light[i]=(int)(s[i+6]-'0')==0 ? 0 : 1;
+        }
+
+    }
+}
+
 void S122(char *s, Target *T) {
 
     const char delim[2] = ";";
@@ -310,6 +324,13 @@ int umain(Target *T) {
     //}
     if (strstr(chaine, "Qs122=")) {
         S122(chaine, T);
+        update = 1;
+    }
+
+    // ExtLts : External lights, Mode=XECON
+    if (strstr(chaine, "Qs443=")) {
+
+        S443(chaine, T);
         update = 1;
     }
 

@@ -12,13 +12,12 @@ int quit = 0;
 Target T;
 float ground_elev = 0;
 pthread_mutex_t mutex;
-
+int updateLights;
 HRESULT hr;
-
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
-    (DWORD )(cbData);
+    (DWORD)(cbData);
     (void *)(pContext);
 
     switch (pData->dwID) {
@@ -54,15 +53,13 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
-                printf("Inside EVENT_PRINT\n");
+            printf("Inside EVENT_PRINT\n");
 
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_LIGHT, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         } break;
-        
+
         case EVENT_QUIT: {
-            printf("Inside QUTI\n");
-            quit=1;
+            printf("Inside QUIT\n");
+            quit = 1;
         } break;
 
         default:
@@ -102,6 +99,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 }
 
 int init_MS_data(void) {
+
+    /* Standard Plane attributes*/
+
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "degrees");
@@ -111,19 +111,39 @@ int init_MS_data(void) {
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knot");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED INDICATED", "knot");
-
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "VERTICAL SPEED", "feet per minute");
+
+    /*Surfaces attributes*/
+
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR HANDLE POSITION", "percent over 100");
-     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
-     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
 
+    /*Data definition for lights. Even though in the SDK documentation they are defined as non settable,
+    /*Setting them like this works just fine. Alternative is to use EVENTS, but in that case all 4 landing
+    /*light switches cannot be synchronised. */
 
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:3", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:4", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:3", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT NAV", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT STROBE", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT BEACON:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT BEACON:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT WING", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LOGO", "Number");
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect,MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
+    /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
+
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_VISUAL_FRAME);
 
-    // Request a simulation start event:w
+    // Request a simulation start event
     //
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
@@ -136,49 +156,19 @@ int init_MS_data(void) {
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
 
-
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_LIGHT, "BEACON_LIGHTS_ON");
-
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
     hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_PRINT);
-    
+
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_QUIT, "My.CTRLQ");
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
     hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT);
-    
-    hr = SimConnect_SetInputGroupPriority(hSimConnect, INPUT_PRINT, SIMCONNECT_GROUP_PRIORITY_HIGHEST);
 
     return hr;
 }
 
-// prints the parameters of the simu objects. simu =0 for both, simu = 1 for
-// MSFS, simu = 2 for PSX
-
-void print_state(AcftPosition *Pos, Target *T) {
-
-    if ((T == NULL) or (Pos == NULL)) {
-        return;
-    }
-    printf("MSFS: ");
-    printf("Alt: %.2f\t", Pos->altitude);
-    printf("Lat: %.4f\t", Pos->latitude);
-    printf("Long: %.4f\t", Pos->longitude);
-    printf("Heading: %.2f\t", Pos->heading);
-    printf("Pitch: %.2f\t", Pos->pitch);
-    printf("Bank: %.2f\t", Pos->bank);
-    printf("TAS: %.2f\t", Pos->tas);
-    printf("VS: %.2f\t", Pos->vertical_speed);
-
-    printf("-----");
-    state(T);
-
-    printf("\n");
-}
-
-
 void *ptDatafromMSFS(void *Param) {
-    while (!quit){
+    while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
     }
     return NULL;
@@ -191,7 +181,7 @@ void *ptUmainboost(void *thread_id) {
     while (!quit) {
         if (umainBoost2(T)) {
             pthread_mutex_lock(&mutex);
-                 SetMSFSPos(T);
+            SetMSFSPos(T);
             pthread_mutex_unlock(&mutex);
         }
     }
@@ -202,7 +192,7 @@ void *ptUmainboost(void *thread_id) {
 void *ptUmain(void *thread_id) {
     Target *T;
     T = (Target *)(thread_id);
-    while (!quit){
+    while (!quit) {
         if (umain(T)) {
             pthread_mutex_lock(&mutex);
             SetMSFSPos(T);
@@ -217,8 +207,10 @@ void init_pos(void) {
     // Setting the aircraft at LFPG gate
     AcftPosition APos;
 
-    printf("Setting initial position at LFPG\n");
-    APos.altitude = 360.5; //358 + 15.6;
+    /*
+     * Setting initial position at LFPG"
+     */
+    APos.altitude = 360.5; // 358 + 15.6;
     APos.latitude = 49.0012;
     APos.longitude = 2.57728;
     APos.heading = 356.0;
@@ -227,9 +219,23 @@ void init_pos(void) {
     APos.tas = 0.0;
     APos.ias = 0.0;
     APos.vertical_speed = 0.0;
-    APos.FlapsPosition = 0.0; //Flaps down
-    APos.Speedbrake=0.0;   //Spoilers down
+    APos.FlapsPosition = 0.0; // Flaps down
+    APos.Speedbrake = 0.0;    // Spoilers down
     APos.GearDown = 1.0;
+
+    APos.LandLeftOutboard = 0.0;
+    APos.LandLeftInboard = 0.0;
+    APos.LandRightInboard = 0.0;
+    APos.LandRightOutboard = 0.0;
+    APos.LeftRwyTurnoff = 0.0;
+    APos.RightRwyTurnoff = 0.0;
+    APos.LightTaxi = 0.0;
+    APos.Strobe = 0.0;
+    APos.LightNav = 0.0;
+    APos.Beacon = 0.0;
+    APos.BeaconLwr = 0.0;
+    APos.LightWing = 0.0;
+    APos.LightLogo = 0.0;
     if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                       &APos) != S_OK) {
         err_n_die("Could not update position");
@@ -241,12 +247,12 @@ int SetMSFSPos(Target *T) {
     AcftPosition APos;
     HRESULT hr;
 
-    if (T->onGround==2) {
+    if (T->onGround == 2) {
         APos.altitude = ground_elev + 15.6;
         APos.GearDown = 1.0;
     } else {
         APos.altitude = T->altitude;
-        APos.GearDown = ((T->GearLever==3) ? 1.0 : 0.0);
+        APos.GearDown = ((T->GearLever == 3) ? 1.0 : 0.0);
     }
     APos.latitude = T->latitude;
     APos.longitude = T->longitude;
@@ -254,13 +260,36 @@ int SetMSFSPos(Target *T) {
     APos.pitch = -T->pitch;
     APos.bank = T->bank;
     APos.tas = T->TAS;
-    APos.ias=T->IAS;
+    APos.ias = T->IAS;
     APos.vertical_speed = T->VerticalSpeed;
-    APos.FlapsPosition= T->FlapLever;
-    APos.Speedbrake=T->SpdBrkLever/800.0;
-    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),&APos);
+    APos.FlapsPosition = T->FlapLever;
+    APos.Speedbrake = T->SpdBrkLever / 800.0;
 
+    if (updateLights) {
+        for (int i = 0; i < 14; i++) {
+            printf("T->light[%d]=%d\n", i, T->light[i]);
+        }
+        updateLights = 0;
+    }
 
+    // Update lights
+    APos.LandLeftOutboard = T->light[0];
+    APos.LandLeftInboard = T->light[2];
+    APos.LandRightInboard = T->light[3];
+    APos.LandRightOutboard = T->light[1];
+    APos.LeftRwyTurnoff = T->light[4];
+    APos.RightRwyTurnoff = T->light[5];
+    APos.LightTaxi = T->light[6];
+    APos.Strobe = T->light[11];
+    APos.LightNav = T->light[9] || T->light[10];
+    APos.Beacon = T->light[7];
+    APos.BeaconLwr = T->light[8];
+    APos.LightWing = T->light[12];
+    APos.LightLogo = T->light[13];
+
+    // finally update everything
+    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
+                                       &APos);
 
     return hr;
 }
@@ -268,14 +297,16 @@ int main(int argc, char **argv) {
 
     pthread_t t1, t2, t3;
     int rc;
+
     // T = (Target *)malloc(sizeof(T));
     if (argc != 3) {
         printf("Usage: %s IP:port\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-
-    /* Initialise and connect to all sockets: PSX, PSX Boost and Simconnect */
+    /*
+     * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
+     */
     open_connections(argv);
 
     // initialize the data to be received as well as all EVENTS
@@ -285,9 +316,9 @@ int main(int argc, char **argv) {
     // Here at LFPG stand E22
     init_pos();
 
-    //Sending Q423 DEMAND variable tro PSX for the winds
+    // Sending Q423 DEMAND variable tro PSX for the winds
     sendQPSX("demand=Qs483");
-    
+
     pthread_mutex_init(&mutex, NULL);
 
     rc = pthread_create(&t1, NULL, &ptUmain, &T);
@@ -300,21 +331,21 @@ int main(int argc, char **argv) {
 
     pthread_mutex_destroy(&mutex);
 
-    printf("Closing MSFS connection...\n" );
+    printf("Closing MSFS connection...\n");
     SimConnect_Close(hSimConnect);
 
-    //and gracefully close main + boost sockets
-    printf("Closing PSX main connection...\n" );
-    if(close_PSX_socket(sPSX)<0){
+    // and gracefully close main + boost sockets
+    printf("Closing PSX main connection...\n");
+    if (close_PSX_socket(sPSX) < 0) {
         printf("Could not close main PSX socket...\n");
     }
-    
-    printf("Closing PSX boost connection...\n" );
-    if(close_PSX_socket(sPSXBOOST)<0){
+
+    printf("Closing PSX boost connection...\n");
+    if (close_PSX_socket(sPSXBOOST) < 0) {
         printf("Could not close boost PSX socket...\n");
     }
 
-    //Finally clean up the Win32 sockets
+    // Finally clean up the Win32 sockets
     WSACleanup();
 
     printf("Normal exit. See you\n");
