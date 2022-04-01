@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
 
     // T = (Target *)malloc(sizeof(T));
     if (argc != 3) {
-        printf("Usage: %s IP:port\n", argv[0]);
+        printf("Usage: %s IP port\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
