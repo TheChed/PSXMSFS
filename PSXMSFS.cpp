@@ -117,7 +117,11 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
 int init_MS_data(void) {
 
-    /* Standard Plane attributes*/
+    /* Here we map all the variables that are used to update the 747 in MSFS.
+     * It is VERY important that the order of those variables matches the order in with the structure AcftPosition is   
+     * defined in PSXMSFS.h
+     */
+     
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "degrees");
@@ -135,6 +139,9 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR HANDLE POSITION", "percent over 100");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
+
+
+    
 
     /*
      * Data definition for lights. Even though in the SDK documentation they are defined as non settable,
@@ -155,6 +162,17 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT BEACON:2", "Number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT WING", "Number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LOGO", "Number");
+
+    /*
+     * Moving Surfaces: Ailerons, rudder , elevator
+     *
+    */
+
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "RUDDER POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "ELEVATOR POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AILERON POSITION", "position 16K");
+    
+
 
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
@@ -264,6 +282,7 @@ void init_pos() {
     APos.Speedbrake = 0.0;    // Spoilers down
     APos.GearDown = 1.0;
 
+    //All lights off
     APos.LandLeftOutboard = 0.0;
     APos.LandLeftInboard = 0.0;
     APos.LandRightInboard = 0.0;
@@ -277,6 +296,13 @@ void init_pos() {
     APos.BeaconLwr = 0.0;
     APos.LightWing = 0.0;
     APos.LightLogo = 0.0;
+
+    //All surfaces centered (ailerons, rudder, elevator
+
+    APos.rudder=0.0;
+    APos.ailerons=0.0;
+    APos.elevator=0.0;
+
     if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                       &APos) != S_OK) {
         err_n_die("Could not update position");
@@ -330,6 +356,16 @@ int SetMSFSPos(Target *T) {
     // Set the UTC time
     SetUTCTime(T);
 
+
+    /*
+     * Set the moving surfaces: aileron, rudder, elevator
+     */
+
+    APos.rudder=T->rudder;
+    APos.ailerons=T->aileron;
+    APos.elevator=T->elevator;
+
+
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
@@ -358,8 +394,13 @@ int main(int argc, char **argv) {
     // Here at LFPG stand E22
     init_pos();
 
-    // Sending Q423 DEMAND variable tro PSX for the winds
+    /* 
+     * Sending Q423 DEMAND variable to PSX for the winds
+     * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
+    */
+
     sendQPSX("demand=Qs483");
+    sendQPSX("demand=Qs480");
 
     pthread_mutex_init(&mutex, NULL);
 

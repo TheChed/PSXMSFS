@@ -17,6 +17,13 @@ struct Struct_MSFS {
     double ground; // ground altitude
 }; 
 
+
+
+/* Definition of the structure used to update MSFS
+ * It is VERY important that the order this structure elements are defined is the
+ * same order as when mapping the variables in PSXMSFS.cpp
+ */
+
 struct AcftPosition {
     double altitude;
     double latitude;
@@ -44,6 +51,11 @@ struct AcftPosition {
     double Beacon; // Both Beacon light
     double LightWing; // Wing light
     double LightLogo; // Wing light
+    //moving surfaces
+    double rudder;
+    double elevator;
+    double ailerons;
+
 
 };
 enum GROUP_ID {
@@ -101,6 +113,8 @@ typedef struct {
                    // logo
     //Time Z
     int year,month,day,hour,minute;
+    //Moving surfaces
+    double elevator, aileron, rudder;
 } Target;
 
 // Function definitions

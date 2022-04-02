@@ -102,6 +102,27 @@ void S483(char *s, Target *T) {
     T->IAS = strtol(token, &ptr, 10) / 10.0;
 }
 
+void S480(char *s, Target *T) {
+
+    int val[10];
+
+    /* get the first token */
+    if (strlen(s+6)!=20){
+        printf("Wrong size for Qs480. Should be 20 and got %s\n",strlen(s+6));
+        return;
+    }
+
+    for(int i=0;i<10;i++){
+        val[i]=(s[2*i+6]-'0')*10+(s[2*i+1+6]-'0');
+    }
+
+    T->rudder=16384*((val[8]+val[9])/2 -32) /32.0 ; // maximum deflection = 64
+    T->aileron=-16384*(val[0] -20) /20.0 ; //maximum deflection in PSX  = 40
+    T->elevator=16384*(val[6]-21) / 21.0; //maximum deflection in PSX = 42
+
+}
+
+
 void S124(char *s, Target *T) {
 
     struct tm *time_PSX;
@@ -370,7 +391,10 @@ int umain(Target *T) {
         S483(chaine, T);
         update = 1;
     }
-
+    if (strstr(chaine, "Qs480=")) {
+        S480(chaine, T);
+        update = 1;
+    }
     if (strstr(chaine, "Qi214=")) {
         //    printf("Got Qi214:%s\n", chaine);
         //    update = 1;
