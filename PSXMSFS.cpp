@@ -31,6 +31,7 @@ void SetUTCTime(Target *T) {
         UTCupdate = 1; //continous update of UTC time
     }
 }
+
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
     (DWORD)(cbData);
@@ -53,9 +54,11 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         switch (evt->uEventID) {
         case EVENT_SIM_START: {
+            printf("Inside EVENT_SIM_START\n");
         } break;
 
         case EVENT_ONE_SEC: {
+            //    printf("Inside EVENT_ONE_SEC\n");
 
         } break;
 
@@ -67,6 +70,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
+            printf("Inside PRINT\n");
 
         } break;
 
@@ -77,6 +81,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         default:
+            printf("Another event received\n");
         }
         break;
     }
@@ -103,12 +108,14 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
     case SIMCONNECT_RECV_ID_QUIT: {
 
+        printf("\nSIMCONNECT_RECV_ID_QUIT received and data sent");
     } break;
 
     default:
         break;
     }
 }
+
 
 int init_MS_data(void) {
 
@@ -168,7 +175,6 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AILERON POSITION", "position 16K");
     
 
-
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
 
@@ -202,6 +208,9 @@ int init_MS_data(void) {
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_HOURS, "ZULU_HOURS_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_MINUTES, "ZULU_MINUTES_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_YEAR, "ZULU_YEAR_SET");
+
+
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PARKING, "PARKING_BRAKE_SET");
 
     /* Custom EVENTS
      *
@@ -297,6 +306,7 @@ void init_pos() {
     APos.rudder=0.0;
     APos.ailerons=0.0;
     APos.elevator=0.0;
+    
 
     if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                       &APos) != S_OK) {
@@ -360,12 +370,14 @@ int SetMSFSPos(Target *T) {
     APos.ailerons=T->aileron;
     APos.elevator=T->elevator;
 
-
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
 
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T->parkbreak,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     return hr;
+
 }
 int main(int argc, char **argv) {
 

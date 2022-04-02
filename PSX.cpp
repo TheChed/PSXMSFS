@@ -51,6 +51,15 @@ void H389(char *s, Target *T) {
 
     T->FlapLever = (int)(s[6] - '0');
 }
+void H397(char *s, Target *T) {
+
+    if (strlen(s) != 7) {
+        printf("Wrong Qh397 code\n");
+        return;
+    }
+
+    T->parkbreak= (int)(s[6] - '0');
+}
 
 // Speedbrake lever variable Qh389
 void H388(char *s, Target *T) {
@@ -373,6 +382,11 @@ int umain(Target *T) {
         H170(chaine, T);
         update = 1;
     }
+    // Update Gear position
+    if (strstr(chaine, "Qh397=")) {
+        H397(chaine, T);
+        update = 1;
+    }
     // Update Flap position
     if (strstr(chaine, "Qh389=")) {
         H389(chaine, T);
@@ -391,6 +405,7 @@ int umain(Target *T) {
         S483(chaine, T);
         update = 1;
     }
+    //Rudder+aileron+elevator
     if (strstr(chaine, "Qs480=")) {
         S480(chaine, T);
         update = 1;

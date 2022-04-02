@@ -83,6 +83,7 @@ enum EVENT_ID {
     EVENT_ZULU_HOURS,
     EVENT_ZULU_MINUTES,
     EVENT_ZULU_YEAR,
+    EVENT_PARKING,
 };
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
@@ -115,6 +116,7 @@ typedef struct {
     int year,month,day,hour,minute;
     //Moving surfaces
     double elevator, aileron, rudder;
+    double parkbreak;
 } Target;
 
 // Function definitions
