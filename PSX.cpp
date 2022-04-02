@@ -130,7 +130,7 @@ void S443(char *s, Target *T) {
     } else {
         updateLights = 1;
         for (int i = 0; i < 14; i++) {
-            T->light[i] = (int)(s[i + 6] - '0') == 0 ? 0 : 1;
+            T->light[i] = (int)(s[i + 6] - '0') < 5  ? 0 : 1;
         }
     }
 }
@@ -337,7 +337,6 @@ int umain(Target *T) {
 
     // ExtLts : External lights, Mode=XECON
     if (strstr(chaine, "Qs443=")) {
-
         S443(chaine, T);
         update = 1;
     }
