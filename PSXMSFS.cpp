@@ -53,11 +53,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         switch (evt->uEventID) {
         case EVENT_SIM_START: {
-            printf("Inside EVENT_SIM_START\n");
         } break;
 
         case EVENT_ONE_SEC: {
-            //    printf("Inside EVENT_ONE_SEC\n");
 
         } break;
 
@@ -69,7 +67,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
-            printf("Inside PRINT\n");
 
         } break;
 
@@ -80,7 +77,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         default:
-            printf("Another event received\n");
         }
         break;
     }
@@ -107,7 +103,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
     case SIMCONNECT_RECV_ID_QUIT: {
 
-        printf("\nSIMCONNECT_RECV_ID_QUIT received and data sent");
     } break;
 
     default:
