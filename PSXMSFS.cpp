@@ -12,9 +12,25 @@ int quit = 0;
 Target T;
 float ground_elev = 0;
 pthread_mutex_t mutex;
-int updateLights;
+int updateLights, UTCupdate = 1;
+int validtime = 0;
 HRESULT hr;
 
+void SetUTCTime(Target *T) {
+
+    if (UTCupdate && validtime) {
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, T->hour,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, T->minute,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, T->day,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, T->year,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+
+        UTCupdate = 1; //continous update of UTC time
+    }
+}
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
     (DWORD)(cbData);
@@ -53,11 +69,14 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
+            printf("Inside PRINT\n");
 
         } break;
 
         case EVENT_QUIT: {
             quit = 1;
+            printf("Preparing to close PSXMSFS...\n");
+
         } break;
 
         default:
@@ -117,11 +136,11 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
 
-    /* 
-    * Data definition for lights. Even though in the SDK documentation they are defined as non settable,
-    *  Setting them like this works just fine. Alternative is to use EVENTS, but in that case all 4 landing
-    *  light switches cannot be synchronised.
-    */
+    /*
+     * Data definition for lights. Even though in the SDK documentation they are defined as non settable,
+     *  Setting them like this works just fine. Alternative is to use EVENTS, but in that case all 4 landing
+     *  light switches cannot be synchronised.
+     */
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:1", "Number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:2", "Number");
@@ -152,9 +171,31 @@ int init_MS_data(void) {
     hr = SimConnect_SetSystemEventState(hSimConnect, EVENT_FRAME, SIMCONNECT_STATE_ON);
     hr = SimConnect_AIReleaseControl(hSimConnect, SIMCONNECT_OBJECT_ID_USER, DATA_REQUEST);
 
+    /* Mapping Events to the client
+
+    /*Events used to freeze the internal MSFS engine and allow injection of positionning
+     * from PSX
+     */
+
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
+
+    /*
+     * EVENTS used to set the time
+     */
+
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_DAY, "ZULU_DAY_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_HOURS, "ZULU_HOURS_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_MINUTES, "ZULU_MINUTES_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_YEAR, "ZULU_YEAR_SET");
+
+    /* Custom EVENTS
+     *
+     * Here pressing the P or Q key in MSFS
+     * Note: the name of the event shall have a "."
+     *
+     */
 
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
@@ -202,7 +243,7 @@ void *ptUmain(void *thread_id) {
     return NULL;
 }
 
-void init_pos(void) {
+void init_pos() {
 
     // Setting the aircraft at LFPG gate
     AcftPosition APos;
@@ -265,7 +306,6 @@ int SetMSFSPos(Target *T) {
     APos.FlapsPosition = T->FlapLever;
     APos.Speedbrake = T->SpdBrkLever / 800.0;
 
-
     // Update lights
     APos.LandLeftOutboard = T->light[0];
     APos.LandLeftInboard = T->light[2];
@@ -281,12 +321,15 @@ int SetMSFSPos(Target *T) {
     APos.LightWing = T->light[12];
     APos.LightLogo = T->light[13];
 
-    //Taxi lights disabled airborne
-    if(T->onGround != 2) {
-    APos.LeftRwyTurnoff = 0.0;
-    APos.RightRwyTurnoff = 0.0;
-            }
-   
+    // Taxi lights disabled airborne
+    if (T->onGround != 2) {
+        APos.LeftRwyTurnoff = 0.0;
+        APos.RightRwyTurnoff = 0.0;
+    }
+
+    // Set the UTC time
+    SetUTCTime(T);
+
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
@@ -298,7 +341,6 @@ int main(int argc, char **argv) {
     pthread_t t1, t2, t3;
     int rc;
 
-    // T = (Target *)malloc(sizeof(T));
     if (argc != 3) {
         printf("Usage: %s IP port\n", argv[0]);
         exit(EXIT_FAILURE);
@@ -321,15 +363,15 @@ int main(int argc, char **argv) {
 
     pthread_mutex_init(&mutex, NULL);
 
-    if (pthread_create(&t1, NULL, &ptUmain, &T) !=0) {
+    if (pthread_create(&t1, NULL, &ptUmain, &T) != 0) {
         err_n_die("Error creating thread Umain");
     }
 
-    if (pthread_create(&t2, NULL, &ptUmainboost, &T) !=0) {
+    if (pthread_create(&t2, NULL, &ptUmainboost, &T) != 0) {
         err_n_die("Error creating thread Umainboost");
     }
-    
-    if (pthread_create(&t3, NULL, &ptDatafromMSFS, &T) !=0) {
+
+    if (pthread_create(&t3, NULL, &ptDatafromMSFS, &T) != 0) {
         err_n_die("Error creating thread DatafromMSFS");
     }
 

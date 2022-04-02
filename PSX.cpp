@@ -1,3 +1,6 @@
+#include <cstdlib>
+//#include <ctime>
+#include <time.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,18 +16,9 @@ const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
 void state(Target *T) {
 
-    struct timeval start;
-    double msecs = 0;
-
-    gettimeofday(&start, NULL);
-
-    // Do stuff  here
-
-    msecs = (double)start.tv_usec / 1000;
-
     if (print) {
         //   asctime_s(stime, sizeof(stime),&result);
-        printf("PSX: |%f|\t  ", msecs);
+        printf("PSX:\t  ");
         printf("Alt: %.0f\t", T->altitude);
         printf("Head: %.2f\t", T->heading);
         printf("Lat: %.4f\t", T->latitude);
@@ -103,21 +97,41 @@ void S483(char *s, Target *T) {
 
     /* get the first token */
     token = strtok(s + 6, delim);
-    
+
     /* walk through other tokens */
-    T->IAS= strtol(token, &ptr, 10) / 10.0;
+    T->IAS = strtol(token, &ptr, 10) / 10.0;
 }
+
+void S124(char *s, Target *T) {
+
+    struct tm *time_PSX;
+    time_t timeUTC;
+
+    timeUTC = strtoll(s + 6, NULL, 10) / 1000;
+
+    if ((time_PSX = gmtime(&timeUTC)) == NULL) {
+        printf("Error creating timePSX\n");
+        return;
+    }
+
+    T->year = time_PSX->tm_year + 1900; // year starts in 1900
+    T->day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
+    T->hour = time_PSX->tm_hour;
+    T->minute = time_PSX->tm_min;
+
+    validtime = 1; // we have read a valid time from PSX
+    return;
+}
+
 void S443(char *s, Target *T) {
 
-    if(strlen(s)!=20){
-        printf("Wrong size for Qs443, should be 14 but got %lld\n",strlen(s));
-    } 
-    else {
-    updateLights=1; 
-        for(int i=0;i<14;i++){
-            T->light[i]=(int)(s[i+6]-'0')==0 ? 0 : 1;
+    if (strlen(s) != 20) {
+        printf("Wrong size for Qs443, should be 14 but got %lld\n", strlen(s));
+    } else {
+        updateLights = 1;
+        for (int i = 0; i < 14; i++) {
+            T->light[i] = (int)(s[i + 6] - '0') == 0 ? 0 : 1;
         }
-
     }
 }
 
@@ -349,18 +363,18 @@ int umain(Target *T) {
         H388(chaine, T);
         update = 1;
     }
-    if (strstr(chaine, "Qs482=")) {
-    //    printf("Got Qs482%s\n", chaine);
-    //    update = 1;
+    if (strstr(chaine, "Qs124=")) {
+        S124(chaine, T);
+        update = 1;
     }
     if (strstr(chaine, "Qs483=")) {
-        S483(chaine,T);
+        S483(chaine, T);
         update = 1;
     }
 
     if (strstr(chaine, "Qi214=")) {
-    //    printf("Got Qi214:%s\n", chaine);
-    //    update = 1;
+        //    printf("Got Qi214:%s\n", chaine);
+        //    update = 1;
     }
     return update;
 }

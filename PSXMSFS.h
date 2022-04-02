@@ -10,7 +10,8 @@ extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 extern HRESULT hr;
 
-extern int updateLights ; // has one light been toggled?
+extern int updateLights;
+extern int validtime ; // has one light been toggled?
 
 struct Struct_MSFS {
     double ground; // ground altitude
@@ -66,6 +67,10 @@ enum EVENT_ID {
     EVENT_FREEZE_LAT_LONG,
     EVENT_INIT,
     EVENT_QUIT,
+    EVENT_ZULU_DAY,
+    EVENT_ZULU_HOURS,
+    EVENT_ZULU_MINUTES,
+    EVENT_ZULU_YEAR,
 };
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
@@ -94,6 +99,8 @@ typedef struct {
     int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
                    // logo
+    //Time Z
+    int year,month,day,hour,minute;
 } Target;
 
 // Function definitions
@@ -110,5 +117,6 @@ int umainBoost2(Target *T);
 void err_n_die(const char *fmt, ...);
 int SetMSFSPos(Target *T);
 
+void SetUTCTime(Target *T);
 int sendQPSX(const char *s);
 #endif
