@@ -390,7 +390,9 @@ int SetMSFSPos(Target *T) {
 
 void usage() {
 
-    printf("usage: [-v] [-m IP [-p port]] [-b IP [-c port]]\n");
+    printf("usage: [-h] [-v] [-m IP [-p port]] [-b IP [-c port]]\n");
+    printf("\t -h, --help");
+    printf("\t Prints this help\n");
     printf("\t --verbose");
     printf("\t verbose. Prints out information on Q strings. Warning: can be very verbose\n");
     printf("\t -m");
@@ -420,6 +422,7 @@ int main(int argc, char **argv) {
                                                /* These options don’t set a flag.
                                                   We distinguish them by their indices. */
                                                {"boost", required_argument, 0, 'b'},
+                                               {"help", no_argument, 0, 'h'},
                                                {"main", required_argument, 0, 'm'},
                                                {"boost-port", required_argument, 0, 'c'},
                                                {"main-port", required_argument, 0, 'p'},
@@ -427,7 +430,7 @@ int main(int argc, char **argv) {
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "vm:b:c:p:f:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hvm:b:c:p:f:", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -446,6 +449,9 @@ int main(int argc, char **argv) {
 
         case 'b':
             strcpy(PSXBoostServer, optarg);
+            break;
+        case 'h':
+            usage();
             break;
         case 'm':
             strcpy(PSXMainServer, optarg);
