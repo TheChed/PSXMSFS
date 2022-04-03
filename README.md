@@ -18,7 +18,9 @@ you will need 3 dlls for windows which should be in the same directory as the ex
   For convenience sake, I have included those files in the bin directory.
 
   USAGE:
-  Once all 4 files are in the same directory, just launch the program in a cmd window by typing: PSXMSFS.exe 192.168.x.xx 10747
+  Once all 4 files are in the same directory, just launch the program in a cmd window by typing: PSXMSFS.exe 
+  
+  PSXMSFS.exe -h gives a brief help
 
   Replacing xx.xx.xx.xx with the IP address of the computer running PSX, and 10747 being the port for the main PSX server. The port of the boost server is expected to be 10749.
 
