@@ -10,7 +10,6 @@
 HANDLE hSimConnect = NULL;
 
 int sPSX, sPSXBOOST;
-
 int close_PSX_socket(int sockid) {
 
     return closesocket(sockid);
@@ -63,19 +62,20 @@ void init_connect_MSFS(HANDLE *p) {
 }
 
 
-void open_connections(char **s){
+void open_connections(){
 
 
     //initialise Win32 socket library
     init_socket(); 
 
     //connect to PSX main socket
-    sPSX=init_connect_PSX(s[1], (int)strtol(s[2], NULL, 0)); 
-    printf("Connected to PSX main server on %s:%d\n",s[1], (int)strtol(s[2],NULL,0));
+    printf("opening: %s:%d\n",PSXMainServer, PSXPort);
+    sPSX=init_connect_PSX(PSXMainServer,PSXPort); 
+    printf("Connected to PSX main server on %s:%d\n",PSXMainServer,PSXPort);
 
     //connect to boost socket
-    sPSXBOOST=init_connect_PSX(s[1], 10749); 
-    printf("Connected to PSX boost server on %s:%d\n",s[1], 10749);
+    sPSXBOOST=init_connect_PSX(PSXBoostServer,PSXBoostPort);
+    printf("Connected to PSX boost server on %s:%d\n",PSXBoostServer,PSXBoostPort);
 
     //finally connect to MSFS socket via SimConnect
     init_connect_MSFS(&hSimConnect); 

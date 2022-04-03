@@ -13,6 +13,13 @@ extern HRESULT hr;
 extern int updateLights;
 extern int validtime ; // has one light been toggled?
 
+extern int DEBUG;
+
+extern char PSXMainServer[];
+extern char PSXBoostServer[];
+extern int PSXPort;
+extern int PSXBoostPort;
+
 struct Struct_MSFS {
     double ground; // ground altitude
 }; 
@@ -126,7 +133,7 @@ int check_param(const char *);
 void init_socket();
 int close_PSX_socket(int socket);
 void Decode(int, char, char *, Target *);
-void open_connections(char **v);
+void open_connections();
 void state(Target *T); // prints aircraft position
 char *convert(double, int);
 int umain(Target *T);

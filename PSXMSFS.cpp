@@ -1,4 +1,7 @@
 #include <assert.h>
+#include <cstddef>
+#include <cstring>
+#include <getopt.h>
 #include <cstdint>
 #include <math.h>
 #include <pthread.h>
@@ -15,6 +18,11 @@ pthread_mutex_t mutex;
 int updateLights, UTCupdate = 1;
 int validtime = 0;
 HRESULT hr;
+int DEBUG;
+char PSXMainServer[] = "127.0.0.1";
+char PSXBoostServer[] = "0.0.0.0";
+int PSXPort;
+int PSXBoostPort;
 
 void SetUTCTime(Target *T) {
 
@@ -28,7 +36,7 @@ void SetUTCTime(Target *T) {
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, T->year,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
-        UTCupdate = 1; //continous update of UTC time
+        UTCupdate = 1; // continous update of UTC time
     }
 }
 
@@ -116,14 +124,12 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     }
 }
 
-
 int init_MS_data(void) {
 
     /* Here we map all the variables that are used to update the 747 in MSFS.
-     * It is VERY important that the order of those variables matches the order in with the structure AcftPosition is   
+     * It is VERY important that the order of those variables matches the order in with the structure AcftPosition is
      * defined in PSXMSFS.h
      */
-     
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "degrees");
@@ -141,9 +147,6 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR HANDLE POSITION", "percent over 100");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
-
-
-    
 
     /*
      * Data definition for lights. Even though in the SDK documentation they are defined as non settable,
@@ -168,12 +171,11 @@ int init_MS_data(void) {
     /*
      * Moving Surfaces: Ailerons, rudder , elevator
      *
-    */
+     */
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "RUDDER POSITION", "position 16K");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "ELEVATOR POSITION", "position 16K");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AILERON POSITION", "position 16K");
-    
 
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
@@ -213,12 +215,11 @@ int init_MS_data(void) {
      * EVENT used to set the parking break
      */
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PARKING, "PARKING_BRAKE_SET");
-  
+
     /*
      * EVENT used for steering wheel
      */
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_STEERING, "STEERING_SET");
-    
 
     /* Custom EVENTS
      *
@@ -294,7 +295,7 @@ void init_pos() {
     APos.Speedbrake = 0.0;    // Spoilers down
     APos.GearDown = 1.0;
 
-    //All lights off
+    // All lights off
     APos.LandLeftOutboard = 0.0;
     APos.LandLeftInboard = 0.0;
     APos.LandRightInboard = 0.0;
@@ -309,12 +310,11 @@ void init_pos() {
     APos.LightWing = 0.0;
     APos.LightLogo = 0.0;
 
-    //All surfaces centered (ailerons, rudder, elevator
+    // All surfaces centered (ailerons, rudder, elevator
 
-    APos.rudder=0.0;
-    APos.ailerons=0.0;
-    APos.elevator=0.0;
-    
+    APos.rudder = 0.0;
+    APos.ailerons = 0.0;
+    APos.elevator = 0.0;
 
     if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                       &APos) != S_OK) {
@@ -369,39 +369,126 @@ int SetMSFSPos(Target *T) {
     // Set the UTC time
     SetUTCTime(T);
 
-
     /*
      * Set the moving surfaces: aileron, rudder, elevator
      */
 
-    APos.rudder=T->rudder;
-    APos.ailerons=T->aileron;
-    APos.elevator=T->elevator;
+    APos.rudder = T->rudder;
+    APos.ailerons = T->aileron;
+    APos.elevator = T->elevator;
 
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
 
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T->parkbreak,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T->steering,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T->parkbreak,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T->steering,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     return hr;
-
 }
+
+void usage() {
+
+    printf("usage: [-v] [-m IP [-p port]] [-b IP [-c port]]\n");
+    printf("\t --verbose");
+    printf("\t verbose. Prints out information on Q strings. Warning: can be very verbose\n");
+    printf("\t -m");
+    printf("\t Main server IP. Default is 127.0.0.1\n");
+    printf("\t -p");
+    printf("\t Main server port. Default is 10747\n");
+    printf("\t -b");
+    printf("\t Boost server IP. Default is main server IP [127.0.0.1] \n");
+    printf("\t -c");
+    printf("\t Boost server port. Default is 10749\n");
+
+    exit(-1);
+}
+
 int main(int argc, char **argv) {
-
     pthread_t t1, t2, t3;
+    
 
-    if (argc != 3) {
-        printf("Usage: %s IP port\n", argv[0]);
-        exit(EXIT_FAILURE);
+    int c;
+
+    strcpy(PSXMainServer, "127.0.0.1");
+    PSXPort = 10747;
+    PSXBoostPort = 10749;
+    while (1) {
+        static struct option long_options[] = {/* These options set a flag. */
+                                               {"verbose", no_argument, &DEBUG, 1},
+                                               /* These options don’t set a flag.
+                                                  We distinguish them by their indices. */
+                                               {"boost", required_argument, 0, 'b'},
+                                               {"main", required_argument, 0, 'm'},
+                                               {"boost-port", required_argument, 0, 'c'},
+                                               {"main-port", required_argument, 0, 'p'},
+                                               {0, 0, 0, 0}};
+        /* getopt_long stores the option index here. */
+        int option_index = 0;
+
+        c = getopt_long(argc, argv, "vm:b:c:p:f:", long_options, &option_index);
+
+        /* Detect the end of the options. */
+        if (c == -1)
+            break;
+
+        switch (c) {
+        case 0:
+            /* If this option set a flag, do nothing else now. */
+            if (long_options[option_index].flag != 0)
+                break;
+            printf("option %s", long_options[option_index].name);
+            if (optarg)
+                printf(" with arg %s", optarg);
+            printf("\n");
+            break;
+
+        case 'b':
+            strcpy(PSXBoostServer, optarg);
+            break;
+        case 'm':
+            strcpy(PSXMainServer, optarg);
+            break;
+        case 'c':
+            PSXBoostPort = (int)strtol(optarg, NULL, 10);
+            break;
+        case 'p':
+            PSXPort = (int)strtol(optarg, NULL, 10);
+            break;
+        case 'v':
+            DEBUG=1;
+            break;
+
+        case '?':
+            /* getopt_long already printed an error message. */
+            usage();
+            break;
+
+        default:
+            abort();
+        }
     }
 
+    /* Instead of reporting ‘--verbose’
+       and ‘--brief’ as they are encountered,
+       we report the final status resulting from them. */
+
+    /* Print any remaining command line arguments (not options). */
+    if (optind < argc) {
+        // printf("non-option ARGV-elements: ");
+        while (optind < argc)
+            optind++;
+    }
+
+
+    if (strcmp(PSXBoostServer, "0.0.0.0") == 0) {
+        strcpy(PSXBoostServer, PSXMainServer);
+    }
     /*
      * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
      */
-    open_connections(argv);
+    open_connections();
 
     // initialize the data to be received as well as all EVENTS
     init_MS_data();
@@ -410,10 +497,10 @@ int main(int argc, char **argv) {
     // Here at LFPG stand E22
     init_pos();
 
-    /* 
+    /*
      * Sending Q423 DEMAND variable to PSX for the winds
      * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
-    */
+     */
 
     sendQPSX("demand=Qs483");
     sendQPSX("demand=Qs480");

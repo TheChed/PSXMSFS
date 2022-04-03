@@ -64,7 +64,6 @@ void H397(char *s, Target *T) {
 void H426(char *s, Target *T) {
 double pos;
 
-
     pos=strtol(s+6,NULL,10)/999.0*16384.0;
     if (abs(pos)>16385){
         pos=0;
