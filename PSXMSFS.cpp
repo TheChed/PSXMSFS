@@ -34,8 +34,8 @@ void SetUTCTime(Target *T) {
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
-    (DWORD)(cbData);
-    (void *)(pContext);
+    (void)(cbData);
+    (void)(pContext);
 
     switch (pData->dwID) {
 
@@ -190,7 +190,7 @@ int init_MS_data(void) {
     hr = SimConnect_SetSystemEventState(hSimConnect, EVENT_FRAME, SIMCONNECT_STATE_ON);
     hr = SimConnect_AIReleaseControl(hSimConnect, SIMCONNECT_OBJECT_ID_USER, DATA_REQUEST);
 
-    /* Mapping Events to the client
+    /* Mapping Events to the client*/
 
     /*Events used to freeze the internal MSFS engine and allow injection of positionning
      * from PSX
@@ -209,8 +209,16 @@ int init_MS_data(void) {
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_MINUTES, "ZULU_MINUTES_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_YEAR, "ZULU_YEAR_SET");
 
-
+    /*
+     * EVENT used to set the parking break
+     */
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PARKING, "PARKING_BRAKE_SET");
+  
+    /*
+     * EVENT used for steering wheel
+     */
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_STEERING, "STEERING_SET");
+    
 
     /* Custom EVENTS
      *
@@ -230,7 +238,7 @@ int init_MS_data(void) {
     return hr;
 }
 
-void *ptDatafromMSFS(void *Param) {
+void *ptDatafromMSFS(void *) {
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
     }
@@ -376,13 +384,14 @@ int SetMSFSPos(Target *T) {
 
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T->parkbreak,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T->steering,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     return hr;
 
 }
 int main(int argc, char **argv) {
 
     pthread_t t1, t2, t3;
-    int rc;
 
     if (argc != 3) {
         printf("Usage: %s IP port\n", argv[0]);
@@ -419,7 +428,7 @@ int main(int argc, char **argv) {
         err_n_die("Error creating thread Umainboost");
     }
 
-    if (pthread_create(&t3, NULL, &ptDatafromMSFS, &T) != 0) {
+    if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
         err_n_die("Error creating thread DatafromMSFS");
     }
 

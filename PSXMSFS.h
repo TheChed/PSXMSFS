@@ -84,6 +84,7 @@ enum EVENT_ID {
     EVENT_ZULU_MINUTES,
     EVENT_ZULU_YEAR,
     EVENT_PARKING,
+    EVENT_STEERING,
 };
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
@@ -117,6 +118,7 @@ typedef struct {
     //Moving surfaces
     double elevator, aileron, rudder;
     double parkbreak;
+    double steering;
 } Target;
 
 // Function definitions

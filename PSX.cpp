@@ -60,6 +60,18 @@ void H397(char *s, Target *T) {
 
     T->parkbreak= (int)(s[6] - '0');
 }
+// Steering wheel
+void H426(char *s, Target *T) {
+double pos;
+
+
+    pos=strtol(s+6,NULL,10)/999.0*16384.0;
+    if (abs(pos)>16385){
+        pos=0;
+    }
+
+    T->steering=-pos;
+    }
 
 // Speedbrake lever variable Qh389
 void H388(char *s, Target *T) {
@@ -117,7 +129,7 @@ void S480(char *s, Target *T) {
 
     /* get the first token */
     if (strlen(s+6)!=20){
-        printf("Wrong size for Qs480. Should be 20 and got %s\n",strlen(s+6));
+        printf("Wrong size for Qs480. Should be 20 and got %lld (%s)\n",strlen(s+6),s);
         return;
     }
 
@@ -408,6 +420,12 @@ int umain(Target *T) {
     //Rudder+aileron+elevator
     if (strstr(chaine, "Qs480=")) {
         S480(chaine, T);
+        update = 1;
+    }
+
+    //Steering wheel
+    if (strstr(chaine, "Qh426=")) {
+        H426(chaine, T);
         update = 1;
     }
     if (strstr(chaine, "Qi214=")) {
