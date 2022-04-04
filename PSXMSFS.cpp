@@ -1,8 +1,8 @@
 #include <assert.h>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <getopt.h>
-#include <cstdint>
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -97,8 +97,10 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
         SIMCONNECT_RECV_SIMOBJECT_DATA *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA *)pData;
 
-        // printf("dwRequestID: %lu received\n", pObjData->dwRequestID);
-        // printf("MSFS_CLIENT_DATA: %d ", MSFS_CLIENT_DATA);
+        //                            printf(" Received an external IA signal\n");
+        printf("dwRequestID: %lu received\n", pObjData->dwRequestID);
+        printf("MSFS_CLIENT_DATA: %d ", MSFS_CLIENT_DATA);
+        printf("DATA_TCAS: %d ", DATA_TCAS_TRAFFIC);
         switch (pObjData->dwRequestID) {
 
         case MSFS_CLIENT_DATA: {
@@ -106,13 +108,29 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             ground_elev = pS->ground;
         } break;
 
+        case DATA_TCAS_TRAFFIC: {
+            // Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
+            // ground_elev = pS->ground;
+            printf("AI DATA\n");
+
+        } break;
+
         default:
             break;
         }
         break;
     }
+    case SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE: {
+        SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *)pData;
 
-        // Add code to process the structure appropriately
+        switch (pObjData->dwRequestID) {
+        case DATA_REQUEST_TCAS: {
+            printf("Received a TCAS request\n");
+            break;
+        }
+        }
+        break;
+    }
 
     case SIMCONNECT_RECV_ID_QUIT: {
 
@@ -179,12 +197,28 @@ int init_MS_data(void) {
 
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
-
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_VISUAL_FRAME);
+                                           SIMCONNECT_PERIOD_SECOND);
+
+    /*
+     * This is the data that will be fetched from the aircraft in vicinity of PSX
+     * And will be used in the PSX TCAS
+     */
+
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "degrees");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "degrees");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES TRUE", "degrees");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "AIRSPEED TRUE", "knot");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "AIRSPEED INDICATED", "knot");
+
+    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
+                                           SIMCONNECT_PERIOD_SECOND);
+    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 2000,
+                                               SIMCONNECT_SIMOBJECT_TYPE_ALL);
 
     // Request a simulation start event
-    //
+
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
@@ -409,7 +443,6 @@ void usage() {
 
 int main(int argc, char **argv) {
     pthread_t t1, t2, t3;
-    
 
     int c;
 
@@ -463,7 +496,7 @@ int main(int argc, char **argv) {
             PSXPort = (int)strtol(optarg, NULL, 10);
             break;
         case 'v':
-            DEBUG=1;
+            DEBUG = 1;
             break;
 
         case '?':
@@ -486,7 +519,6 @@ int main(int argc, char **argv) {
         while (optind < argc)
             optind++;
     }
-
 
     if (strcmp(PSXBoostServer, "0.0.0.0") == 0) {
         strcpy(PSXBoostServer, PSXMainServer);

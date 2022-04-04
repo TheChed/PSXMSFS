@@ -96,10 +96,12 @@ enum EVENT_ID {
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
     DATA_PSX_TO_MSFS,
+    DATA_TCAS_TRAFFIC,  //This is the DATA to be returned for the aircraft in the vicinity
 };
 
 enum DATA_REQUEST_ID {
     DATA_REQUEST,
+    DATA_REQUEST_TCAS,
 };
 
 typedef struct {
