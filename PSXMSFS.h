@@ -24,6 +24,13 @@ struct Struct_MSFS {
     double ground; // ground altitude
 }; 
 
+struct AI_TCAS {
+    double altitude;
+    double latitude;
+    double longitude;
+    double heading;
+};
+
 
 
 /* Definition of the structure used to update MSFS

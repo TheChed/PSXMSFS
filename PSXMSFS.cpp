@@ -68,6 +68,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         case EVENT_ONE_SEC: {
             //    printf("Inside EVENT_ONE_SEC\n");
 
+    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 200,
+                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+
         } break;
 
         case EVENT_6_HZ: {
@@ -97,10 +100,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
         SIMCONNECT_RECV_SIMOBJECT_DATA *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA *)pData;
 
-        //                            printf(" Received an external IA signal\n");
-        printf("dwRequestID: %lu received\n", pObjData->dwRequestID);
-        printf("MSFS_CLIENT_DATA: %d ", MSFS_CLIENT_DATA);
-        printf("DATA_TCAS: %d ", DATA_TCAS_TRAFFIC);
         switch (pObjData->dwRequestID) {
 
         case MSFS_CLIENT_DATA: {
@@ -125,7 +124,11 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         switch (pObjData->dwRequestID) {
         case DATA_REQUEST_TCAS: {
-            printf("Received a TCAS request\n");
+            AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
+            //printf("Number: %ld",pObjData->dwentrynumber);
+            if(pObjData->dwentrynumber!=1){
+            printf("pS->alt: %f\t ps->lat: %f\t ps->long: %f\t, ps->head: %f\n",ai->altitude, ai->latitude, ai->longitude, ai->heading);
+            }
             break;
         }
         }
@@ -209,13 +212,11 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES TRUE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "AIRSPEED TRUE", "knot");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "AIRSPEED INDICATED", "knot");
 
-    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_SECOND);
-    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 2000,
-                                               SIMCONNECT_SIMOBJECT_TYPE_ALL);
+    //hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
+    //                                       SIMCONNECT_PERIOD_SECOND);
+    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 20,
+                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
 
     // Request a simulation start event
 
