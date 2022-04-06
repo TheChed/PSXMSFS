@@ -312,11 +312,10 @@ int umainBoost(Target *T) {
     return pos;
 }
 int umainBoost2(Target *T) {
-    char chaine[MAXLEN];
+    char chaine[128];
 
-    int nbread = recv(sPSXBOOST, chaine, MAXLEN, 0);
+    int nbread = recv(sPSXBOOST, chaine,128, 0);
     if (nbread > 0) {
-        // printf("chaine: %s\n",chaine);
         Decode_Boost(T, chaine);
     }
     return nbread;

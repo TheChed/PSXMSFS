@@ -19,6 +19,7 @@ int updateLights, UTCupdate = 1;
 int validtime = 0;
 HRESULT hr;
 int DEBUG;
+int TCAS_INJECT = 1;
 char PSXMainServer[] = "127.0.0.1";
 char PSXBoostServer[] = "0.0.0.0";
 int PSXPort;
@@ -29,10 +30,10 @@ int PSXBoostPort;
  */
 
 TCAS tcas_acft[7];
-double min_dist= 999999;
+double min_dist = 999999;
 int nb_acft = 0;
 
-void update_TCAS(AI_TCAS *ai, int acft_id, int nb_acft,  double d);
+void update_TCAS(AI_TCAS *ai, int acft_id, int nb_acft, double d);
 
 double dist(double lat1, double lat2, double long1, double long2) {
     return 2 * EARTH_RAD *
@@ -67,8 +68,8 @@ void IA_update() {
         tcas_acft[acft_id].heading = 0;
         tcas_acft[acft_id].distance = 0;
     }
-    min_dist=999999;
-    nb_acft=0;
+    min_dist = 999999;
+    nb_acft = 0;
 }
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
@@ -98,7 +99,13 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_ONE_SEC: {
 
-            IA_update();
+            /*
+             * TCAS injection
+             */
+
+            if (TCAS_INJECT) {
+                IA_update();
+            }
 
         } break;
 
@@ -136,13 +143,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             ground_elev = pS->ground;
         } break;
 
-        case DATA_TCAS_TRAFFIC: {
-            // Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
-            // ground_elev = pS->ground;
-            printf("AI DATA\n");
-
-        } break;
-
         default:
             break;
         }
@@ -158,7 +158,8 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
             if (pObjData->dwentrynumber > 1) {
                 d = dist(ai->latitude, T->latitude, ai->longitude, T->longitude) / NM;
-                if (((d < 40 ) || nb_acft <7 )&& abs(ai->altitude-T->altitude)<2700 && ( !(T->onGround==2) || (T->onGround==2 && abs(ai->altitude-T->altitude)>50 ))){
+                if (((d < 40) || nb_acft < 7) && abs(ai->altitude - T->altitude) < 2700 &&
+                    (!(T->onGround == 2) || (T->onGround == 2 && abs(ai->altitude - T->altitude) > 50))) {
                     update_TCAS(ai, pObjData->dwentrynumber, pObjData->dwoutof, d);
                 }
             }
@@ -178,7 +179,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     }
 }
 
-void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb,  double d) {
+void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb, double d) {
 
     char tmpchn[128] = {0};
     char QsTfcPos[999] = {0}; // max lenght = 999
@@ -191,7 +192,7 @@ void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb,  double d) {
             tcas_acft[i].altitude = tcas_acft[i - 1].altitude;
             tcas_acft[i].heading = tcas_acft[i - 1].heading;
             tcas_acft[i].distance = tcas_acft[i - 1].distance;
-            min_dist=MAX(d,tcas_acft[i].distance);
+            min_dist = MAX(d, tcas_acft[i].distance);
         }
         tcas_acft[0].latitude = ai->latitude * M_PI / 180.0;
         tcas_acft[0].longitude = ai->longitude * M_PI / 180.0;
@@ -200,7 +201,6 @@ void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb,  double d) {
         tcas_acft[0].distance = d;
         min_dist = d;
     }
-
 
     if ((acft_id == acft_nb)) {
         strcpy(QsTfcPos, "Qs450=");
@@ -213,14 +213,15 @@ void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb,  double d) {
             strcat(strcat(QsTfcPos, tmpchn), ";");
             sprintf(tmpchn, "%d", tcas_acft[i].heading);
             strcat(strcat(QsTfcPos, tmpchn), ";");
-
         }
-          //  printf("\t0\t\t 1\t\t 2\t\t 3\t\t 4\t\t 5\t\t 6\t\n");
-          //  printf("dist:\t %f\t %f\t %f\t %f\t %f\t %f\t %f\t\n", tcas_acft[0].distance, tcas_acft[1].distance,tcas_acft[2].distance,tcas_acft[3].distance,tcas_acft[4].distance,tcas_acft[5].distance,tcas_acft[6].distance);
-            //printf("Alt:\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t\n", tcas_acft[0].altitude, tcas_acft[1].altitude,tcas_acft[2].altitude,tcas_acft[3].altitude,tcas_acft[4].altitude,tcas_acft[5].altitude,tcas_acft[6].altitude);
+        //  printf("\t0\t\t 1\t\t 2\t\t 3\t\t 4\t\t 5\t\t 6\t\n");
+        //  printf("dist:\t %f\t %f\t %f\t %f\t %f\t %f\t %f\t\n", tcas_acft[0].distance,
+        //  tcas_acft[1].distance,tcas_acft[2].distance,tcas_acft[3].distance,tcas_acft[4].distance,tcas_acft[5].distance,tcas_acft[6].distance);
+        // printf("Alt:\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t\n", tcas_acft[0].altitude,
+        // tcas_acft[1].altitude,tcas_acft[2].altitude,tcas_acft[3].altitude,tcas_acft[4].altitude,tcas_acft[5].altitude,tcas_acft[6].altitude);
 
         /* and now we can send the string to PSX */
-       // printf("Sending: %s\n", QsTfcPos);
+        // printf("Sending: %s\n", QsTfcPos);
         sendQPSX("Qi201=1");
         sendQPSX(QsTfcPos);
     }
@@ -521,6 +522,8 @@ void usage() {
     printf("\t Boost server IP. Default is main server IP [127.0.0.1] \n");
     printf("\t -c");
     printf("\t Boost server port. Default is 10749\n");
+    printf("\t -t");
+    printf("\t Disables TCAS injection from MSFS to PSX\n");
 
     exit(-1);
 }
@@ -547,7 +550,7 @@ int main(int argc, char **argv) {
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "hvm:b:c:p:f:", long_options, &option_index);
+        c = getopt_long(argc, argv, "thvm:b:c:p:f:", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -566,6 +569,9 @@ int main(int argc, char **argv) {
 
         case 'b':
             strcpy(PSXBoostServer, optarg);
+            break;
+        case 't':
+            TCAS_INJECT = 0;
             break;
         case 'h':
             usage();
