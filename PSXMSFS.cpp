@@ -24,10 +24,22 @@ char PSXBoostServer[] = "0.0.0.0";
 int PSXPort;
 int PSXBoostPort;
 
+/*
+ * Global variables used for TCAS updating
+ */
+
 TCAS tcas_acft[7];
+double min_dist= 999999;
+int nb_acft = 0;
 
-void update_TCAS(AI_TCAS *ai, int acft_id, int nb_acft);
+void update_TCAS(AI_TCAS *ai, int acft_id, int nb_acft,  double d);
 
+double dist(double lat1, double lat2, double long1, double long2) {
+    return 2 * EARTH_RAD *
+           (sqrt(pow(sin((lat2 * M_PI / 180 - lat1 * M_PI / 180) / 2), 2) +
+                 cos(lat1 * M_PI / 180) * cos(lat2 * M_PI / 180) *
+                     pow(sin((long2 * M_PI / 180 - long1 * M_PI / 180) / 2), 2)));
+}
 void SetUTCTime(Target *T) {
 
     if (UTCupdate && validtime) {
@@ -44,25 +56,25 @@ void SetUTCTime(Target *T) {
     }
 }
 
-void TCAS_update() {
+void IA_update() {
 
-    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 200,
+    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 40 * NM,
                                                SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
     for (int acft_id = 0; acft_id < 7; acft_id++) {
         tcas_acft[acft_id].latitude = 0.0;
         tcas_acft[acft_id].longitude = 0.0;
         tcas_acft[acft_id].altitude = 0;
         tcas_acft[acft_id].heading = 0;
-        tcas_acft[acft_id].VS = 0;
-        tcas_acft[acft_id].track_rate = 0;
-        tcas_acft[acft_id].GS = 0.0;
+        tcas_acft[acft_id].distance = 0;
     }
+    min_dist=999999;
+    nb_acft=0;
 }
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
     (void)(cbData);
-    (void)(pContext);
+    Target *T = (Target *)(pContext);
 
     switch (pData->dwID) {
 
@@ -86,8 +98,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_ONE_SEC: {
 
-            //       hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 200,
-            //                                                 SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+            IA_update();
 
         } break;
 
@@ -100,7 +111,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_PRINT: {
             printf("Inside PRINT\n");
-            TCAS_update();
+            IA_update();
         } break;
 
         case EVENT_QUIT: {
@@ -143,12 +154,13 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         switch (pObjData->dwRequestID) {
         case DATA_REQUEST_TCAS: {
             AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
-
-            // printf("Total Nb of AI: %ld", pObjData->dwoutof);
-            // printf("Id object: %ld ", pObjData->dwentrynumber);
+            double d;
 
             if (pObjData->dwentrynumber > 1) {
-                update_TCAS(ai, pObjData->dwentrynumber, pObjData->dwoutof);
+                d = dist(ai->latitude, T->latitude, ai->longitude, T->longitude) / NM;
+                if (((d < 40 ) || nb_acft <7 )&& abs(ai->altitude-T->altitude)<2700 && ( !(T->onGround==2) || (T->onGround==2 && abs(ai->altitude-T->altitude)>50 ))){
+                    update_TCAS(ai, pObjData->dwentrynumber, pObjData->dwoutof, d);
+                }
             }
 
         } break;
@@ -166,44 +178,53 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     }
 }
 
-void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb) {
+void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb,  double d) {
 
-    char tmpchn[128]={0};
-
+    char tmpchn[128] = {0};
     char QsTfcPos[999] = {0}; // max lenght = 999
-    if (acft_id < 8) {
-        /* Index starts at 1 in MSFS. Index 1 is our PSX plane, hence we have to start at 2*/
-        tcas_acft[acft_id-2].latitude = ai->latitude * M_PI / 180.0;
-        tcas_acft[acft_id-2].longitude = ai->longitude * M_PI / 180.0;
-        tcas_acft[acft_id-2].altitude = (int)(ai->altitude * 10);
-        tcas_acft[acft_id-2].heading = (int)(ai->heading * 100);
-        tcas_acft[acft_id-2].VS = (int)(ai->VS);
-        tcas_acft[acft_id-2].track_rate = 0;
-        tcas_acft[acft_id-2].GS = ai->GS;
+
+    if (d <= min_dist) { // we found a closer aircraft
+        nb_acft++;
+        for (int i = 6; i > 0; i--) {
+            tcas_acft[i].latitude = tcas_acft[i - 1].latitude;
+            tcas_acft[i].longitude = tcas_acft[i - 1].longitude;
+            tcas_acft[i].altitude = tcas_acft[i - 1].altitude;
+            tcas_acft[i].heading = tcas_acft[i - 1].heading;
+            tcas_acft[i].distance = tcas_acft[i - 1].distance;
+            min_dist=MAX(d,tcas_acft[i].distance);
+        }
+        tcas_acft[0].latitude = ai->latitude * M_PI / 180.0;
+        tcas_acft[0].longitude = ai->longitude * M_PI / 180.0;
+        tcas_acft[0].altitude = (int)(ai->altitude * 10);
+        tcas_acft[0].heading = (int)(ai->heading * 100);
+        tcas_acft[0].distance = d;
+        min_dist = d;
     }
 
-    if (acft_id == acft_nb) {
-        printf("Done with populating the TCAS array with %d aircraft\n", acft_nb - 1);
-        strcpy(QsTfcPos,"Qs450=");
-        for (int i = 0; i<7; i++) {
-            sprintf(tmpchn, "%f", tcas_acft[i].latitude);
+
+    if ((acft_id == acft_nb)) {
+        strcpy(QsTfcPos, "Qs450=");
+        for (int i = 0; i < 7; i++) {
+            sprintf(tmpchn, "%lf", tcas_acft[i].latitude);
             strcat(strcat(QsTfcPos, tmpchn), ";");
-            sprintf(tmpchn, "%f", tcas_acft[i].longitude);
+            sprintf(tmpchn, "%lf", tcas_acft[i].longitude);
             strcat(strcat(QsTfcPos, tmpchn), ";");
             sprintf(tmpchn, "%d", tcas_acft[i].altitude);
             strcat(strcat(QsTfcPos, tmpchn), ";");
             sprintf(tmpchn, "%d", tcas_acft[i].heading);
             strcat(strcat(QsTfcPos, tmpchn), ";");
+
         }
+          //  printf("\t0\t\t 1\t\t 2\t\t 3\t\t 4\t\t 5\t\t 6\t\n");
+          //  printf("dist:\t %f\t %f\t %f\t %f\t %f\t %f\t %f\t\n", tcas_acft[0].distance, tcas_acft[1].distance,tcas_acft[2].distance,tcas_acft[3].distance,tcas_acft[4].distance,tcas_acft[5].distance,tcas_acft[6].distance);
+            //printf("Alt:\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t\n", tcas_acft[0].altitude, tcas_acft[1].altitude,tcas_acft[2].altitude,tcas_acft[3].altitude,tcas_acft[4].altitude,tcas_acft[5].altitude,tcas_acft[6].altitude);
 
         /* and now we can send the string to PSX */
+       // printf("Sending: %s\n", QsTfcPos);
+        sendQPSX("Qi201=1");
         sendQPSX(QsTfcPos);
-
-
     }
 
-    // printf("Updating acft %d\n",acft_id);
-    //         printf("Head of AI : %.4f\n",ai->heading);
     return;
 }
 
@@ -274,8 +295,6 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES TRUE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "VERTICAL SPEED", "feet per minute");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "GROUND VELOCITY", "knots");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_SECOND);
@@ -336,9 +355,11 @@ int init_MS_data(void) {
     return hr;
 }
 
-void *ptDatafromMSFS(void *) {
+void *ptDatafromMSFS(void *thread_id) {
+    Target *T;
+    T = (Target *)(thread_id);
     while (!quit) {
-        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
+        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, T);
     }
     return NULL;
 }
@@ -616,7 +637,7 @@ int main(int argc, char **argv) {
         err_n_die("Error creating thread Umainboost");
     }
 
-    if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
+    if (pthread_create(&t3, NULL, &ptDatafromMSFS, &T) != 0) {
         err_n_die("Error creating thread DatafromMSFS");
     }
 

@@ -215,7 +215,6 @@ void I257(char *s, Target *T) {
 
     if (strlen(s) != 7) {
         printf("Wrong Qi257 format\n");
-        exit(-1);
     }
     T->onGround = (int)(s[6] - '0');
 }
@@ -319,8 +318,6 @@ int umainBoost2(Target *T) {
     if (nbread > 0) {
         // printf("chaine: %s\n",chaine);
         Decode_Boost(T, chaine);
-    } else {
-        printf("Nothing received\n");
     }
     return nbread;
 }
@@ -332,8 +329,8 @@ int sendQPSX(const char *s) {
 
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
-
-    int nbsend = send(sPSX, dem, strlen(dem) + 1, 0);
+    
+    int nbsend = send(sPSX, dem, strlen(s)+1 , 0);
 
     if (nbsend == 0) {
         printf("Error sending variable %s to PSX\n", s);

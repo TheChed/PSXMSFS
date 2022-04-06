@@ -2,9 +2,12 @@
 #define __PSXMSFS_H_
 
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
 
 #define MAXLEN 8192
 #define PRINT 1
+#define NM 1852     //meters in a nm
+#define EARTH_RAD   6371008  //earth radius in meters
 
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
@@ -111,10 +114,7 @@ typedef struct {
     double latitude;
     double longitude;
     int heading;
-
-    int VS;
-    double track_rate;
-    int GS;
+    double distance;
 } TCAS;
 
 
@@ -127,8 +127,6 @@ struct AI_TCAS {
     double latitude;
     double longitude;
     double heading;
-    double VS;
-    double GS;
 };
 
 
