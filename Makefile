@@ -20,7 +20,7 @@ testMSFS.o: testMSFS.cpp
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	rm -rf PSXMSFS.exe *.o *.exe
+	rm -rf bin/PSXMSFS.exe *.o *.exe
 
 move:
 	cp *.exe /home/stephan/NAS/TRANSFERT/pfpx

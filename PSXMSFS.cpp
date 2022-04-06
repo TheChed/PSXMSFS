@@ -24,6 +24,10 @@ char PSXBoostServer[] = "0.0.0.0";
 int PSXPort;
 int PSXBoostPort;
 
+TCAS tcas_acft[7];
+
+void update_TCAS(AI_TCAS *ai, int acft_id, int nb_acft);
+
 void SetUTCTime(Target *T) {
 
     if (UTCupdate && validtime) {
@@ -37,6 +41,21 @@ void SetUTCTime(Target *T) {
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
         UTCupdate = 1; // continous update of UTC time
+    }
+}
+
+void TCAS_update() {
+
+    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 200,
+                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+    for (int acft_id = 0; acft_id < 7; acft_id++) {
+        tcas_acft[acft_id].latitude = 0.0;
+        tcas_acft[acft_id].longitude = 0.0;
+        tcas_acft[acft_id].altitude = 0;
+        tcas_acft[acft_id].heading = 0;
+        tcas_acft[acft_id].VS = 0;
+        tcas_acft[acft_id].track_rate = 0;
+        tcas_acft[acft_id].GS = 0.0;
     }
 }
 
@@ -66,10 +85,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_ONE_SEC: {
-            //    printf("Inside EVENT_ONE_SEC\n");
 
-    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 200,
-                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+            //       hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 200,
+            //                                                 SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
 
         } break;
 
@@ -82,7 +100,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_PRINT: {
             printf("Inside PRINT\n");
-
+            TCAS_update();
         } break;
 
         case EVENT_QUIT: {
@@ -125,12 +143,15 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         switch (pObjData->dwRequestID) {
         case DATA_REQUEST_TCAS: {
             AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
-            //printf("Number: %ld",pObjData->dwentrynumber);
-            if(pObjData->dwentrynumber!=1){
-            printf("pS->alt: %f\t ps->lat: %f\t ps->long: %f\t, ps->head: %f\n",ai->altitude, ai->latitude, ai->longitude, ai->heading);
+
+            // printf("Total Nb of AI: %ld", pObjData->dwoutof);
+            // printf("Id object: %ld ", pObjData->dwentrynumber);
+
+            if (pObjData->dwentrynumber > 1) {
+                update_TCAS(ai, pObjData->dwentrynumber, pObjData->dwoutof);
             }
-            break;
-        }
+
+        } break;
         }
         break;
     }
@@ -143,6 +164,47 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     default:
         break;
     }
+}
+
+void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb) {
+
+    char tmpchn[128]={0};
+
+    char QsTfcPos[999] = {0}; // max lenght = 999
+    if (acft_id < 8) {
+        /* Index starts at 1 in MSFS. Index 1 is our PSX plane, hence we have to start at 2*/
+        tcas_acft[acft_id-2].latitude = ai->latitude * M_PI / 180.0;
+        tcas_acft[acft_id-2].longitude = ai->longitude * M_PI / 180.0;
+        tcas_acft[acft_id-2].altitude = (int)(ai->altitude * 10);
+        tcas_acft[acft_id-2].heading = (int)(ai->heading * 100);
+        tcas_acft[acft_id-2].VS = (int)(ai->VS);
+        tcas_acft[acft_id-2].track_rate = 0;
+        tcas_acft[acft_id-2].GS = ai->GS;
+    }
+
+    if (acft_id == acft_nb) {
+        printf("Done with populating the TCAS array with %d aircraft\n", acft_nb - 1);
+        strcpy(QsTfcPos,"Qs450=");
+        for (int i = 0; i<7; i++) {
+            sprintf(tmpchn, "%f", tcas_acft[i].latitude);
+            strcat(strcat(QsTfcPos, tmpchn), ";");
+            sprintf(tmpchn, "%f", tcas_acft[i].longitude);
+            strcat(strcat(QsTfcPos, tmpchn), ";");
+            sprintf(tmpchn, "%d", tcas_acft[i].altitude);
+            strcat(strcat(QsTfcPos, tmpchn), ";");
+            sprintf(tmpchn, "%d", tcas_acft[i].heading);
+            strcat(strcat(QsTfcPos, tmpchn), ";");
+        }
+
+        /* and now we can send the string to PSX */
+        sendQPSX(QsTfcPos);
+
+
+    }
+
+    // printf("Updating acft %d\n",acft_id);
+    //         printf("Head of AI : %.4f\n",ai->heading);
+    return;
 }
 
 int init_MS_data(void) {
@@ -212,11 +274,11 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "degrees");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES TRUE", "degrees");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "VERTICAL SPEED", "feet per minute");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "GROUND VELOCITY", "knots");
 
-    //hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
-    //                                       SIMCONNECT_PERIOD_SECOND);
-    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 20,
-                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
+                                           SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
 

@@ -24,12 +24,6 @@ struct Struct_MSFS {
     double ground; // ground altitude
 }; 
 
-struct AI_TCAS {
-    double altitude;
-    double latitude;
-    double longitude;
-    double heading;
-};
 
 
 
@@ -112,6 +106,33 @@ enum DATA_REQUEST_ID {
 };
 
 typedef struct {
+
+    int altitude;
+    double latitude;
+    double longitude;
+    int heading;
+
+    int VS;
+    double track_rate;
+    int GS;
+} TCAS;
+
+
+/* 
+ * Structure of AI traffic present in MSFS 
+ */
+
+struct AI_TCAS {
+    double altitude;
+    double latitude;
+    double longitude;
+    double heading;
+    double VS;
+    double GS;
+};
+
+
+typedef struct {
     double pitch;
     double bank;
     double heading;
@@ -150,7 +171,6 @@ int umainBoost(Target *T);
 int umainBoost2(Target *T);
 void err_n_die(const char *fmt, ...);
 int SetMSFSPos(Target *T);
-
 void SetUTCTime(Target *T);
 int sendQPSX(const char *s);
 #endif
