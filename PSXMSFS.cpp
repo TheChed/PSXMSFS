@@ -240,9 +240,7 @@ int init_MS_data(void) {
 }
 
 void *ptDatafromMSFS(void *) {
-    while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
-    }
     return NULL;
 }
 
@@ -250,12 +248,10 @@ void *ptUmainboost(void *thread_id) {
 
     Target *T;
     T = (Target *)(thread_id);
-    while (!quit) {
-        if (umainBoost2(T)) {
-            pthread_mutex_lock(&mutex);
-            SetMSFSPos(T);
-            pthread_mutex_unlock(&mutex);
-        }
+    if (umainBoost2(T)) {
+        pthread_mutex_lock(&mutex);
+        SetMSFSPos(T);
+        pthread_mutex_unlock(&mutex);
     }
 
     return NULL;
@@ -264,12 +260,10 @@ void *ptUmainboost(void *thread_id) {
 void *ptUmain(void *thread_id) {
     Target *T;
     T = (Target *)(thread_id);
-    while (!quit) {
-        if (umain(T)) {
-            pthread_mutex_lock(&mutex);
-            SetMSFSPos(T);
-            pthread_mutex_unlock(&mutex);
-        }
+    if (umain(T)) {
+        pthread_mutex_lock(&mutex);
+        SetMSFSPos(T);
+        pthread_mutex_unlock(&mutex);
     }
     return NULL;
 }
@@ -319,7 +313,7 @@ void init_pos() {
     if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                       &APos) != S_OK) {
         err_n_die("Could not update position");
-    };
+    }
 }
 
 int SetMSFSPos(Target *T) {
@@ -377,7 +371,8 @@ int SetMSFSPos(Target *T) {
     APos.ailerons = T->aileron;
     APos.elevator = T->elevator;
 
-    // finally update everything
+    // printf("Rudder: %f\n",T->rudder);
+    //  finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
 
@@ -409,7 +404,6 @@ void usage() {
 
 int main(int argc, char **argv) {
     pthread_t t1, t2, t3;
-    
 
     int c;
 
@@ -463,7 +457,7 @@ int main(int argc, char **argv) {
             PSXPort = (int)strtol(optarg, NULL, 10);
             break;
         case 'v':
-            DEBUG=1;
+            DEBUG = 1;
             break;
 
         case '?':
@@ -486,7 +480,6 @@ int main(int argc, char **argv) {
         while (optind < argc)
             optind++;
     }
-
 
     if (strcmp(PSXBoostServer, "0.0.0.0") == 0) {
         strcpy(PSXBoostServer, PSXMainServer);
@@ -513,36 +506,36 @@ int main(int argc, char **argv) {
 
     pthread_mutex_init(&mutex, NULL);
 
-    if (pthread_create(&t1, NULL, &ptUmain, &T) != 0) {
-        err_n_die("Error creating thread Umain");
+    while (!quit) {
+        if (pthread_create(&t1, NULL, &ptUmain, &T) != 0) {
+            err_n_die("Error creating thread Umain");
+        }
+
+        if (pthread_create(&t2, NULL, &ptUmainboost, &T) != 0) {
+            err_n_die("Error creating thread Umainboost");
+        }
+
+        if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
+            err_n_die("Error creating thread DatafromMSFS");
+        }
+
+        pthread_join(t1, NULL);
+        pthread_join(t2, NULL);
+        pthread_join(t3, NULL);
     }
-
-    if (pthread_create(&t2, NULL, &ptUmainboost, &T) != 0) {
-        err_n_die("Error creating thread Umainboost");
-    }
-
-    if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
-        err_n_die("Error creating thread DatafromMSFS");
-    }
-
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
-    pthread_join(t3, NULL);
-
     pthread_mutex_destroy(&mutex);
 
     printf("Closing MSFS connection...\n");
     SimConnect_Close(hSimConnect);
 
     // and gracefully close main + boost sockets
-    printf("Closing PSX main connection...\n");
-    if (close_PSX_socket(sPSX) < 0) {
-        printf("Could not close main PSX socket...\n");
-    }
-
     printf("Closing PSX boost connection...\n");
     if (close_PSX_socket(sPSXBOOST) < 0) {
         printf("Could not close boost PSX socket...\n");
+    }
+    printf("Closing PSX main connection...\n");
+    if (close_PSX_socket(sPSX) < 0) {
+        printf("Could not close main PSX socket...\n");
     }
 
     // Finally clean up the Win32 sockets
