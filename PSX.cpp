@@ -33,10 +33,6 @@ void state(Target *T) {
 // Position of Gear
 void H170(char *s, Target *T) {
 
-    if (strlen(s) != 7) {
-        printf("Wrong Qh170 code\n");
-        exit(-1);
-    }
 
     T->GearLever = (int)(s[6] - '0');
 }
@@ -44,19 +40,11 @@ void H170(char *s, Target *T) {
 // Flap lever variable Qh389
 void H389(char *s, Target *T) {
 
-    if (strlen(s) != 7) {
-        printf("Wrong Qh389 code\n");
-        exit(-1);
-    }
 
     T->FlapLever = (int)(s[6] - '0');
 }
 void H397(char *s, Target *T) {
 
-    if (strlen(s) != 7) {
-        printf("Wrong Qh397 code\n");
-        return;
-    }
 
     T->parkbreak = (int)(s[6] - '0');
 }
@@ -126,11 +114,6 @@ void S480(char *s, Target *T) {
 
     int val[10];
 
-    /* get the first token */
-    if (strlen(s + 6) != 20) {
-        printf("Wrong size for Qs480. Should be 20 and got %lld (%s)\n", strlen(s + 6), s);
-        return;
-    }
 
     for (int i = 0; i < 10; i++) {
         val[i] = (s[2 * i + 6] - '0') * 10 + (s[2 * i + 1 + 6] - '0');
@@ -164,9 +147,6 @@ void S124(char *s, Target *T) {
 
 void S443(char *s, Target *T) {
 
-        if(s==NULL){
-            return;
-        }
         updateLights = 1;
         for (int i = 0; i < 14; i++) {
             T->light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
@@ -216,10 +196,6 @@ void S122(char *s, Target *T) {
 
 void I257(char *s, Target *T) {
 
-    if (strlen(s) != 7) {
-        printf("Wrong Qi257 format\n");
-        exit(-1);
-    }
     T->onGround = (int)(s[6] - '0');
 }
 
@@ -350,34 +326,17 @@ int umain(Target *T) {
     char cBuf[MAXLEN]={0};
     int update = 0; // shall we update the aircraft in MSFS ?
 
-    // while (boucle) {
-    //     int nbread = recv(sPSX, &cBuf, 1, 0);
-    //     if (nbread > 0) {
-    //         if (cBuf == '\n' || cBuf == '\r' || cBuf == 10 || cBuf == 0) {
-    //             chaine[pos] = '\0';
-    //             boucle = 0;
-    //         } else {
-    //             if (pos < MAXLEN) {
-    //                 chaine[pos++] = cBuf;
-    //             } else {
-    //                 boucle = 0; // too much data read, exiting
-    //             }
-    //         }
-    //     } else
-    //         boucle = 0;
-    // }
 
     bzero(cBuf, MAXLEN);
     int nbread = recv(sPSX, cBuf, MAXLEN-1, 0);
+    
+    if (nbread == 0){
+        //Socket is closed
+        printf("Error in main PSX socket. Unfortunately we are closing....\n" );
+        exit(-1);
+    }
 
-
-        printf("Got: %s\n",cBuf);
-
-    //  We found the Variable in the stream
-    // if (strstr(chaine, "Qs121=")) {
-    //    Decode(VarDecoded, 121, 's', chaine, T);
-    //}
-    if (strstr(cBuf, "Qs122=")) {
+        if (strstr(cBuf, "Qs122=")) {
         S122(strstr(cBuf,"Qs122="),T);
         update = 1;
     }
@@ -395,47 +354,50 @@ int umain(Target *T) {
     }
 
     //// Update Gear position
-    if (strstr(chaine, "Qh170=")) {
-    //    H170(chaine, T);
-    //    update = 1;
-    //}
-    //// Update Gear position
-    //if (strstr(chaine, "Qh397=")) {
-    //    H397(chaine, T);
-    //    update = 1;
-    //}
+    if (strstr(cBuf, "Qh170")) {
+        H170(strstr(cBuf,"Qh170"),T);
+        update = 1;
+    }
+    //// Update PArking break
+    if (strstr(cBuf, "Qh397")) {
+        H397(strstr(cBuf,"Qh397"),T);
+        update = 1;
+    }
+    
     //// Update Flap position
-    //if (strstr(chaine, "Qh389=")) {
-    //    H389(chaine, T);
-    //    update = 1;
-    //}
+    if (strstr(cBuf, "Qh389")) {
+        H389(strstr(cBuf,"Qh389"),T);
+        update = 1;
+    }
     //// Speedbrake
-    //if (strstr(chaine, "Qh388=")) {
-    //    H388(chaine, T);
-    //    update = 1;
-    //}
-    //if (strstr(chaine, "Qs124=")) {
-    //    S124(chaine, T);
-    //    update = 1;
-    //}
-    //if (strstr(chaine, "Qs483=")) {
-    //    S483(chaine, T);
-    //    update = 1;
-    //}
-    //// Rudder+aileron+elevator
-    //if (strstr(chaine, "Qs480=")) {
-    //    S480(chaine, T);
-    //    update = 1;
-    //}
+    if (strstr(cBuf, "Qh388")) {
+        H388(strstr(cBuf,"Qh388"),T);
+        update = 1;
+    }
 
-    //// Steering wheel
-    //if (strstr(chaine, "Qh426=")) {
-    //    H426(chaine, T);
-    //    update = 1;
-    //}
-    //if (strstr(chaine, "Qi214=")) {
-    //    //    printf("Got Qi214:%s\n", chaine);
-    //    //    update = 1;
-    //}
+    // Update Time
+    if (strstr(cBuf, "Qs124")) {
+        S124(strstr(cBuf,"Qs124"),T);
+        update = 1;
+    }
+    
+    // Indicated Airspeed IAS
+    if (strstr(cBuf, "Qs483")) {
+        S483(strstr(cBuf,"Qs483"),T);
+        update = 1;
+    }
+    
+    // Rudder+aileron+elevator
+    if (strstr(cBuf, "Qs480")) {
+        S480(strstr(cBuf,"Qs480"),T);
+        update = 1;
+    }
+
+    // Steering wheel
+    if (strstr(cBuf, "Qh426")) {
+        H426(strstr(cBuf,"Qh426"),T);
+        update = 1;
+    } 
+
     return update;
 }
