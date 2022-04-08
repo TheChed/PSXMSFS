@@ -237,10 +237,35 @@ void Decode_Boost(Target *T, char *s) {
     T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch / 180.0 * M_PI) + 15.63;
 }
 
+int umainBoost(Target *T) {
+    int boucle = 1;
+    char cBuf;
+    int pos = 0;
+    char chaine[MAXLEN];
+
+    while (boucle) {
+        int nbread = recv(sPSXBOOST, &cBuf, 1, 0);
+        if (nbread > 0) {
+            if (cBuf == '\n' || cBuf == '\r' || cBuf == 10 || cBuf == 0) {
+                chaine[pos] = '\0';
+                boucle = 0;
+                Decode_Boost(T, chaine);
+            } else {
+                if (pos < MAXLEN) {
+                    chaine[pos++] = cBuf;
+                } else {
+                    boucle = 0; // too much data read, exiting
+                }
+            }
+        } else
+            boucle = 0;
+    }
+    return pos;
+}
 int umainBoost2(Target *T) {
     char chaine[128];
 
-    int nbread = recv(sPSXBOOST, chaine, MAXLEN-1, 0);
+    int nbread = recv(sPSXBOOST, chaine,128, 0);
     if (nbread > 0) {
         Decode_Boost(T, chaine);
     }
@@ -252,17 +277,14 @@ int sendQPSX(const char *s) {
     char *dem;
     dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
 
-    if(dem==NULL){
-        return -1;
-    }
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
 
-    int nbsend = send(sPSX, dem, strlen(dem) , 0);
+    int nbsend = send(sPSX, dem, strlen(dem) + 1, 0);
 
     if (nbsend == 0) {
         printf("Error sending variable %s to PSX\n", s);
-    } 
+    }
 
     free(dem);
     return nbsend;
@@ -272,43 +294,6 @@ int umain(Target *T) {
     char cBuf[MAXLEN]={0};
     int update = 0; // shall we update the aircraft in MSFS ?
 
-<<<<<<< HEAD
-    int nbread = recv(sPSX, chaine, 1, 0);
-   
-    printf("Received in main: (%ld) %s\n",strlen(chaine), chaine);
-    //while (boucle) {
-    //    int nbread = recv(sPSX, &cBuf, 1, 0);
-    //    if (nbread > 0) {
-    //        if (cBuf == '\n' || cBuf == '\r' || cBuf == 10 || cBuf == 0) {
-    //            chaine[pos] = '\0';
-    //            boucle = 0;
-    //        } else {
-    //            if (pos < MAXLEN) {
-    //                chaine[pos++] = cBuf;
-    //            } else {
-    //                boucle = 0; // too much data read, exiting
-    //            }
-    //        }
-    //    } else
-    //        boucle = 0;
-    //}
-=======
-    // while (boucle) {
-    //     int nbread = recv(sPSX, &cBuf, 1, 0);
-    //     if (nbread > 0) {
-    //         if (cBuf == '\n' || cBuf == '\r' || cBuf == 10 || cBuf == 0) {
-    //             chaine[pos] = '\0';
-    //             boucle = 0;
-    //         } else {
-    //             if (pos < MAXLEN) {
-    //                 chaine[pos++] = cBuf;
-    //             } else {
-    //                 boucle = 0; // too much data read, exiting
-    //             }
-    //         }
-    //     } else
-    //         boucle = 0;
-    // }
 
     bzero(cBuf, MAXLEN);
     int nbread = recv(sPSX, cBuf, MAXLEN-1, 0);
@@ -318,13 +303,9 @@ int umain(Target *T) {
         printf("Error in main PSX socket. Unfortunately we are closing....\n" );
         exit(-1);
     }
->>>>>>> socket
 
 
     //  We found the Variable in the stream
-    // if (strstr(chaine, "Qs121=")) {
-    //    Decode(VarDecoded, 121, 's', chaine, T);
-    //}
     if (strstr(cBuf, "Qs122=")) {
         S122(strstr(cBuf,"Qs122="),T);
         update = 1;
@@ -358,29 +339,9 @@ int umain(Target *T) {
         H389(strstr(cBuf,"Qh389"),T);
         update = 1;
     }
-<<<<<<< HEAD
-    // Speedbrake
-    if (strstr(chaine, "Qh388=")) {
-        H388(chaine, T);
-        update = 1;
-    }
-    if (strstr(chaine, "Qs124=")) {
-        S124(chaine, T);
-        update = 1;
-    }
-    if (strstr(chaine, "Qs483=")) {
-        S483(chaine, T);
-        update = 1;
-    }
-    //Rudder+aileron+elevator
-    if (strstr(chaine, "Qs480=")) {
-    printf("S480: %s\n",chaine);
-        S480(chaine, T);
-=======
     //// Speedbrake
     if (strstr(cBuf, "Qh388")) {
         H388(strstr(cBuf,"Qh388"),T);
->>>>>>> socket
         update = 1;
     }
 
