@@ -115,9 +115,6 @@ void S124(char *s, Target *T) {
 
 void S443(char *s, Target *T) {
 
-        if(s==NULL){
-            return;
-        }
         updateLights = 1;
         for (int i = 0; i < 14; i++) {
             T->light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
@@ -297,7 +294,7 @@ int umain(Target *T) {
 
     bzero(cBuf, MAXLEN);
     int nbread = recv(sPSX, cBuf, MAXLEN-1, 0);
-
+    
     if (nbread == 0){
         //Socket is closed
         printf("Error in main PSX socket. Unfortunately we are closing....\n" );
@@ -306,7 +303,7 @@ int umain(Target *T) {
 
 
     //  We found the Variable in the stream
-    if (strstr(cBuf, "Qs122=")) {
+        if (strstr(cBuf, "Qs122=")) {
         S122(strstr(cBuf,"Qs122="),T);
         update = 1;
     }
@@ -368,7 +365,6 @@ int umain(Target *T) {
         H426(strstr(cBuf,"Qh426"),T);
         update = 1;
     }
-
 
     return update;
 }
