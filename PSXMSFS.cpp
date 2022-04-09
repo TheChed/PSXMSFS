@@ -33,7 +33,7 @@ TCAS tcas_acft[7];
 double min_dist = 999999;
 int nb_acft = 0;
 
-void update_TCAS(AI_TCAS *ai, int acft_id, int nb_acft, double d);
+void update_TCAS(AI_TCAS *ai, double d);
 
 double dist(double lat1, double lat2, double long1, double long2) {
     return 2 * EARTH_RAD *
@@ -99,19 +99,21 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_ONE_SEC: {
 
+        } break;
+
+        case EVENT_6_HZ: {
+        } break;
+
+        case EVENT_4_SEC: {
             /*
              * TCAS injection
              */
-
             if (TCAS_INJECT) {
                 IA_update();
             }
 
         } break;
 
-        case EVENT_6_HZ: {
-
-        } break;
         case EVENT_FREEZE_ALT: {
 
         } break;
@@ -155,12 +157,50 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         case DATA_REQUEST_TCAS: {
             AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
             double d;
+            char tmpchn[128] = {0};
+            char QsTfcPos[999] = {0}; // max lenght = 999
 
             if (pObjData->dwentrynumber > 1) {
                 d = dist(ai->latitude, T->latitude, ai->longitude, T->longitude) / NM;
-                if (((d < 40) || nb_acft < 7) && abs(ai->altitude - T->altitude) < 2700 &&
-                    (!(T->onGround == 2) || (T->onGround == 2 && abs(ai->altitude - T->altitude) > 50))) {
-                    update_TCAS(ai, pObjData->dwentrynumber, pObjData->dwoutof, d);
+                if ((d < 40) &&                               // less than 40 NM away
+                    abs(ai->altitude - T->altitude) < 2700 && // below or above 2700 feet
+                    (!(T->onGround == 2) ||
+                     ((T->onGround == 2) &&
+                      abs(ai->altitude - T->altitude) > 500))) { // onground dont show acft below 500 above us
+
+                    update_TCAS(ai, d);
+                }
+
+                /*
+                 * We have scanned all the planes in the vicinity{
+                 */
+                if (pObjData->dwentrynumber == pObjData->dwoutof) {
+                    strcpy(QsTfcPos, "Qs450=");
+                    for (int i = 0; i < 7; i++) {
+                        sprintf(tmpchn, "%lf", tcas_acft[i].latitude);
+                        strcat(strcat(QsTfcPos, tmpchn), ";");
+                        sprintf(tmpchn, "%lf", tcas_acft[i].longitude);
+                        strcat(strcat(QsTfcPos, tmpchn), ";");
+                        sprintf(tmpchn, "%d", tcas_acft[i].altitude);
+                        strcat(strcat(QsTfcPos, tmpchn), ";");
+                        sprintf(tmpchn, "%d", tcas_acft[i].heading);
+                        strcat(strcat(QsTfcPos, tmpchn), ";");
+                    }
+                    // printf("dmin: %.3f\n", min_dist);
+                    // printf("\t0\t\t 1\t\t 2\t\t 3\t\t 4\t\t 5\t\t 6\t\n");
+                    // printf("dist:\t %f\t %f\t %f\t %f\t %f\t %f\t %f\t\n", tcas_acft[0].distance,
+                    // tcas_acft[1].distance,
+                    //        tcas_acft[2].distance, tcas_acft[3].distance, tcas_acft[4].distance,
+                    //        tcas_acft[5].distance, tcas_acft[6].distance);
+                    // printf("Alt:\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t\n", tcas_acft[0].altitude,
+                    //        tcas_acft[1].altitude, tcas_acft[2].altitude, tcas_acft[3].altitude,
+                    //        tcas_acft[4].altitude, tcas_acft[5].altitude, tcas_acft[6].altitude);
+
+                    //    printf("Sending: %s\n", QsTfcPos);
+
+                    /* and now we can send the string to PSX */
+                    sendQPSX("Qi201=1");
+                    sendQPSX(QsTfcPos);
                 }
             }
 
@@ -179,13 +219,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     }
 }
 
-void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb, double d) {
+void update_TCAS(AI_TCAS *ai, double d) {
 
-    char tmpchn[128] = {0};
-    char QsTfcPos[999] = {0}; // max lenght = 999
-
-    if (d <= min_dist) { // we found a closer aircraft
-        nb_acft++;
+    if (d <= min_dist || nb_acft < 7) { // we found a closer aircraft or less than 7 aircrafts
         for (int i = 6; i > 0; i--) {
             tcas_acft[i].latitude = tcas_acft[i - 1].latitude;
             tcas_acft[i].longitude = tcas_acft[i - 1].longitude;
@@ -199,31 +235,10 @@ void update_TCAS(AI_TCAS *ai, int acft_id, int acft_nb, double d) {
         tcas_acft[0].altitude = (int)(ai->altitude * 10);
         tcas_acft[0].heading = (int)(ai->heading * 100);
         tcas_acft[0].distance = d;
-        min_dist = d;
+        nb_acft++;
     }
-
-    if ((acft_id == acft_nb)) {
-        strcpy(QsTfcPos, "Qs450=");
-        for (int i = 0; i < 7; i++) {
-            sprintf(tmpchn, "%lf", tcas_acft[i].latitude);
-            strcat(strcat(QsTfcPos, tmpchn), ";");
-            sprintf(tmpchn, "%lf", tcas_acft[i].longitude);
-            strcat(strcat(QsTfcPos, tmpchn), ";");
-            sprintf(tmpchn, "%d", tcas_acft[i].altitude);
-            strcat(strcat(QsTfcPos, tmpchn), ";");
-            sprintf(tmpchn, "%d", tcas_acft[i].heading);
-            strcat(strcat(QsTfcPos, tmpchn), ";");
-        }
-        //  printf("\t0\t\t 1\t\t 2\t\t 3\t\t 4\t\t 5\t\t 6\t\n");
-        //  printf("dist:\t %f\t %f\t %f\t %f\t %f\t %f\t %f\t\n", tcas_acft[0].distance,
-        //  tcas_acft[1].distance,tcas_acft[2].distance,tcas_acft[3].distance,tcas_acft[4].distance,tcas_acft[5].distance,tcas_acft[6].distance);
-        // printf("Alt:\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t\n", tcas_acft[0].altitude,
-        // tcas_acft[1].altitude,tcas_acft[2].altitude,tcas_acft[3].altitude,tcas_acft[4].altitude,tcas_acft[5].altitude,tcas_acft[6].altitude);
-
-        /* and now we can send the string to PSX */
-        // printf("Sending: %s\n", QsTfcPos);
-        sendQPSX("Qi201=1");
-        sendQPSX(QsTfcPos);
+    if (d < min_dist) {
+        min_dist = d;
     }
 
     return;
@@ -305,6 +320,7 @@ int init_MS_data(void) {
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
+    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_FRAME, "frame");
     hr = SimConnect_SetSystemEventState(hSimConnect, EVENT_FRAME, SIMCONNECT_STATE_ON);
     hr = SimConnect_AIReleaseControl(hSimConnect, SIMCONNECT_OBJECT_ID_USER, DATA_REQUEST);
@@ -657,15 +673,15 @@ int main(int argc, char **argv) {
     SimConnect_Close(hSimConnect);
 
     // and gracefully close main + boost sockets
+    printf("Closing PSX boost connection...\n");
+    if (!close_PSX_socket(sPSXBOOST)) {
+        printf("Could not close boost PSX socket...\n");
+    }
     printf("Closing PSX main connection...\n");
-    if (close_PSX_socket(sPSX) < 0) {
+    if (!close_PSX_socket(sPSX))  {
         printf("Could not close main PSX socket...\n");
     }
 
-    printf("Closing PSX boost connection...\n");
-    if (close_PSX_socket(sPSXBOOST) < 0) {
-        printf("Could not close boost PSX socket...\n");
-    }
 
     // Finally clean up the Win32 sockets
     WSACleanup();

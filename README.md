@@ -9,6 +9,22 @@ The SDK used is very similar with the one of P3D and this might work with P3D, b
 One main advantage of this tool, is that is does not require any configuration
 and should work out of the box.
 
+CHANGES:
+
+09/04/2022:
+Functional TCAS
+
+03/04/2022:
+Added Nose gear steering sync
+Added parsing command line
+Added server+ports selections
+
+02/04/2022:
+Added time synchronization with PSX
+Added rudder+elevator+aileron sync. Seems that there is a bug in MSFS: when ailerons move, spoilers move too.
+Added PArking brakes sync
+
+
 INSTALLATION:
 you will need 3 dlls for windows which should be in the same directory as the executable
   * Simconnect.dll (which should be somewhere in your MSFS directoryi once you enable the SDK environment)
