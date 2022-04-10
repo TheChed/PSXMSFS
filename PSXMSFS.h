@@ -97,6 +97,10 @@ enum EVENT_ID {
     EVENT_ZULU_YEAR,
     EVENT_PARKING,
     EVENT_STEERING,
+    EVENT_XPDR,
+    EVENT_XPDR_IDENT,
+    EVENT_COM,
+    EVENT_COM_STDBY,
 };
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
@@ -108,7 +112,6 @@ enum DATA_REQUEST_ID {
     DATA_REQUEST,
     DATA_REQUEST_TCAS,
 };
-
 typedef struct {
 
     int altitude;
@@ -155,6 +158,13 @@ typedef struct {
     double elevator, aileron, rudder;
     double parkbreak;
     double steering;
+
+    //COMMS & XPDR
+    int XPDR;
+    int IDENT;
+    int COM1;
+    int COM2;
+
 } Target;
 
 // Function definitions

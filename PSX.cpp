@@ -31,22 +31,11 @@ void state(Target *T) {
 }
 
 // Position of Gear
-void H170(char *s, Target *T) {
-
-    T->GearLever = (int)(s[6] - '0');
-}
+void H170(char *s, Target *T) { T->GearLever = (int)(s[6] - '0'); }
 
 // Flap lever variable Qh389
-void H389(char *s, Target *T) {
-
-
-    T->FlapLever = (int)(s[6] - '0');
-}
-void H397(char *s, Target *T) {
-
-
-    T->parkbreak = (int)(s[6] - '0');
-}
+void H389(char *s, Target *T) { T->FlapLever = (int)(s[6] - '0'); }
+void H397(char *s, Target *T) { T->parkbreak = (int)(s[6] - '0'); }
 // Steering wheel
 void H426(char *s, Target *T) {
     double pos;
@@ -109,10 +98,27 @@ void S483(char *s, Target *T) {
     T->IAS = strtol(token, &ptr, 10) / 10.0;
 }
 
+void S458(char *s, Target *T) {
+    char COM1[5]={0}, COM2[5]={0};
+
+    /*
+     * discard the last digit from the Qs string as it is not taken into MSFS. and start at second digit, as first one
+     * is always 1
+     */
+    strncpy(COM1,s+7,2); // get the xx in 1xx.yyy
+    strncat(COM1,s+10,2); // get the yy in 1xx.yyz
+    
+    T->COM1 = strtol(COM1,NULL, 16); // start at index 7 to get only 1xx.xxx part
+
+    strncpy(COM2,s+14,2); // get the xx in 1xx.yyy
+    strncat(COM2,s+17,2); // get the yy in 1xx.yyz
+
+
+    T->COM2 = strtol(COM2, NULL, 16); // start at index 7 to get only 1xx.xxx part
+}
 void S480(char *s, Target *T) {
 
     int val[10];
-
 
     for (int i = 0; i < 10; i++) {
         val[i] = (s[2 * i + 6] - '0') * 10 + (s[2 * i + 1 + 6] - '0');
@@ -146,18 +152,16 @@ void S124(char *s, Target *T) {
 
 void S443(char *s, Target *T) {
 
-        updateLights = 1;
-        for (int i = 0; i < 14; i++) {
-            T->light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
-        }
+    updateLights = 1;
+    for (int i = 0; i < 14; i++) {
+        T->light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
+}
 
 void S122(char *s, Target *T) {
 
     const char delim[2] = ";";
     char *token, *ptr;
-
-
 
     /* get the first token */
     token = strtok(s + 6, delim);
@@ -190,10 +194,12 @@ void S122(char *s, Target *T) {
     T->longitude = strtod(token, &ptr) * 180 / M_PI;
 }
 
-void I257(char *s, Target *T) {
+void I204(char *s, Target *T) {
 
-    T->onGround = (int)(s[6] - '0');
+    T->XPDR = strtol(s + 8, NULL, 16);
+    T->IDENT = (int)(s[7] - '0');
 }
+void I257(char *s, Target *T) { T->onGround = (int)(s[6] - '0'); }
 
 // Checks validity of input
 int check_param(const char *s) {
@@ -290,7 +296,7 @@ int umainBoost(Target *T) {
 int umainBoost2(Target *T) {
     char chaine[128];
 
-    int nbread = recv(sPSXBOOST, chaine,127, 0);
+    int nbread = recv(sPSXBOOST, chaine, 127, 0);
     if (nbread > 0) {
         Decode_Boost(T, chaine);
     } else {
@@ -307,8 +313,8 @@ int sendQPSX(const char *s) {
 
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
-    
-    int nbsend = send(sPSX, dem, strlen(s)+1 , 0);
+
+    int nbsend = send(sPSX, dem, strlen(s) + 1, 0);
 
     if (nbsend == 0) {
         printf("Error sending variable %s to PSX\n", s);
@@ -319,81 +325,92 @@ int sendQPSX(const char *s) {
 }
 
 int umain(Target *T) {
-    char cBuf[MAXLEN]={0};
+    char cBuf[MAXLEN] = {0};
     int update = 0; // shall we update the aircraft in MSFS ?
 
-
     bzero(cBuf, MAXLEN);
-    int nbread = recv(sPSX, cBuf, MAXLEN-1, 0);
-    
-    if (nbread == 0){
-        //Socket is closed
-        printf("Error in main PSX socket. Unfortunately we are closing....\n" );
+    int nbread = recv(sPSX, cBuf, MAXLEN - 1, 0);
+
+    if (nbread == 0) {
+        // Socket is closed
+        printf("Error in main PSX socket. Unfortunately we are closing....\n");
         exit(-1);
     }
 
-        if (strstr(cBuf, "Qs122=")) {
-        S122(strstr(cBuf,"Qs122="),T);
+    if (strstr(cBuf, "Qs122=")) {
+        S122(strstr(cBuf, "Qs122="), T);
         update = 1;
     }
 
     // ExtLts : External lights, Mode=XECON
     if (strstr(cBuf, "Qs443")) {
-        S443(strstr(cBuf,"Qs443="),T);
+        S443(strstr(cBuf, "Qs443="), T);
         update = 1;
     }
 
     //// PSX on groud
     if (strstr(cBuf, "Qi257")) {
-        I257(strstr(cBuf,"Qi257"),T);
+        I257(strstr(cBuf, "Qi257"), T);
         update = 1;
     }
 
     //// Update Gear position
     if (strstr(cBuf, "Qh170")) {
-        H170(strstr(cBuf,"Qh170"),T);
+        H170(strstr(cBuf, "Qh170"), T);
         update = 1;
     }
     //// Update PArking break
     if (strstr(cBuf, "Qh397")) {
-        H397(strstr(cBuf,"Qh397"),T);
+        H397(strstr(cBuf, "Qh397"), T);
         update = 1;
     }
-    
+
     //// Update Flap position
     if (strstr(cBuf, "Qh389")) {
-        H389(strstr(cBuf,"Qh389"),T);
+        H389(strstr(cBuf, "Qh389"), T);
         update = 1;
     }
     //// Speedbrake
     if (strstr(cBuf, "Qh388")) {
-        H388(strstr(cBuf,"Qh388"),T);
+        H388(strstr(cBuf, "Qh388"), T);
         update = 1;
     }
 
     // Update Time
     if (strstr(cBuf, "Qs124")) {
-        S124(strstr(cBuf,"Qs124"),T);
+        S124(strstr(cBuf, "Qs124"), T);
         update = 1;
     }
-    
+
     // Indicated Airspeed IAS
     if (strstr(cBuf, "Qs483")) {
-        S483(strstr(cBuf,"Qs483"),T);
+        S483(strstr(cBuf, "Qs483"), T);
         update = 1;
     }
-    
+
     // Rudder+aileron+elevator
     if (strstr(cBuf, "Qs480")) {
-        S480(strstr(cBuf,"Qs480"),T);
+        S480(strstr(cBuf, "Qs480"), T);
+        update = 1;
+    }
+
+    // COMMS
+    if (strstr(cBuf, "Qs458")) {
+        S458(strstr(cBuf, "Qs458"), T);
         update = 1;
     }
 
     // Steering wheel
     if (strstr(cBuf, "Qh426")) {
-        H426(strstr(cBuf,"Qh426"),T);
+        H426(strstr(cBuf, "Qh426"), T);
         update = 1;
-    } 
+    }
+
+    // Steering wheel
+    if (strstr(cBuf, "Qi204")) {
+        I204(strstr(cBuf, "Qi204"), T);
+        update = 1;
+    }
 
     return update;
 }
