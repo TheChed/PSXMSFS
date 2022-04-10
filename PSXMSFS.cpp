@@ -74,8 +74,9 @@ void IA_update() {
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
+    static int nb = 0;
     (void)(cbData);
-    Target *T = (Target *)(pContext);
+   // Target *T = (Target *)(pContext);
 
     switch (pData->dwID) {
 
@@ -105,10 +106,8 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_4_SEC: {
-            /*
-             * TCAS injection
-             */
-            if (TCAS_INJECT) {
+            nb++;
+            if (!(nb % 10)) {
                 IA_update();
             }
 
@@ -120,7 +119,12 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_PRINT: {
             printf("Inside PRINT\n");
-            IA_update();
+            /*
+             * TCAS injection
+             */
+            if (TCAS_INJECT) {
+                IA_update();
+            }
         } break;
 
         case EVENT_QUIT: {
@@ -161,12 +165,12 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             char QsTfcPos[999] = {0}; // max lenght = 999
 
             if (pObjData->dwentrynumber > 1) {
-                d = dist(ai->latitude, T->latitude, ai->longitude, T->longitude) / NM;
+                d = dist(ai->latitude, T.latitude, ai->longitude, T.longitude) / NM;
                 if ((d < 40) &&                               // less than 40 NM away
-                    abs(ai->altitude - T->altitude) < 2700 && // below or above 2700 feet
-                    (!(T->onGround == 2) ||
-                     ((T->onGround == 2) &&
-                      abs(ai->altitude - T->altitude) > 500))) { // onground dont show acft below 500 above us
+                    abs(ai->altitude - T.altitude) < 2700 && // below or above 2700 feet
+                    (!(T.onGround == 2) ||
+                     ((T.onGround == 2) &&
+                      abs(ai->altitude - T.altitude) > 500))) { // onground dont show acft below 500 above us
 
                     update_TCAS(ai, d);
                 }
@@ -186,17 +190,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
                         sprintf(tmpchn, "%d", tcas_acft[i].heading);
                         strcat(strcat(QsTfcPos, tmpchn), ";");
                     }
-                    // printf("dmin: %.3f\n", min_dist);
-                    // printf("\t0\t\t 1\t\t 2\t\t 3\t\t 4\t\t 5\t\t 6\t\n");
-                    // printf("dist:\t %f\t %f\t %f\t %f\t %f\t %f\t %f\t\n", tcas_acft[0].distance,
-                    // tcas_acft[1].distance,
-                    //        tcas_acft[2].distance, tcas_acft[3].distance, tcas_acft[4].distance,
-                    //        tcas_acft[5].distance, tcas_acft[6].distance);
-                    // printf("Alt:\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t %d\t\t\n", tcas_acft[0].altitude,
-                    //        tcas_acft[1].altitude, tcas_acft[2].altitude, tcas_acft[3].altitude,
-                    //        tcas_acft[4].altitude, tcas_acft[5].altitude, tcas_acft[6].altitude);
-
-                    //    printf("Sending: %s\n", QsTfcPos);
 
                     /* and now we can send the string to PSX */
                     sendQPSX("Qi201=1");
@@ -373,39 +366,32 @@ int init_MS_data(void) {
 }
 
 void *ptDatafromMSFS(void *thread_id) {
-    Target *T;
-    T = (Target *)(thread_id);
-    while (!quit) {
-        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, T);
+    while(!quit){
+    hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
     }
     return NULL;
 }
 
 void *ptUmainboost(void *thread_id) {
 
-    Target *T;
-    T = (Target *)(thread_id);
-    while (!quit) {
-        if (umainBoost2(T)) {
-            pthread_mutex_lock(&mutex);
-            SetMSFSPos(T);
-            pthread_mutex_unlock(&mutex);
+        while (!quit) {
+            if (umainBoost2(&T)) {
+
+                SetMSFSPos(&T);
+            }
         }
-    }
 
     return NULL;
 }
 
 void *ptUmain(void *thread_id) {
-    Target *T;
-    T = (Target *)(thread_id);
+
     while (!quit) {
-        if (umain(T)) {
-            pthread_mutex_lock(&mutex);
-            SetMSFSPos(T);
-            pthread_mutex_unlock(&mutex);
+        if (umain(&T)) {
+            SetMSFSPos(&T);
         }
     }
+
     return NULL;
 }
 
@@ -459,6 +445,7 @@ void init_pos() {
 
 int SetMSFSPos(Target *T) {
 
+    pthread_mutex_lock(&mutex);
     AcftPosition APos;
     HRESULT hr;
 
@@ -512,6 +499,7 @@ int SetMSFSPos(Target *T) {
     APos.ailerons = T->aileron;
     APos.elevator = T->elevator;
 
+
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
@@ -520,6 +508,7 @@ int SetMSFSPos(Target *T) {
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T->steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    pthread_mutex_unlock(&mutex);
     return hr;
 }
 
@@ -666,7 +655,6 @@ int main(int argc, char **argv) {
     pthread_join(t1, NULL);
     pthread_join(t2, NULL);
     pthread_join(t3, NULL);
-
     pthread_mutex_destroy(&mutex);
 
     printf("Closing MSFS connection...\n");
@@ -678,10 +666,9 @@ int main(int argc, char **argv) {
         printf("Could not close boost PSX socket...\n");
     }
     printf("Closing PSX main connection...\n");
-    if (!close_PSX_socket(sPSX))  {
+    if (!close_PSX_socket(sPSX)) {
         printf("Could not close main PSX socket...\n");
     }
-
 
     // Finally clean up the Win32 sockets
     WSACleanup();

@@ -33,7 +33,6 @@ void state(Target *T) {
 // Position of Gear
 void H170(char *s, Target *T) {
 
-
     T->GearLever = (int)(s[6] - '0');
 }
 
@@ -158,9 +157,6 @@ void S122(char *s, Target *T) {
     const char delim[2] = ";";
     char *token, *ptr;
 
-    if(s==NULL){
-        return;
-    }
 
 
     /* get the first token */
@@ -294,10 +290,13 @@ int umainBoost(Target *T) {
 int umainBoost2(Target *T) {
     char chaine[128];
 
-    int nbread = recv(sPSXBOOST, chaine,128, 0);
+    int nbread = recv(sPSXBOOST, chaine,127, 0);
     if (nbread > 0) {
         Decode_Boost(T, chaine);
+    } else {
+        printf("Boost connection lost.... We have to exit now. Sorry Folks\n");
     }
+
     return nbread;
 }
 
