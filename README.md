@@ -30,8 +30,8 @@ Added PArking brakes sync
 
 INSTALLATION:
 you will need 3 dlls for windows which should be in the same directory as the executable
-  * Simconnect.dll (which should be somewhere in your MSFS directoryi once you enable the SDK environment)
-  * pthreadGC2.dll and pthreadVC2.dll that enable POSIX threads under Windows. Those can be found in any $
+  * Simconnect.dll (which should be somewhere in your MSFS directory once you enable the SDK environment)
+  * pthreadGC2.dll and pthreadVC2.dll that enable POSIX threads under Windows. Those can be found in any 
   good grocery, I use : https://sourceware.org/pub/pthreads-win32/dll-latest/dll/x64/
 
   For convenience sake, I have included those files in the bin directory.
@@ -45,7 +45,7 @@ you will need 3 dlls for windows which should be in the same directory as the ex
 
   
   Building from source:
-  All sources are on the githug link: https://github.com/TheChed/PSXMSFS
+  All sources are on the github link: https://github.com/TheChed/PSXMSFS
 
   The executable has been compiled under Linux under a Mingw environnent so to be able to create Windows compatible executables:
   https://en.wikipedia.org/wiki/MinGW
