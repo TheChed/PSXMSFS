@@ -105,16 +105,10 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_4_SEC: {
-<<<<<<< HEAD
-            nb++;
-            if (!(nb % 10)) {
-=======
             /*
              * TCAS injection
              */
             if (TCAS_INJECT) {
-            printf("TCAS UPDATE\n");
->>>>>>> 660a22a (Minor optimization in callback)
                 IA_update();
             }
 
