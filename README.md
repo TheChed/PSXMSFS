@@ -11,6 +11,9 @@ and should work out of the box.
 
 CHANGES:
 
+10/04/2022:
+Added COMM + XPDR synch
+
 09/04/2022:
 Functional TCAS
 
