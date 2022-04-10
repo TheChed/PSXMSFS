@@ -74,9 +74,8 @@ void IA_update() {
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
-    static int nb = 0;
     (void)(cbData);
-   // Target *T = (Target *)(pContext);
+    (void)(&pContext);
 
     switch (pData->dwID) {
 
@@ -106,8 +105,16 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_4_SEC: {
+<<<<<<< HEAD
             nb++;
             if (!(nb % 10)) {
+=======
+            /*
+             * TCAS injection
+             */
+            if (TCAS_INJECT) {
+            printf("TCAS UPDATE\n");
+>>>>>>> 660a22a (Minor optimization in callback)
                 IA_update();
             }
 
@@ -118,7 +125,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
-            printf("Inside PRINT\n");
             /*
              * TCAS injection
              */
@@ -365,14 +371,16 @@ int init_MS_data(void) {
     return hr;
 }
 
-void *ptDatafromMSFS(void *thread_id) {
+void *ptDatafromMSFS(void *thread_param) {
+    (void )(&thread_param);
     while(!quit){
     hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
     }
     return NULL;
 }
 
-void *ptUmainboost(void *thread_id) {
+void *ptUmainboost(void *thread_param) {
+    (void )(&thread_param);
 
         while (!quit) {
             if (umainBoost2(&T)) {
@@ -384,7 +392,8 @@ void *ptUmainboost(void *thread_id) {
     return NULL;
 }
 
-void *ptUmain(void *thread_id) {
+void *ptUmain(void *thread_param) {
+    (void )(&thread_param);
 
     while (!quit) {
         if (umain(&T)) {
