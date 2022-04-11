@@ -41,35 +41,33 @@ double dist(double lat1, double lat2, double long1, double long2) {
                  cos(lat1 * M_PI / 180) * cos(lat2 * M_PI / 180) *
                      pow(sin((long2 * M_PI / 180 - long1 * M_PI / 180) / 2), 2)));
 }
-void SetUTCTime(Target *T) {
+void SetUTCTime(void) {
 
     if (UTCupdate && validtime) {
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, T->hour,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, T.hour,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, T->minute,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, T.minute,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, T->day,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, T.day,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, T->year,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, T.year,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
         UTCupdate = 1; // continous update of UTC time
     }
 }
 
-void SetCOMM(Target *T){
-    
+void SetCOMM(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, T->XPDR,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, T.XPDR,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, T->IDENT,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, T.IDENT,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, T->COM1,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, T.COM1,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, T->COM2,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, T.COM2,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
-
 
 void IA_update() {
 
@@ -180,7 +178,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
             if (pObjData->dwentrynumber > 1) {
                 d = dist(ai->latitude, T.latitude, ai->longitude, T.longitude) / NM;
-                if ((d < 40) &&                               // less than 40 NM away
+                if ((d < 40) &&                              // less than 40 NM away
                     abs(ai->altitude - T.altitude) < 2700 && // below or above 2700 feet
                     (!(T.onGround == 2) ||
                      ((T.onGround == 2) &&
@@ -360,7 +358,7 @@ int init_MS_data(void) {
      * EVENT used for steering wheel
      */
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_STEERING, "STEERING_SET");
-    
+
     /*
      * EVENT used for XPDR
      */
@@ -391,32 +389,32 @@ int init_MS_data(void) {
 }
 
 void *ptDatafromMSFS(void *thread_param) {
-    (void )(&thread_param);
-    while(!quit){
-    hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
+    (void)(&thread_param);
+    while (!quit) {
+        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
     }
     return NULL;
 }
 
 void *ptUmainboost(void *thread_param) {
-    (void )(&thread_param);
+    (void)(&thread_param);
 
-        while (!quit) {
-            if (umainBoost2(&T)) {
+    while (1) {
+        if (umainBoost2(&T)) {
 
-                SetMSFSPos(&T);
-            }
+            SetMSFSPos();
         }
+    }
 
     return NULL;
 }
 
 void *ptUmain(void *thread_param) {
-    (void )(&thread_param);
+    (void)(&thread_param);
 
-    while (!quit) {
+    while (1) {
         if (umain(&T)) {
-            SetMSFSPos(&T);
+            SetMSFSPos();
         }
     }
 
@@ -471,73 +469,72 @@ void init_pos() {
     };
 }
 
-int SetMSFSPos(Target *T) {
+int SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
     AcftPosition APos;
     HRESULT hr;
 
-    if (T->onGround == 2) {
+    if (T.onGround == 2) {
         APos.altitude = ground_elev + 15.6;
         APos.GearDown = 1.0;
     } else {
-        APos.altitude = T->altitude;
-        APos.GearDown = ((T->GearLever == 3) ? 1.0 : 0.0);
+        APos.altitude = T.altitude;
+        APos.GearDown = ((T.GearLever == 3) ? 1.0 : 0.0);
     }
-    APos.latitude = T->latitude;
-    APos.longitude = T->longitude;
-    APos.heading = T->heading;
-    APos.pitch = -T->pitch;
-    APos.bank = T->bank;
-    APos.tas = T->TAS;
-    APos.ias = T->IAS;
-    APos.vertical_speed = T->VerticalSpeed;
-    APos.FlapsPosition = T->FlapLever;
-    APos.Speedbrake = T->SpdBrkLever / 800.0;
+    APos.latitude = T.latitude;
+    APos.longitude = T.longitude;
+    APos.heading = T.heading;
+    APos.pitch = -T.pitch;
+    APos.bank = T.bank;
+    APos.tas = T.TAS;
+    APos.ias = T.IAS;
+    APos.vertical_speed = T.VerticalSpeed;
+    APos.FlapsPosition = T.FlapLever;
+    APos.Speedbrake = T.SpdBrkLever / 800.0;
 
     // Update lights
-    APos.LandLeftOutboard = T->light[0];
-    APos.LandLeftInboard = T->light[2];
-    APos.LandRightInboard = T->light[3];
-    APos.LandRightOutboard = T->light[1];
-    APos.LeftRwyTurnoff = T->light[4];
-    APos.RightRwyTurnoff = T->light[5];
-    APos.LightTaxi = T->light[6];
-    APos.Strobe = T->light[11];
-    APos.LightNav = T->light[9] || T->light[10];
-    APos.Beacon = T->light[7];
-    APos.BeaconLwr = T->light[8];
-    APos.LightWing = T->light[12];
-    APos.LightLogo = T->light[13];
+    APos.LandLeftOutboard = T.light[0];
+    APos.LandLeftInboard = T.light[2];
+    APos.LandRightInboard = T.light[3];
+    APos.LandRightOutboard = T.light[1];
+    APos.LeftRwyTurnoff = T.light[4];
+    APos.RightRwyTurnoff = T.light[5];
+    APos.LightTaxi = T.light[6];
+    APos.Strobe = T.light[11];
+    APos.LightNav = T.light[9] || T.light[10];
+    APos.Beacon = T.light[7];
+    APos.BeaconLwr = T.light[8];
+    APos.LightWing = T.light[12];
+    APos.LightLogo = T.light[13];
 
     // Taxi lights disabled airborne
-    if (T->onGround != 2) {
+    if (T.onGround != 2) {
         APos.LeftRwyTurnoff = 0.0;
         APos.RightRwyTurnoff = 0.0;
     }
 
     // Set the UTC time
-    SetUTCTime(T);
+    SetUTCTime();
 
-    //Set the XPDR and COMMS
-    SetCOMM(T);
+    // Set the XPDR and COMMS
+    SetCOMM();
 
     /*
      * Set the moving surfaces: aileron, rudder, elevator
      */
 
-    APos.rudder = T->rudder;
-    APos.ailerons = T->aileron;
-    APos.elevator = T->elevator;
-
+    APos.rudder = T.rudder;
+    APos.ailerons = T.aileron;
+    APos.elevator = T.elevator;
 
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T->parkbreak,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T->steering,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     pthread_mutex_unlock(&mutex);
     return hr;

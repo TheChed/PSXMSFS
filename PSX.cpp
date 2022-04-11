@@ -99,20 +99,19 @@ void S483(char *s, Target *T) {
 }
 
 void S458(char *s, Target *T) {
-    char COM1[5]={0}, COM2[5]={0};
+    char COM1[5] = {0}, COM2[5] = {0};
 
     /*
      * discard the last digit from the Qs string as it is not taken into MSFS. and start at second digit, as first one
      * is always 1
      */
-    strncpy(COM1,s+7,2); // get the xx in 1xx.yyy
-    strncat(COM1,s+10,2); // get the yy in 1xx.yyz
-    
-    T->COM1 = strtol(COM1,NULL, 16); // start at index 7 to get only 1xx.xxx part
+    strncpy(COM1, s + 7, 2);  // get the xx in 1xx.yyy
+    strncat(COM1, s + 10, 2); // get the yy in 1xx.yyz
 
-    strncpy(COM2,s+14,2); // get the xx in 1xx.yyy
-    strncat(COM2,s+17,2); // get the yy in 1xx.yyz
+    T->COM1 = strtol(COM1, NULL, 16); // start at index 7 to get only 1xx.xxx part
 
+    strncpy(COM2, s + 14, 2); // get the xx in 1xx.yyy
+    strncat(COM2, s + 17, 2); // get the yy in 1xx.yyz
 
     T->COM2 = strtol(COM2, NULL, 16); // start at index 7 to get only 1xx.xxx part
 }
