@@ -368,8 +368,8 @@ int init_MS_data(void) {
     /*
      * EVENT used for COMM & stdy COMM
      */
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM, "COM_RADIO_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM, "COM_RADIO_SET_HZ");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET_HZ");
     /* Custom EVENTS
      *
      * Here pressing the P or Q key in MSFS
