@@ -101,6 +101,7 @@ void S483(char *s, Target *T) {
 void S448(char *s, Target *T) {
 
     char *token, *ptr;
+    int stdbar;
 
     /* get the first token 
      * Altimeter setting is the 4th token
@@ -119,7 +120,8 @@ void S448(char *s, Target *T) {
 
     /* STD setting*/
     token = strtok(NULL, delim);
-    T->STD=(int)(token[0]-'0') == 1 ? 0 :1;
+    stdbar=strtod(token,NULL);
+    T->STD=(abs(stdbar) == 1) ? 0 :1;
 }
 
 void S458(char *s, Target *T) {
