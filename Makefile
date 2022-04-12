@@ -4,7 +4,7 @@ CFLAGS = -IInclude -Wall -Wextra -pedantic
 DEPS = PSXMSFS.h
 OBJ = PSXMSFS.o PSX.o connect.o
 
-all: PSXMSFS move
+all: PSXMSFS hash move
 
 
 testMSFS: testMSFS.o
@@ -21,6 +21,9 @@ testMSFS.o: testMSFS.cpp
 
 clean:
 	rm -rf bin/PSXMSFS.exe *.o *.exe
+
+hash:
+	md5sum PSXMSFS.exe > bin/PSXMSFS.MD5
 
 move:
 	cp *.exe /home/stephan/NAS/TRANSFERT/pfpx
