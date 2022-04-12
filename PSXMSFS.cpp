@@ -68,6 +68,15 @@ void SetCOMM(void) {
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, T.COM2,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
+void SetBARO(void) {
+
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, T.altimeter*16.0,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+   if(T.STD){
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+   }
+}
 
 void IA_update() {
 
@@ -302,6 +311,9 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "ELEVATOR POSITION", "position 16K");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AILERON POSITION", "position 16K");
 
+
+    
+
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
@@ -370,6 +382,16 @@ int init_MS_data(void) {
      */
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM, "COM_RADIO_SET_HZ");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET_HZ");
+    
+    /*
+     * EVENT Barometer settings
+     *
+     */
+
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO, "KOHLSMAN_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO_STD, "BAROMETRIC");
+
+
     /* Custom EVENTS
      *
      * Here pressing the P or Q key in MSFS
@@ -463,6 +485,7 @@ void init_pos() {
     APos.ailerons = 0.0;
     APos.elevator = 0.0;
 
+
     if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                       &APos) != S_OK) {
         err_n_die("Could not update position");
@@ -520,6 +543,10 @@ int SetMSFSPos(void) {
     // Set the XPDR and COMMS
     SetCOMM();
 
+    //Set the altimeter
+    SetBARO();
+
+
     /*
      * Set the moving surfaces: aileron, rudder, elevator
      */
@@ -527,6 +554,8 @@ int SetMSFSPos(void) {
     APos.rudder = T.rudder;
     APos.ailerons = T.aileron;
     APos.elevator = T.elevator;
+
+
 
     // finally update everything
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),

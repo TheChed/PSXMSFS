@@ -98,6 +98,30 @@ void S483(char *s, Target *T) {
     T->IAS = strtol(token, &ptr, 10) / 10.0;
 }
 
+void S448(char *s, Target *T) {
+
+    char *token, *ptr;
+
+    /* get the first token 
+     * Altimeter setting is the 4th token
+     * 5th token is STD setting
+     */
+    
+    token = strtok(s + 6, delim);
+    token = strtok(NULL, delim);
+    token = strtok(NULL, delim);
+    token = strtok(NULL, delim);
+    
+
+
+    /* walk through other tokens */
+    T->altimeter = strtol(token, &ptr, 10) / 100.0;
+
+    /* STD setting*/
+    token = strtok(NULL, delim);
+    T->STD=(int)(token[0]-'0') == 1 ? 0 :1;
+}
+
 void S458(char *s, Target *T) {
     char COM1[9] = {0}, COM2[9] = {0};
 
@@ -410,6 +434,11 @@ int umain(Target *T) {
     // Steering wheel
     if (strstr(cBuf, "Qi204")) {
         I204(strstr(cBuf, "Qi204"), T);
+        update = 1;
+    }
+    // Altimeter
+    if (strstr(cBuf, "Qs448")) {
+        S448(strstr(cBuf, "Qs448"),T);
         update = 1;
     }
 

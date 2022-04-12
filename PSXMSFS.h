@@ -66,6 +66,7 @@ struct AcftPosition {
     double rudder;
     double elevator;
     double ailerons;
+    //Altimeter
 
 
 };
@@ -101,6 +102,8 @@ enum EVENT_ID {
     EVENT_XPDR_IDENT,
     EVENT_COM,
     EVENT_COM_STDBY,
+    EVENT_BARO,
+    EVENT_BARO_STD,
 };
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
@@ -160,10 +163,14 @@ typedef struct {
     double steering;
 
     //COMMS & XPDR
-    int XPDR;
+    int XPDR=0;
     int IDENT;
     int COM1;
     int COM2;
+
+    //Altimeter
+    double altimeter=1013.25;
+    int STD = 1;
 
 } Target;
 
