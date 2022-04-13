@@ -270,6 +270,7 @@ void Decode_Boost(Target *T, char *s) {
     char *token, *ptr;
     float flightDeckAlt;
 
+  
     /* get the first token */
     token = strtok(s, delim);
     T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
@@ -321,11 +322,19 @@ int umainBoost(Target *T) {
     return pos;
 }
 int umainBoost2(Target *T) {
-    char chaine[128];
+    char chaine[128]={0};
 
     int nbread = recv(sPSXBOOST, chaine, 127, 0);
     if (nbread > 0) {
-        Decode_Boost(T, chaine);
+       if(chaine[0]=='F' || chaine[0]=='G'){
+           Decode_Boost(T, chaine);
+       }
+       else {
+        
+           if (DEBUG) {
+               printf("Wrong boost string received: %s",chaine);
+           }
+       }
     } else {
         printf("Boost connection lost.... We have to exit now. Sorry Folks\n");
     }
