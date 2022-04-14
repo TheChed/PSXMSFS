@@ -185,7 +185,7 @@ int umain(Target *T);
 int umainBoost(Target *T);
 int umainBoost2(Target *T);
 void err_n_die(const char *fmt, ...);
-int SetMSFSPos(void);
+void SetMSFSPos(void);
 void SetUTCTime(Target *T);
 int sendQPSX(const char *s);
 #endif

@@ -24,7 +24,7 @@ char PSXMainServer[] = "127.0.0.1";
 char PSXBoostServer[] = "0.0.0.0";
 int PSXPort;
 int PSXBoostPort;
-            FILE *fdebug;
+FILE *fdebug;
 
 /*
  * Global variables used for TCAS updating
@@ -144,9 +144,10 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             /*
              * TCAS injection
              */
-            if (TCAS_INJECT) {
-                IA_update();
-            }
+            printf("Cloaing\n");
+            SimConnect_Close(hSimConnect);
+            printf("opening\n");
+            SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0);
         } break;
 
         case EVENT_QUIT: {
@@ -488,11 +489,11 @@ void init_pos() {
     };
 }
 
-int SetMSFSPos(void) {
-
-    static int nbupdate = 0;
+void SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
+    static int nbupdate = 0;
+
     AcftPosition APos;
     HRESULT hr;
 
@@ -562,29 +563,28 @@ int SetMSFSPos(void) {
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    nbupdate++;
 
     if (DEBUG) {
+        nbupdate++;
         if (!(nbupdate % 500)) {
             time_t result = time(NULL);
-            printf("HR: %ld Apos size %lld on:  %s", hr, sizeof(APos), asctime(gmtime(&result)));
-            //fprintf(fdebug,"HR: %ld Apos size %lld on:  %s", hr, sizeof(APos), asctime(gmtime(&result)));
+            printf("%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)),hr,sizeof(APos),
+                   SIMCONNECT_OBJECT_ID_USER);
+            fprintf(fdebug,"%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)),hr,sizeof(APos),
+                   SIMCONNECT_OBJECT_ID_USER);
             fflush(NULL);
             if (hr < 0) {
                 state(&T);
                 printf("\n");
-                stateMSFS(&APos,fdebug);
+                stateMSFS(&APos, fdebug);
                 printf("\n");
                 fflush(NULL);
-                /* Try to close and reopen SimConnect connection */
-                SimConnect_Close(hSimConnect);
-                SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0);
             }
-            nbupdate = 0;
+                nbupdate = 0;
         }
+
+        pthread_mutex_unlock(&mutex);
     }
-    pthread_mutex_unlock(&mutex);
-    return hr;
 }
 
 void usage() {
@@ -593,7 +593,7 @@ void usage() {
     printf("\t -h, --help");
     printf("\t Prints this help\n");
     printf("\t --verbose");
-    printf("\t verbose. Prints out information on Q strings. Warning: can be very verbose\n");
+    printf("\t verbose. Prints out debug into on console and in file DEBUT.TXT. Warning: can be very verbose\n");
     printf("\t -m");
     printf("\t Main server IP. Default is 127.0.0.1\n");
     printf("\t -p");
@@ -667,8 +667,8 @@ int main(int argc, char **argv) {
             break;
         case 'v':
             DEBUG = 1;
-            fdebug=fopen("DEBUG.TXT","w");
-            if(!fdebug){
+            fdebug = fopen("DEBUG.TXT", "w");
+            if (!fdebug) {
                 err_n_die("Error creating debug file...");
                 exit(-1);
             }
