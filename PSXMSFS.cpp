@@ -19,11 +19,12 @@ int updateLights, UTCupdate = 1;
 int validtime = 0;
 HRESULT hr;
 int DEBUG;
-int TCAS_INJECT = 1;
+int TCAS_INJECT = 1; /*TCAS injection on by default*/
 char PSXMainServer[] = "127.0.0.1";
 char PSXBoostServer[] = "0.0.0.0";
 int PSXPort;
 int PSXBoostPort;
+            FILE *fdebug;
 
 /*
  * Global variables used for TCAS updating
@@ -70,12 +71,12 @@ void SetCOMM(void) {
 }
 void SetBARO(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, T.altimeter*16.0,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, T.altimeter * 16.0,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-   if(T.STD){
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-   }
+    if (T.STD) {
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    }
 }
 
 void IA_update() {
@@ -127,7 +128,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_4_SEC: {
             /*
-             * TCAS injection
+             * TCAS injection every 4 seconds but only if TCAS switch is on
              */
             if (TCAS_INJECT) {
                 IA_update();
@@ -311,9 +312,6 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "ELEVATOR POSITION", "position 16K");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AILERON POSITION", "position 16K");
 
-
-    
-
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
@@ -382,7 +380,7 @@ int init_MS_data(void) {
      */
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM, "COM_RADIO_SET_HZ");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET_HZ");
-    
+
     /*
      * EVENT Barometer settings
      *
@@ -390,7 +388,6 @@ int init_MS_data(void) {
 
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO, "KOHLSMAN_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO_STD, "BAROMETRIC");
-
 
     /* Custom EVENTS
      *
@@ -422,7 +419,7 @@ void *ptUmainboost(void *thread_param) {
     (void)(&thread_param);
 
     while (1) {
-        if (umainBoost2(&T)) {
+        if (umainBoost(&T)) {
 
             SetMSFSPos();
         }
@@ -485,7 +482,6 @@ void init_pos() {
     APos.ailerons = 0.0;
     APos.elevator = 0.0;
 
-
     if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                       &APos) != S_OK) {
         err_n_die("Could not update position");
@@ -493,6 +489,8 @@ void init_pos() {
 }
 
 int SetMSFSPos(void) {
+
+    static int nbupdate = 0;
 
     pthread_mutex_lock(&mutex);
     AcftPosition APos;
@@ -543,9 +541,8 @@ int SetMSFSPos(void) {
     // Set the XPDR and COMMS
     SetCOMM();
 
-    //Set the altimeter
+    // Set the altimeter
     SetBARO();
-
 
     /*
      * Set the moving surfaces: aileron, rudder, elevator
@@ -555,9 +552,9 @@ int SetMSFSPos(void) {
     APos.ailerons = T.aileron;
     APos.elevator = T.elevator;
 
-
-
     // finally update everything
+    //
+
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
 
@@ -565,6 +562,27 @@ int SetMSFSPos(void) {
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    nbupdate++;
+
+    if (DEBUG) {
+        if (!(nbupdate % 500)) {
+            time_t result = time(NULL);
+            printf("HR: %ld Apos size %lld on:  %s", hr, sizeof(APos), asctime(gmtime(&result)));
+            //fprintf(fdebug,"HR: %ld Apos size %lld on:  %s", hr, sizeof(APos), asctime(gmtime(&result)));
+            fflush(NULL);
+            if (hr < 0) {
+                state(&T);
+                printf("\n");
+                stateMSFS(&APos,fdebug);
+                printf("\n");
+                fflush(NULL);
+                /* Try to close and reopen SimConnect connection */
+                SimConnect_Close(hSimConnect);
+                SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0);
+            }
+            nbupdate = 0;
+        }
+    }
     pthread_mutex_unlock(&mutex);
     return hr;
 }
@@ -649,6 +667,11 @@ int main(int argc, char **argv) {
             break;
         case 'v':
             DEBUG = 1;
+            fdebug=fopen("DEBUG.TXT","w");
+            if(!fdebug){
+                err_n_die("Error creating debug file...");
+                exit(-1);
+            }
             break;
 
         case '?':

@@ -66,8 +66,6 @@ struct AcftPosition {
     double rudder;
     double elevator;
     double ailerons;
-    //Altimeter
-
 
 };
 enum GROUP_ID {
@@ -180,7 +178,8 @@ void init_socket();
 int close_PSX_socket(int socket);
 void Decode(int, char, char *, Target *);
 void open_connections();
-void state(Target *T); // prints aircraft position
+void state(Target *T); // prints PSX information 
+void stateMSFS(struct AcftPosition *APos, FILE *fdebug); // prints MSFS information 
 char *convert(double, int);
 int umain(Target *T);
 int umainBoost(Target *T);

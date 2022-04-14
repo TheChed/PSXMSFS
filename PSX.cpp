@@ -1,5 +1,4 @@
 #include <cstdlib>
-//#include <ctime>
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
@@ -9,33 +8,102 @@
 #include <sys/time.h>
 #include <windows.h>
 #include "PSXMSFS.h"
-// Global variables
-int print = 1;
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
 void state(Target *T) {
 
-    if (print) {
         //   asctime_s(stime, sizeof(stime),&result);
         printf("PSX:\t  ");
         printf("Alt: %.0f\t", T->altitude);
-        printf("Head: %.2f\t", T->heading);
         printf("Lat: %.4f\t", T->latitude);
         printf("Long: %.4f\t", T->longitude);
+        printf("Head: %.2f\t", T->heading);
         printf("Pitch in deg: %.6f\t", T->pitch);
         printf("Bank: %.4f\t", T->bank);
         printf("TAS: %.1f\t", T->TAS);
+        printf("IAS: %.1f\t", T->IAS);
+        printf("VS: %.2f\t", T->VerticalSpeed);
         printf("\r");
-    }
 }
+void stateMSFS(struct AcftPosition *A, FILE *fd) {
+
+        //printing to debug file
+        fprintf(fd, "MSFS:\t  ");
+        fprintf(fd, "Alt: %.0f\t", A->altitude);
+        fprintf(fd, "Lat: %.4f\t", A->latitude);
+        fprintf(fd, "Long: %.4f\t", A->longitude);
+        fprintf(fd, "Head: %.2f\t", A->heading);
+        fprintf(fd, "Pitch: %.6f\t", A->pitch);
+        fprintf(fd, "Bank: %.4f\t", A->bank);
+        fprintf(fd, "TAS: %.1f\t", A->tas);
+        fprintf(fd, "IAS: %.1f\t", A->ias);
+        fprintf(fd, "VS: %.1f\t", A->vertical_speed);
+        fprintf(fd, "GearDown: %.1f\t", A->GearDown);
+        fprintf(fd, "FlapsPosition: %.1f\t", A->FlapsPosition);
+        fprintf(fd, "Speedbrake: %.1f\t", A->Speedbrake);
+        // Lights
+        fprintf(fd, "Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t", A->LandLeftOutboard, // L Outboard
+               A->LandLeftInboard,                                                                  // L Inboard
+               A->LandRightInboard,                                                                 // R Inboard
+               A->LandRightOutboard,                                                                // R Outboard
+               A->LeftRwyTurnoff,  // L Runway Turnoff light
+               A->RightRwyTurnoff, // R Runway Turnoff light
+               A->LightTaxi,       // Taxi light
+               A->LightNav,        // Nav light
+               A->Strobe,          // Strobe light
+               A->BeaconLwr,       // Lower Beacon light
+               A->Beacon,          // Both Beacon light
+               A->LightWing,       // Wing light
+               A->LightLogo);      // Wing light
+        // moving surfaces
+        fprintf(fd, "rudder: %.1f\t", A->rudder);
+        fprintf(fd, "elevator: %.1f\t", A->elevator);
+        fprintf(fd, "ailerons: %.1f\t", A->ailerons);
+        fflush(NULL);
+// And printing to stdout
+        printf("MSFS:\t  ");
+        printf("Alt: %.0f\t", A->altitude);
+        printf("Lat: %.4f\t", A->latitude);
+        printf("Long: %.4f\t", A->longitude);
+        printf("Head: %.2f\t", A->heading);
+        printf("Pitch: %.6f\t", A->pitch);
+        printf("Bank: %.4f\t", A->bank);
+        printf("TAS: %.1f\t", A->tas);
+        printf("IAS: %.1f\t", A->ias);
+        printf("VS: %.1f\t", A->vertical_speed);
+        printf("GearDown: %.1f\t", A->GearDown);
+        printf("FlapsPosition: %.1f\t", A->FlapsPosition);
+        printf("Speedbrake: %.1f\t", A->Speedbrake);
+        // Lights
+        printf("Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t", A->LandLeftOutboard, // L Outboard
+               A->LandLeftInboard,                                                                  // L Inboard
+               A->LandRightInboard,                                                                 // R Inboard
+               A->LandRightOutboard,                                                                // R Outboard
+               A->LeftRwyTurnoff,  // L Runway Turnoff light
+               A->RightRwyTurnoff, // R Runway Turnoff light
+               A->LightTaxi,       // Taxi light
+               A->LightNav,        // Nav light
+               A->Strobe,          // Strobe light
+               A->BeaconLwr,       // Lower Beacon light
+               A->Beacon,          // Both Beacon light
+               A->LightWing,       // Wing light
+               A->LightLogo);      // Wing light
+        // moving surfaces
+        printf("rudder: %.1f\t", A->rudder);
+        printf("elevator: %.1f\t", A->elevator);
+        printf("ailerons: %.1f\t", A->ailerons);
+    }
 
 // Position of Gear
 void H170(char *s, Target *T) { T->GearLever = (int)(s[6] - '0'); }
 
 // Flap lever variable Qh389
 void H389(char *s, Target *T) { T->FlapLever = (int)(s[6] - '0'); }
+
+// Parking break
 void H397(char *s, Target *T) { T->parkbreak = (int)(s[6] - '0'); }
+
 // Steering wheel
 void H426(char *s, Target *T) {
     double pos;
@@ -52,96 +120,96 @@ void H426(char *s, Target *T) {
 void H388(char *s, Target *T) {
 
     char *token, *ptr;
-    token = strtok(s + 6, delim);
-
-    T->SpdBrkLever = strtol(token, &ptr, 10);
+    if ((token = strtok(s + 6, delim)) != NULL) {
+        T->SpdBrkLever = strtol(token, &ptr, 10);
+    }
 }
 
 void S121(char *s, Target *T) {
 
     char *token, *ptr;
 
-    /* get the first token */
-    token = strtok(s + 6, delim);
-    /* walk through other tokens */
-    T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
-    token = strtok(NULL, delim);
+    if ((token = strtok(s + 6, delim)) != NULL) {
+        T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
+    }
 
-    T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
-    ;
-    token = strtok(NULL, delim);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
+    }
 
-    T->heading = strtod(token, &ptr);
-    token = strtok(NULL, delim);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->heading = strtod(token, &ptr);
+    }
 
-    T->altitude = strtol(token, &ptr, 10) / 1000.0;
-    token = strtok(NULL, delim);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->altitude = strtol(token, &ptr, 10) / 1000.0;
+    }
 
-    T->TAS = strtol(token, &ptr, 10) / 1000.0;
-    token = strtok(NULL, delim);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->TAS = strtol(token, &ptr, 10) / 1000.0;
+    }
 
-    T->latitude = strtod(token, &ptr);
-    token = strtok(NULL, delim);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->latitude = strtod(token, &ptr);
+    }
 
-    T->longitude = strtod(token, &ptr);
-    token = strtok(NULL, delim);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->longitude = strtod(token, &ptr);
+    }
+
+    if ((token = strtok(NULL, delim)) != NULL) {
+    }
 }
-
 void S483(char *s, Target *T) {
 
     char *token, *ptr;
 
-    /* get the first token */
-    token = strtok(s + 6, delim);
-
-    /* walk through other tokens */
-    T->IAS = strtol(token, &ptr, 10) / 10.0;
+    if ((token = strtok(s + 6, delim)) != NULL) {
+        T->IAS = strtol(token, &ptr, 10) / 10.0;
+    }
 }
-
 void S448(char *s, Target *T) {
 
     char *token, *ptr;
     int stdbar;
 
-    /* get the first token 
+    /* get the first token
      * Altimeter setting is the 4th token
      * 5th token is STD setting
      */
-    
+
     token = strtok(s + 6, delim);
     token = strtok(NULL, delim);
     token = strtok(NULL, delim);
-    token = strtok(NULL, delim);
-    
 
-
-    /* walk through other tokens */
-    T->altimeter = strtol(token, &ptr, 10) / 100.0;
-
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->altimeter = strtol(token, &ptr, 10) / 100.0;
+    }
     /* STD setting*/
-    token = strtok(NULL, delim);
-    stdbar=strtod(token,NULL);
-    T->STD=(abs(stdbar) == 1) ? 0 :1;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        stdbar = strtod(token, NULL);
+        T->STD = (abs(stdbar) == 1) ? 0 : 1;
+    }
 }
 
 void S458(char *s, Target *T) {
     char COM1[9] = {0}, COM2[9] = {0};
 
     /*
-     * discard the last digit from the Qs string as it is not taken into MSFS. and start at second digit, as first one
-     * is always 1
+     * discard the last digit from the Qs string as it is not taken into MSFS. and start at second digit, as first
+     * one is always 1
      */
-    strncpy(COM1, s + 6, 3);  
-    strncat(COM1, s + 10, 3); 
-    strcat(COM1,"000");
+    strncpy(COM1, s + 6, 3);
+    strncat(COM1, s + 10, 3);
+    strcat(COM1, "000");
 
-    T->COM1 = strtol(COM1, NULL, 10); 
+    T->COM1 = strtol(COM1, NULL, 10);
 
-    strncpy(COM2, s + 13, 3); 
-    strncat(COM2, s + 17, 3); 
-    strcat(COM2,"000");
+    strncpy(COM2, s + 13, 3);
+    strncat(COM2, s + 17, 3);
+    strcat(COM2, "000");
 
-    T->COM2 = strtol(COM2, NULL, 10); 
+    T->COM2 = strtol(COM2, NULL, 10);
 }
 void S480(char *s, Target *T) {
 
@@ -194,31 +262,39 @@ void S122(char *s, Target *T) {
     token = strtok(s + 6, delim);
     /* walk through other tokens */
 
-    token = strtok(NULL, delim);
-    T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
+    }
 
-    token = strtok(NULL, delim);
-    T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
-    ;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
+    }
 
-    token = strtok(NULL, delim);
-    T->heading = strtod(token, &ptr) * 180 / M_PI / 1000.0;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->heading = strtod(token, &ptr) * 180 / M_PI / 1000.0;
+    }
 
-    token = strtok(NULL, delim);
-    T->altitude = strtol(token, &ptr, 10);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->altitude = strtol(token, &ptr, 10);
+    }
 
-    token = strtok(NULL, delim);
-    T->VerticalSpeed = strtol(token, &ptr, 10);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->VerticalSpeed = strtol(token, &ptr, 10);
+    }
 
-    token = strtok(NULL, delim);
-    T->TAS = strtol(token, &ptr, 10);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->TAS = strtol(token, &ptr, 10);
+    }
 
     token = strtok(NULL, delim); // YAW is not needed
-    token = strtok(NULL, delim);
-    T->latitude = strtod(token, &ptr) * 180.0 / M_PI;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        token = strtok(NULL, delim);
+        T->latitude = strtod(token, &ptr) * 180.0 / M_PI;
+    }
 
-    token = strtok(NULL, delim);
-    T->longitude = strtod(token, &ptr) * 180 / M_PI;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->longitude = strtod(token, &ptr) * 180 / M_PI;
+    }
 }
 
 void I204(char *s, Target *T) {
@@ -228,113 +304,56 @@ void I204(char *s, Target *T) {
 }
 void I257(char *s, Target *T) { T->onGround = (int)(s[6] - '0'); }
 
-// Checks validity of input
-int check_param(const char *s) {
-
-    return (strlen(s) && (s[0] == 'Q') && ((s[1] == 's') || (s[1] == 'i') || (s[1] == 'h')));
-}
-
-char *convert(double d, int Lat) {
-
-    char *resu;
-    double dec;
-    float min;
-
-    d = d * 180 / M_PI;
-
-    resu = (char *)malloc(11 * sizeof(char));
-
-    if (Lat) {
-        resu[0] = (d < 0) ? 'S' : 'N';
-    } else {
-        resu[0] = (d < 0) ? 'W' : 'E';
-    }
-    d = fabs(d);
-
-    dec = d - (int)d;
-
-    min = dec * 60.0;
-
-    if (Lat) {
-        sprintf(resu + 1, "%.2d %.2f", (int)d, min);
-    } else {
-        sprintf(resu + 1, "%.3d %.2f", (int)d, min);
-    }
-
-    return resu;
-}
-
 void Decode_Boost(Target *T, char *s) {
 
     const char delim[2] = ";";
     char *token, *ptr;
     float flightDeckAlt;
 
-  
     /* get the first token */
-    token = strtok(s, delim);
-    T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
+    if ((token = strtok(s, delim)) != NULL) {
+        T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
+    }
 
-    token = strtok(NULL, delim);
-    flightDeckAlt = strtol(token, &ptr, 10) / 100.0;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        flightDeckAlt = strtol(token, &ptr, 10) / 100.0;
+    }
 
-    token = strtok(NULL, delim);
-    T->heading = strtol(token, &ptr, 10) / 100.0;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->heading = strtol(token, &ptr, 10) / 100.0;
+    }
 
-    token = strtok(NULL, delim);
-    T->pitch = strtol(token, &ptr, 10) / 100.0;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->pitch = strtol(token, &ptr, 10) / 100.0;
+    }
 
-    token = strtok(NULL, delim);
-    T->bank = strtol(token, &ptr, 10) / 100.0;
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->bank = strtol(token, &ptr, 10) / 100.0;
+    }
 
-    token = strtok(NULL, delim);
-    T->latitude = strtod(token, &ptr);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->latitude = strtod(token, &ptr);
+    }
 
-    token = strtok(NULL, delim);
-    T->longitude = strtod(token, &ptr);
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->longitude = strtod(token, &ptr);
+    }
 
     T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch / 180.0 * M_PI) + 15.63;
 }
 
 int umainBoost(Target *T) {
-    int boucle = 1;
-    char cBuf;
-    int pos = 0;
-    char chaine[MAXLEN];
-
-    while (boucle) {
-        int nbread = recv(sPSXBOOST, &cBuf, 1, 0);
-        if (nbread > 0) {
-            if (cBuf == '\n' || cBuf == '\r' || cBuf == 10 || cBuf == 0) {
-                chaine[pos] = '\0';
-                boucle = 0;
-                Decode_Boost(T, chaine);
-            } else {
-                if (pos < MAXLEN) {
-                    chaine[pos++] = cBuf;
-                } else {
-                    boucle = 0; // too much data read, exiting
-                }
-            }
-        } else
-            boucle = 0;
-    }
-    return pos;
-}
-int umainBoost2(Target *T) {
-    char chaine[128]={0};
+    char chaine[128] = {0};
 
     int nbread = recv(sPSXBOOST, chaine, 127, 0);
     if (nbread > 0) {
-       if(chaine[0]=='F' || chaine[0]=='G'){
-           Decode_Boost(T, chaine);
-       }
-       else {
-        
-           if (DEBUG) {
-               printf("Wrong boost string received: %s",chaine);
-           }
-       }
+        if (chaine[0] == 'F' || chaine[0] == 'G') {
+            Decode_Boost(T, chaine);
+        } else {
+            if (DEBUG) {
+                printf("Wrong boost string received: %s", chaine);
+            }
+        }
     } else {
         printf("Boost connection lost.... We have to exit now. Sorry Folks\n");
     }
@@ -449,7 +468,7 @@ int umain(Target *T) {
     }
     // Altimeter
     if (strstr(cBuf, "Qs448")) {
-        S448(strstr(cBuf, "Qs448"),T);
+        S448(strstr(cBuf, "Qs448"), T);
         update = 1;
     }
 
