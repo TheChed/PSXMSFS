@@ -11,31 +11,42 @@
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
-void state(Target *T) {
+void state(Target *T, FILE *fd) {
 
     //   asctime_s(stime, sizeof(stime),&result);
     printf("PSX:\t  ");
     printf("Alt: %.0f\t", T->altitude);
-    printf("Lat: %.4f\t", T->latitude);
-    printf("Long: %.4f\t", T->longitude);
-    printf("Head: %.2f\t", T->heading);
-    printf("Pitch in deg: %.6f\t", T->pitch);
-    printf("Bank: %.4f\t", T->bank);
+    printf("Lat: %.3f\t", T->latitude);
+    printf("Long: %.3f\t", T->longitude);
+    printf("Head: %.1f\t", T->heading);
+    printf("Pitch: %.2f\t", T->pitch);
+    printf("Bank: %.2f\t", T->bank);
     printf("TAS: %.1f\t", T->TAS);
     printf("IAS: %.1f\t", T->IAS);
-    printf("VS: %.2f\t", T->VerticalSpeed);
-    printf("\r");
+    printf("VS: %.1f\t", T->VerticalSpeed);
+    printf("\n");
+    fprintf(fd, "PSX:\t  ");
+    fprintf(fd, "Alt: %.0f\t", T->altitude);
+    fprintf(fd, "Lat: %.3f\t", T->latitude);
+    fprintf(fd, "Long: %.3f\t", T->longitude);
+    fprintf(fd, "Head: %.1f\t", T->heading);
+    fprintf(fd, "Pitch: %.2f\t", T->pitch);
+    fprintf(fd, "Bank: %.2f\t", T->bank);
+    fprintf(fd, "TAS: %.1f\t", T->TAS);
+    fprintf(fd, "IAS: %.1f\t", T->IAS);
+    fprintf(fd, "VS: %.1f\t", T->VerticalSpeed);
+    fprintf(fd, "\n");
 }
 void stateMSFS(struct AcftPosition *A, FILE *fd) {
 
     // printing to debug file
     fprintf(fd, "MSFS:\t  ");
     fprintf(fd, "Alt: %.0f\t", A->altitude);
-    fprintf(fd, "Lat: %.4f\t", A->latitude);
-    fprintf(fd, "Long: %.4f\t", A->longitude);
-    fprintf(fd, "Head: %.2f\t", A->heading);
-    fprintf(fd, "Pitch: %.6f\t", A->pitch);
-    fprintf(fd, "Bank: %.4f\t", A->bank);
+    fprintf(fd, "Lat: %.3f\t", A->latitude);
+    fprintf(fd, "Long: %.3f\t", A->longitude);
+    fprintf(fd, "Head: %.1f\t", A->heading);
+    fprintf(fd, "Pitch: %.2f\t", -A->pitch);
+    fprintf(fd, "Bank: %.2f\t", A->bank);
     fprintf(fd, "TAS: %.1f\t", A->tas);
     fprintf(fd, "IAS: %.1f\t", A->ias);
     fprintf(fd, "VS: %.1f\t", A->vertical_speed);
@@ -64,11 +75,11 @@ void stateMSFS(struct AcftPosition *A, FILE *fd) {
     // And printing to stdout
     printf("MSFS:\t  ");
     printf("Alt: %.0f\t", A->altitude);
-    printf("Lat: %.4f\t", A->latitude);
-    printf("Long: %.4f\t", A->longitude);
-    printf("Head: %.2f\t", A->heading);
-    printf("Pitch: %.6f\t", A->pitch);
-    printf("Bank: %.4f\t", A->bank);
+    printf("Lat: %.3f\t", A->latitude);
+    printf("Long: %.3f\t", A->longitude);
+    printf("Head: %.1f\t", A->heading);
+    printf("Pitch: %.2f\t", -A->pitch);
+    printf("Bank: %.2f\t", A->bank);
     printf("TAS: %.1f\t", A->tas);
     printf("IAS: %.1f\t", A->ias);
     printf("VS: %.1f\t", A->vertical_speed);

@@ -17,7 +17,7 @@ extern int updateLights;
 extern int validtime ; // has one light been toggled?
 
 extern int DEBUG;
-
+extern FILE *fdebug;
 extern char PSXMainServer[];
 extern char PSXBoostServer[];
 extern int PSXPort;
@@ -178,7 +178,7 @@ void init_socket();
 int close_PSX_socket(int socket);
 void Decode(int, char, char *, Target *);
 void open_connections();
-void state(Target *T); // prints PSX information 
+void state(Target *T, FILE *fdebug); // prints PSX information 
 void stateMSFS(struct AcftPosition *APos, FILE *fdebug); // prints MSFS information 
 char *convert(double, int);
 int umain(Target *T);

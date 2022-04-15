@@ -413,7 +413,7 @@ void *ptDatafromMSFS(void *thread_param) {
 void *ptUmainboost(void *thread_param) {
     (void)(&thread_param);
 
-    while (1) {
+    while (!quit) {
         if (umainBoost(&T)) {
 
             SetMSFSPos();
@@ -426,7 +426,7 @@ void *ptUmainboost(void *thread_param) {
 void *ptUmain(void *thread_param) {
     (void)(&thread_param);
 
-    while (1) {
+    while (!quit) {
         if (umain(&T)) {
             SetMSFSPos();
         }
@@ -547,36 +547,40 @@ void SetMSFSPos(void) {
     APos.ailerons = T.aileron;
     APos.elevator = T.elevator;
 
-    // finally update everything
-    //
 
-    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
-                                       &APos);
+        /*
+         * finally update everything
+         */
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
+                                           &APos);
+
+        /*
+         * PArking break and Steering wheel are updated via events ant not via the APos structure
+         */
+
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+
+    /*
+     * print out debug information every 5-6 seconds
+     */
 
     if (DEBUG) {
         nbupdate++;
         if (!(nbupdate % 500)) {
             time_t result = time(NULL);
-            printf("%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)),hr,sizeof(APos),
+            printf("%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)), hr, sizeof(APos),
                    SIMCONNECT_OBJECT_ID_USER);
-            fprintf(fdebug,"%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)),hr,sizeof(APos),
-                   SIMCONNECT_OBJECT_ID_USER);
+            fprintf(fdebug, "%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)), hr, sizeof(APos),
+                    SIMCONNECT_OBJECT_ID_USER);
             fflush(NULL);
-            if (hr < 0) {
-                state(&T);
-                printf("\n");
-                stateMSFS(&APos, fdebug);
-                printf("\n");
-                fflush(NULL);
-            }
-                nbupdate = 0;
+            state(&T, fdebug);
+            stateMSFS(&APos, fdebug);
+            nbupdate = 0;
         }
-
         pthread_mutex_unlock(&mutex);
     }
 }
@@ -661,11 +665,6 @@ int main(int argc, char **argv) {
             break;
         case 'v':
             DEBUG = 1;
-            fdebug = fopen("DEBUG.TXT", "w");
-            if (!fdebug) {
-                err_n_die("Error creating debug file...");
-                exit(-1);
-            }
             break;
 
         case '?':
@@ -678,10 +677,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* Instead of reporting ‘--verbose’
-       and ‘--brief’ as they are encountered,
-       we report the final status resulting from them. */
-
     /* Print any remaining command line arguments (not options). */
     if (optind < argc) {
         // printf("non-option ARGV-elements: ");
@@ -691,6 +686,16 @@ int main(int argc, char **argv) {
 
     if (strcmp(PSXBoostServer, "0.0.0.0") == 0) {
         strcpy(PSXBoostServer, PSXMainServer);
+    }
+    /*
+     * open debug file
+     */
+    if (DEBUG) {
+        fdebug = fopen("DEBUG.TXT", "w");
+        if (!fdebug) {
+            err_n_die("Error creating debug file...");
+            exit(-1);
+        }
     }
     /*
      * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
@@ -712,7 +717,19 @@ int main(int argc, char **argv) {
     sendQPSX("demand=Qs483");
     sendQPSX("demand=Qs480");
 
+    /*
+     * Create a thread mutex so that two threads cannot change simulataneously the
+     * position of the aircraft
+     */
+
     pthread_mutex_init(&mutex, NULL);
+
+    /*
+     * Creating the 3 threads:
+     * Thread 1: main server PSX
+     * Thread 2: boost server
+     * Thread 3: callback function in MSFS
+     */
 
     if (pthread_create(&t1, NULL, &ptUmain, &T) != 0) {
         err_n_die("Error creating thread Umain");
