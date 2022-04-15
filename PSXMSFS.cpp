@@ -405,6 +405,7 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
+        sleep(1);
     }
     return NULL;
 }
