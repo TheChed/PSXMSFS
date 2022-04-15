@@ -141,13 +141,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_PRINT: {
-            /*
-             * TCAS injection
-             */
-            printf("Cloaing\n");
-            SimConnect_Close(hSimConnect);
-            printf("opening\n");
-            SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0);
         } break;
 
         case EVENT_QUIT: {
