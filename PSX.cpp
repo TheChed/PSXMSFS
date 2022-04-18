@@ -11,20 +11,23 @@
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
-void state(Target *T, FILE *fd) {
+void state(Target *T, FILE *fd, int console) {
 
-    //   asctime_s(stime, sizeof(stime),&result);
-    printf("PSX:\t  ");
-    printf("Alt: %.0f\t", T->altitude);
-    printf("Lat: %.3f\t", T->latitude);
-    printf("Long: %.3f\t", T->longitude);
-    printf("Head: %.1f\t", T->heading);
-    printf("Pitch: %.2f\t", T->pitch);
-    printf("Bank: %.2f\t", T->bank);
-    printf("TAS: %.1f\t", T->TAS);
-    printf("IAS: %.1f\t", T->IAS);
-    printf("VS: %.1f\t", T->VerticalSpeed);
-    printf("\n");
+    time_t result = time(NULL);
+    if (console) {
+        printf("PSX:\t  ");
+        printf("Alt: %.0f\t", T->altitude);
+        printf("Lat: %.3f\t", T->latitude);
+        printf("Long: %.3f\t", T->longitude);
+        printf("Head: %.1f\t", T->heading);
+        printf("Pitch: %.2f\t", T->pitch);
+        printf("Bank: %.2f\t", T->bank);
+        printf("TAS: %.1f\t", T->TAS);
+        printf("IAS: %.1f\t", T->IAS);
+        printf("VS: %.1f\t", T->VerticalSpeed);
+        printf("\n");
+    }
+    fprintf(fd, "%s", asctime(gmtime(&result)));
     fprintf(fd, "PSX:\t  ");
     fprintf(fd, "Alt: %.0f\t", T->altitude);
     fprintf(fd, "Lat: %.3f\t", T->latitude);
@@ -37,9 +40,11 @@ void state(Target *T, FILE *fd) {
     fprintf(fd, "VS: %.1f\t", T->VerticalSpeed);
     fprintf(fd, "\n");
 }
-void stateMSFS(struct AcftPosition *A, FILE *fd) {
+void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
 
+    time_t result = time(NULL);
     // printing to debug file
+    fprintf(fd, "%s", asctime(gmtime(&result)));
     fprintf(fd, "MSFS:\t  ");
     fprintf(fd, "Alt: %.0f\t", A->altitude);
     fprintf(fd, "Lat: %.3f\t", A->latitude);
@@ -71,39 +76,44 @@ void stateMSFS(struct AcftPosition *A, FILE *fd) {
     fprintf(fd, "rudder: %.1f\t", A->rudder);
     fprintf(fd, "elevator: %.1f\t", A->elevator);
     fprintf(fd, "ailerons: %.1f\t", A->ailerons);
+    fprintf(fd, "\n");
     fflush(NULL);
-    // And printing to stdout
-    printf("MSFS:\t  ");
-    printf("Alt: %.0f\t", A->altitude);
-    printf("Lat: %.3f\t", A->latitude);
-    printf("Long: %.3f\t", A->longitude);
-    printf("Head: %.1f\t", A->heading);
-    printf("Pitch: %.2f\t", -A->pitch);
-    printf("Bank: %.2f\t", A->bank);
-    printf("TAS: %.1f\t", A->tas);
-    printf("IAS: %.1f\t", A->ias);
-    printf("VS: %.1f\t", A->vertical_speed);
-    printf("GearDown: %.1f\t", A->GearDown);
-    printf("FlapsPosition: %.1f\t", A->FlapsPosition);
-    printf("Speedbrake: %.1f\t", A->Speedbrake);
-    // Lights
-    printf("Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t", A->LandLeftOutboard, // L Outboard
-           A->LandLeftInboard,                                                                    // L Inboard
-           A->LandRightInboard,                                                                   // R Inboard
-           A->LandRightOutboard,                                                                  // R Outboard
-           A->LeftRwyTurnoff,  // L Runway Turnoff light
-           A->RightRwyTurnoff, // R Runway Turnoff light
-           A->LightTaxi,       // Taxi light
-           A->LightNav,        // Nav light
-           A->Strobe,          // Strobe light
-           A->BeaconLwr,       // Lower Beacon light
-           A->Beacon,          // Both Beacon light
-           A->LightWing,       // Wing light
-           A->LightLogo);      // Wing light
-    // moving surfaces
-    printf("rudder: %.1f\t", A->rudder);
-    printf("elevator: %.1f\t", A->elevator);
-    printf("ailerons: %.1f\t", A->ailerons);
+    // And printing to stdout if console is set
+    if (console) {
+        printf("%s", asctime(gmtime(&result)));
+        printf("MSFS:\t  ");
+        printf("Alt: %.0f\t", A->altitude);
+        printf("Lat: %.3f\t", A->latitude);
+        printf("Long: %.3f\t", A->longitude);
+        printf("Head: %.1f\t", A->heading);
+        printf("Pitch: %.2f\t", -A->pitch);
+        printf("Bank: %.2f\t", A->bank);
+        printf("TAS: %.1f\t", A->tas);
+        printf("IAS: %.1f\t", A->ias);
+        printf("VS: %.1f\t", A->vertical_speed);
+        printf("GearDown: %.1f\t", A->GearDown);
+        printf("FlapsPosition: %.1f\t", A->FlapsPosition);
+        printf("Speedbrake: %.1f\t", A->Speedbrake);
+        // Lights
+        printf("Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t", A->LandLeftOutboard, // L Outboard
+               A->LandLeftInboard,                                                                    // L Inboard
+               A->LandRightInboard,                                                                   // R Inboard
+               A->LandRightOutboard,                                                                  // R Outboard
+               A->LeftRwyTurnoff,  // L Runway Turnoff light
+               A->RightRwyTurnoff, // R Runway Turnoff light
+               A->LightTaxi,       // Taxi light
+               A->LightNav,        // Nav light
+               A->Strobe,          // Strobe light
+               A->BeaconLwr,       // Lower Beacon light
+               A->Beacon,          // Both Beacon light
+               A->LightWing,       // Wing light
+               A->LightLogo);      // Wing light
+        // moving surfaces
+        printf("rudder: %.1f\t", A->rudder);
+        printf("elevator: %.1f\t", A->elevator);
+        printf("ailerons: %.1f\t", A->ailerons);
+        printf("\n");
+    }
 }
 
 // Position of Gear

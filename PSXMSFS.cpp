@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
 #include <getopt.h>
 #include <math.h>
 #include <pthread.h>
@@ -33,6 +34,47 @@ FILE *fdebug;
 TCAS tcas_acft[7];
 double min_dist = 999999;
 int nb_acft = 0;
+
+#define max_send_records        10
+
+// Declare a structure to hold the send IDs and identification strings
+struct  record_struct {
+    char  call[256];
+    DWORD   sendid;
+};
+
+int     record_count = 0;
+struct  record_struct send_record[max_send_records];
+
+// Record the ID along with the identification string in the send_record structure
+
+{
+    DWORD id;
+
+    if (record_count < max_send_records)
+    {
+        int hr = SimConnect_GetLastSentPacketID(hSimConnect, &id);
+
+        strncpy_s(send_record[ record_count ].call, 255, c, 255);
+        send_record[ record_count ].sendid = id;
+        ++record_count;
+    }
+}
+
+// Given the ID of an erroneous packet, find the identification string of the call
+
+char* findSendRecord(DWORD id)
+{
+    bool found  = false;
+    int count   = 0;
+    while (!found && count < record_count)
+    {
+        if (id == send_record[count].sendid)
+            return send_record[count].call;
+        ++count;
+    }
+    return "Send Record not found";
+}
 
 void update_TCAS(AI_TCAS *ai, double d);
 
@@ -110,6 +152,18 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     } break;
+    case SIMCONNECT_RECV_ID_EXCEPTION: {
+        SIMCONNECT_RECV_EXCEPTION *except = (SIMCONNECT_RECV_EXCEPTION *)pData;
+        printf("\n\n***** EXCEPTION=%d  SendID=%d  Index=%d  cbData=%d\n", except->dwException, except->dwSendID,
+               except->dwIndex, cbData);
+        fprintf(fdebug, "***** EXCEPTION=%d  SendID=%d  Index=%d  cbData=%d\n", except->dwException,
+                except->dwSendID, except->dwIndex, cbData);
+
+       //  Locate the bad call and print it out
+            char* s = findSendRecord(except->dwSendID);
+            printf("\n%s", s);
+        break;
+    }
 
     case SIMCONNECT_RECV_ID_EVENT: {
         SIMCONNECT_RECV_EVENT *evt = (SIMCONNECT_RECV_EVENT *)pData;
@@ -255,6 +309,7 @@ void update_TCAS(AI_TCAS *ai, double d) {
 
 int init_MS_data(void) {
 
+
     /* Here we map all the variables that are used to update the 747 in MSFS.
      * It is VERY important that the order of those variables matches the order in with the structure AcftPosition is
      * defined in PSXMSFS.h
@@ -327,12 +382,7 @@ int init_MS_data(void) {
     // Request a simulation start event
 
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_FRAME, "frame");
-    hr = SimConnect_SetSystemEventState(hSimConnect, EVENT_FRAME, SIMCONNECT_STATE_ON);
-    hr = SimConnect_AIReleaseControl(hSimConnect, SIMCONNECT_OBJECT_ID_USER, DATA_REQUEST);
 
     /* Mapping Events to the client*/
 
@@ -486,10 +536,10 @@ void init_pos() {
 void SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
-    static int nbupdate = 0;
 
     AcftPosition APos;
-    HRESULT hr;
+    HRESULT hr = 0;
+    static int nbupdate=0;
 
     if (T.onGround == 2) {
         APos.altitude = ground_elev + 15.6;
@@ -547,42 +597,55 @@ void SetMSFSPos(void) {
     APos.ailerons = T.aileron;
     APos.elevator = T.elevator;
 
-
-        /*
-         * finally update everything
-         */
+    /*
+     * finally update everything
+     */
 
         hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                            &APos);
+    if (hr < 0) {
+        fprintf(fdebug, "ERROR in SimConnect_SetDataOnSimObject\n");
+        fprintf(fdebug, "Trying to reinitialize the connection to Simconnect.....\n");
+        fprintf(fdebug, "Closing faulty connection.....\n");
+        SimConnect_Close(hSimConnect);
+    /*
+     * First start by clearing the data definition, in case we call this function after an error
+     */
 
-        /*
-         * PArking break and Steering wheel are updated via events ant not via the APos structure
-         */
+    hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
+    hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
+    hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
+        fprintf(fdebug, "Opening new connection.....\n");
+        init_connect_MSFS(&hSimConnect);
+        if (init_MS_data() < 0) {
+            fprintf(fdebug, "Unable to reinitilize....Sorry folks, quitting now\n");
+            quit = 1;
+        };
+    }
 
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    /*
+     * PArking break and Steering wheel are updated via events ant not via the APos structure
+     */
+
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
     /*
      * print out debug information every 5-6 seconds
      */
 
-    if (DEBUG) {
-        nbupdate++;
-        if (!(nbupdate % 500)) {
-            time_t result = time(NULL);
-            printf("%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)), hr, sizeof(APos),
-                   SIMCONNECT_OBJECT_ID_USER);
-            fprintf(fdebug, "%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)), hr, sizeof(APos),
-                    SIMCONNECT_OBJECT_ID_USER);
-            fflush(NULL);
-            state(&T, fdebug);
-            stateMSFS(&APos, fdebug);
-            nbupdate = 0;
-        }
-        pthread_mutex_unlock(&mutex);
-    }
+     if (DEBUG) {
+         nbupdate++;
+         if (!(nbupdate % 500)) {
+             //state(&T, fdebug,0);
+             //stateMSFS(&APos, fdebug,0);
+             fflush(NULL);
+             nbupdate = 0;
+         }
+     }
+    pthread_mutex_unlock(&mutex);
 }
 
 void usage() {
@@ -591,7 +654,7 @@ void usage() {
     printf("\t -h, --help");
     printf("\t Prints this help\n");
     printf("\t --verbose");
-    printf("\t verbose. Prints out debug into on console and in file DEBUT.TXT. Warning: can be very verbose\n");
+    printf("\t verbose. Prints out debug into on console and in file DEBUG.TXT. Warning: can be very verbose\n");
     printf("\t -m");
     printf("\t Main server IP. Default is 127.0.0.1\n");
     printf("\t -p");
