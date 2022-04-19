@@ -35,40 +35,36 @@ TCAS tcas_acft[7];
 double min_dist = 999999;
 int nb_acft = 0;
 
-#define max_send_records        10
+#define max_send_records 10
 
 // Declare a structure to hold the send IDs and identification strings
-struct  record_struct {
-    char  call[256];
-    DWORD   sendid;
+struct record_struct {
+    char call[256];
+    DWORD sendid;
 };
 
-int     record_count = 0;
-struct  record_struct send_record[max_send_records];
+int record_count = 0;
+struct record_struct send_record[max_send_records];
 
 // Record the ID along with the identification string in the send_record structure
-
-{
+void addSendRecord(char *c) {
     DWORD id;
 
-    if (record_count < max_send_records)
-    {
+    if (record_count < max_send_records) {
         int hr = SimConnect_GetLastSentPacketID(hSimConnect, &id);
 
-        strncpy_s(send_record[ record_count ].call, 255, c, 255);
-        send_record[ record_count ].sendid = id;
+        strncpy_s(send_record[record_count].call, 255, c, 255);
+        send_record[record_count].sendid = id;
         ++record_count;
     }
 }
 
 // Given the ID of an erroneous packet, find the identification string of the call
 
-char* findSendRecord(DWORD id)
-{
-    bool found  = false;
-    int count   = 0;
-    while (!found && count < record_count)
-    {
+char *findSendRecord(DWORD id) {
+    bool found = false;
+    int count = 0;
+    while (!found && count < record_count) {
         if (id == send_record[count].sendid)
             return send_record[count].call;
         ++count;
@@ -154,14 +150,14 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     } break;
     case SIMCONNECT_RECV_ID_EXCEPTION: {
         SIMCONNECT_RECV_EXCEPTION *except = (SIMCONNECT_RECV_EXCEPTION *)pData;
-        printf("\n\n***** EXCEPTION=%d  SendID=%d  Index=%d  cbData=%d\n", except->dwException, except->dwSendID,
+        printf("\n\n***** EXCEPTION=%ld  SendID=%ld  Index=%ld  cbData=%ld\n", except->dwException, except->dwSendID,
                except->dwIndex, cbData);
-        fprintf(fdebug, "***** EXCEPTION=%d  SendID=%d  Index=%d  cbData=%d\n", except->dwException,
-                except->dwSendID, except->dwIndex, cbData);
-
-       //  Locate the bad call and print it out
-            char* s = findSendRecord(except->dwSendID);
-            printf("\n%s", s);
+        //  Locate the bad call and print it out
+        char *s = findSendRecord(except->dwSendID);
+        printf("%s\n", s);
+        fprintf(fdebug, "***** EXCEPTION=%ld  SendID=%ld  Index=%ld  cbData=%ld\n", except->dwException, except->dwSendID,
+                except->dwIndex, cbData);
+        fprintf(fdebug, "%s\n", s);
         break;
     }
 
@@ -308,7 +304,6 @@ void update_TCAS(AI_TCAS *ai, double d) {
 }
 
 int init_MS_data(void) {
-
 
     /* Here we map all the variables that are used to update the 747 in MSFS.
      * It is VERY important that the order of those variables matches the order in with the structure AcftPosition is
@@ -539,7 +534,6 @@ void SetMSFSPos(void) {
 
     AcftPosition APos;
     HRESULT hr = 0;
-    static int nbupdate=0;
 
     if (T.onGround == 2) {
         APos.altitude = ground_elev + 15.6;
@@ -601,24 +595,30 @@ void SetMSFSPos(void) {
      * finally update everything
      */
 
-        hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
-                                           &APos);
+    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
+                                       &APos);
     if (hr < 0) {
-        fprintf(fdebug, "ERROR in SimConnect_SetDataOnSimObject\n");
-        fprintf(fdebug, "Trying to reinitialize the connection to Simconnect.....\n");
-        fprintf(fdebug, "Closing faulty connection.....\n");
-        SimConnect_Close(hSimConnect);
-    /*
-     * First start by clearing the data definition, in case we call this function after an error
-     */
 
-    hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
-    hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
-    hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
-        fprintf(fdebug, "Opening new connection.....\n");
+        time_t result = time(NULL);
+        fprintf(fdebug, "On:%s", asctime(gmtime(&result)));
+        fprintf(fdebug, "ERROR in SimConnect_SetDataOnSimObject\n");
+        fprintf(fdebug, "\tTrying to reinitialize the connection to Simconnect.....\n");
+        fprintf(fdebug, "\tClosing faulty connection.....\n");
+        SimConnect_Close(hSimConnect);
+
+        /*
+         * First start by clearing the data definition, in case we call this function after an error
+         */
+
+        hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
+        hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
+        hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
+        fprintf(fdebug, "\tOpening new connection.....\n");
+
         init_connect_MSFS(&hSimConnect);
         if (init_MS_data() < 0) {
-            fprintf(fdebug, "Unable to reinitilize....Sorry folks, quitting now\n");
+            fprintf(fdebug, "\tUnable to reinitilize....Sorry folks, quitting now\n");
+            fflush(NULL);
             quit = 1;
         };
     }
@@ -632,19 +632,6 @@ void SetMSFSPos(void) {
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
-    /*
-     * print out debug information every 5-6 seconds
-     */
-
-     if (DEBUG) {
-         nbupdate++;
-         if (!(nbupdate % 500)) {
-             //state(&T, fdebug,0);
-             //stateMSFS(&APos, fdebug,0);
-             fflush(NULL);
-             nbupdate = 0;
-         }
-     }
     pthread_mutex_unlock(&mutex);
 }
 
@@ -753,12 +740,10 @@ int main(int argc, char **argv) {
     /*
      * open debug file
      */
-    if (DEBUG) {
-        fdebug = fopen("DEBUG.TXT", "w");
-        if (!fdebug) {
-            err_n_die("Error creating debug file...");
-            exit(-1);
-        }
+    fdebug = fopen("DEBUG.TXT", "w");
+    if (!fdebug) {
+        err_n_die("Error creating debug file...");
+        exit(-1);
     }
     /*
      * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
@@ -827,6 +812,9 @@ int main(int argc, char **argv) {
     // Finally clean up the Win32 sockets
     WSACleanup();
 
-    printf("Normal exit. See you\n");
+    // and close the debug file
+    fclose(fdebug);
+
+    printf("Normal exit. See you soon...\n");
     return 0;
 }
