@@ -9,11 +9,11 @@ The SDK used is very similar with the one of P3D and this might work with P3D, b
 One main advantage of this tool, is that is does not require any configuration
 and should work out of the box.
 
-######################
+
 #
 # CHANGES
 #
-######################
+
 
 20/04/2022:
 No more need for the pthread*.dll, which solves a few stability bugs.
@@ -35,11 +35,10 @@ Added rudder+elevator+aileron sync. Seems that there is a bug in MSFS: when aile
 Added PArking brakes sync
 
 
-######################
 #
-#INSTALLATION:
+# INSTALLATION:
 #
-######################
+
 
 You will need the API dll from MS FlightSimulator:
   * Simconnect.dll (which should be somewhere in your MSFS directory once you enable the SDK environment)
@@ -47,12 +46,11 @@ You will need the API dll from MS FlightSimulator:
 For convenience sake, I have included this file in the bin directory.
 
 
-
-######################
+ 
 #
 # USAGE:
 #
-######################
+
 
 Once the DLL and the exe are in the same directory, just launch the program in a cmd window by typing: PSXMSFS.exe. Please make sure you launch the file via a command line and not by clicking on it in the Windown Manager.
   
@@ -62,11 +60,10 @@ Replacing xx.xx.xx.xx with the IP address of the computer running PSX, and 10747
 
  
 
-######################
 #
-#BUILDING FROM SOURCE:
+# BUILDING FROM SOURCE:
 #
-######################
+
 
 All sources are on the github link: https://github.com/TheChed/PSXMSFS
 
