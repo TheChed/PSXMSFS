@@ -17,7 +17,7 @@ extern int updateLights;
 extern int validtime ; // has one light been toggled?
 
 extern int DEBUG;
-
+extern FILE *fdebug;
 extern char PSXMainServer[];
 extern char PSXBoostServer[];
 extern int PSXPort;
@@ -34,7 +34,6 @@ struct Struct_MSFS {
  * It is VERY important that the order this structure elements are defined is the
  * same order as when mapping the variables in PSXMSFS.cpp
  */
-
 struct AcftPosition {
     double altitude;
     double latitude;
@@ -178,8 +177,8 @@ void init_socket();
 int close_PSX_socket(int socket);
 void Decode(int, char, char *, Target *);
 void open_connections();
-void state(Target *T); // prints PSX information 
-void stateMSFS(struct AcftPosition *APos, FILE *fdebug); // prints MSFS information 
+void state(Target *T, FILE *fdebug, int console); // prints PSX information 
+void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints MSFS information 
 char *convert(double, int);
 int umain(Target *T);
 int umainBoost(Target *T);
@@ -188,4 +187,5 @@ void err_n_die(const char *fmt, ...);
 void SetMSFSPos(void);
 void SetUTCTime(Target *T);
 int sendQPSX(const char *s);
+void init_connect_MSFS(HANDLE *p);
 #endif

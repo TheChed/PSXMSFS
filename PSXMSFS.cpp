@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
 #include <getopt.h>
 #include <math.h>
 #include <pthread.h>
@@ -327,12 +328,7 @@ int init_MS_data(void) {
     // Request a simulation start event
 
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_FRAME, "frame");
-    hr = SimConnect_SetSystemEventState(hSimConnect, EVENT_FRAME, SIMCONNECT_STATE_ON);
-    hr = SimConnect_AIReleaseControl(hSimConnect, SIMCONNECT_OBJECT_ID_USER, DATA_REQUEST);
 
     /* Mapping Events to the client*/
 
@@ -405,6 +401,7 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
+        sleep(1);
     }
     return NULL;
 }
@@ -412,7 +409,7 @@ void *ptDatafromMSFS(void *thread_param) {
 void *ptUmainboost(void *thread_param) {
     (void)(&thread_param);
 
-    while (1) {
+    while (!quit) {
         if (umainBoost(&T)) {
 
             SetMSFSPos();
@@ -425,7 +422,7 @@ void *ptUmainboost(void *thread_param) {
 void *ptUmain(void *thread_param) {
     (void)(&thread_param);
 
-    while (1) {
+    while (!quit) {
         if (umain(&T)) {
             SetMSFSPos();
         }
@@ -485,10 +482,9 @@ void init_pos() {
 void SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
-    static int nbupdate = 0;
 
     AcftPosition APos;
-    HRESULT hr;
+    HRESULT hr = 0;
 
     if (T.onGround == 2) {
         APos.altitude = ground_elev + 15.6;
@@ -546,38 +542,48 @@ void SetMSFSPos(void) {
     APos.ailerons = T.aileron;
     APos.elevator = T.elevator;
 
-    // finally update everything
-    //
+    /*
+     * finally update everything
+     */
 
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
+    if (hr < 0) {
+
+        time_t result = time(NULL);
+        fprintf(fdebug, "On:%s", asctime(gmtime(&result)));
+        fprintf(fdebug, "ERROR in SimConnect_SetDataOnSimObject\n");
+        fprintf(fdebug, "\tTrying to reinitialize the connection to Simconnect.....\n");
+        fprintf(fdebug, "\tClosing faulty connection.....\n");
+        SimConnect_Close(hSimConnect);
+
+        /*
+         * First start by clearing the data definition, in case we call this function after an error
+         */
+
+        hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
+        hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
+        hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
+        fprintf(fdebug, "\tOpening new connection.....\n");
+
+        init_connect_MSFS(&hSimConnect);
+        if (init_MS_data() < 0) {
+            fprintf(fdebug, "\tUnable to reinitilize....Sorry folks, quitting now\n");
+            fflush(NULL);
+            quit = 1;
+        };
+    }
+
+    /*
+     * PArking break and Steering wheel are updated via events ant not via the APos structure
+     */
 
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
-    if (DEBUG) {
-        nbupdate++;
-        if (!(nbupdate % 500)) {
-            time_t result = time(NULL);
-            printf("%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)),hr,sizeof(APos),
-                   SIMCONNECT_OBJECT_ID_USER);
-            fprintf(fdebug,"%sHR: %ld Apos size %lld OBJECT_ID %lu\n\n", asctime(gmtime(&result)),hr,sizeof(APos),
-                   SIMCONNECT_OBJECT_ID_USER);
-            fflush(NULL);
-            if (hr < 0) {
-                state(&T);
-                printf("\n");
-                stateMSFS(&APos, fdebug);
-                printf("\n");
-                fflush(NULL);
-            }
-                nbupdate = 0;
-        }
-
-        pthread_mutex_unlock(&mutex);
-    }
+    pthread_mutex_unlock(&mutex);
 }
 
 void usage() {
@@ -586,7 +592,7 @@ void usage() {
     printf("\t -h, --help");
     printf("\t Prints this help\n");
     printf("\t --verbose");
-    printf("\t verbose. Prints out debug into on console and in file DEBUT.TXT. Warning: can be very verbose\n");
+    printf("\t verbose. Prints out debug into on console and in file DEBUG.TXT. Warning: can be very verbose\n");
     printf("\t -m");
     printf("\t Main server IP. Default is 127.0.0.1\n");
     printf("\t -p");
@@ -660,11 +666,6 @@ int main(int argc, char **argv) {
             break;
         case 'v':
             DEBUG = 1;
-            fdebug = fopen("DEBUG.TXT", "w");
-            if (!fdebug) {
-                err_n_die("Error creating debug file...");
-                exit(-1);
-            }
             break;
 
         case '?':
@@ -677,10 +678,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* Instead of reporting ‘--verbose’
-       and ‘--brief’ as they are encountered,
-       we report the final status resulting from them. */
-
     /* Print any remaining command line arguments (not options). */
     if (optind < argc) {
         // printf("non-option ARGV-elements: ");
@@ -690,6 +687,14 @@ int main(int argc, char **argv) {
 
     if (strcmp(PSXBoostServer, "0.0.0.0") == 0) {
         strcpy(PSXBoostServer, PSXMainServer);
+    }
+    /*
+     * open debug file
+     */
+    fdebug = fopen("DEBUG.TXT", "w");
+    if (!fdebug) {
+        err_n_die("Error creating debug file...");
+        exit(-1);
     }
     /*
      * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
@@ -711,7 +716,19 @@ int main(int argc, char **argv) {
     sendQPSX("demand=Qs483");
     sendQPSX("demand=Qs480");
 
+    /*
+     * Create a thread mutex so that two threads cannot change simulataneously the
+     * position of the aircraft
+     */
+
     pthread_mutex_init(&mutex, NULL);
+
+    /*
+     * Creating the 3 threads:
+     * Thread 1: main server PSX
+     * Thread 2: boost server
+     * Thread 3: callback function in MSFS
+     */
 
     if (pthread_create(&t1, NULL, &ptUmain, &T) != 0) {
         err_n_die("Error creating thread Umain");
@@ -746,6 +763,9 @@ int main(int argc, char **argv) {
     // Finally clean up the Win32 sockets
     WSACleanup();
 
-    printf("Normal exit. See you\n");
+    // and close the debug file
+    fclose(fdebug);
+
+    printf("Normal exit. See you soon...\n");
     return 0;
 }

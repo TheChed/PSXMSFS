@@ -9,7 +9,14 @@ The SDK used is very similar with the one of P3D and this might work with P3D, b
 One main advantage of this tool, is that is does not require any configuration
 and should work out of the box.
 
-CHANGES:
+######################
+#
+# CHANGES
+#
+######################
+
+20/04/2022:
+No more need for the pthread*.dll, which solves a few stability bugs.
 
 10/04/2022:
 Added COMM + XPDR synch
@@ -28,29 +35,52 @@ Added rudder+elevator+aileron sync. Seems that there is a bug in MSFS: when aile
 Added PArking brakes sync
 
 
-INSTALLATION:
-you will need 3 dlls for windows which should be in the same directory as the executable
+######################
+#
+#INSTALLATION:
+#
+######################
+
+You will need the API dll from MS FlightSimulator:
   * Simconnect.dll (which should be somewhere in your MSFS directory once you enable the SDK environment)
-  * pthreadGC2.dll and pthreadVC2.dll that enable POSIX threads under Windows. Those can be found in any 
-  good grocery, I use : https://sourceware.org/pub/pthreads-win32/dll-latest/dll/x64/
 
-  For convenience sake, I have included those files in the bin directory.
+For convenience sake, I have included this file in the bin directory.
 
-  USAGE:
-  Once all 4 files are in the same directory, just launch the program in a cmd window by typing: PSXMSFS.exe 
+
+
+######################
+#
+# USAGE:
+#
+######################
+
+Once the DLL and the exe are in the same directory, just launch the program in a cmd window by typing: PSXMSFS.exe. Please make sure you launch the file via a command line and not by clicking on it in the Windown Manager.
   
-  PSXMSFS.exe -h gives a brief help
+ PSXMSFS.exe -h gives a brief help
 
-  Replacing xx.xx.xx.xx with the IP address of the computer running PSX, and 10747 being the port for the main PSX server. The port of the boost server is expected to be 10749.
+Replacing xx.xx.xx.xx with the IP address of the computer running PSX, and 10747 being the port for the main PSX server. The port of the boost server is expected to be 10749.
 
-  
-  Building from source:
-  All sources are on the github link: https://github.com/TheChed/PSXMSFS
+ 
 
-  The executable has been compiled under Linux under a Mingw environnent so to be able to create Windows compatible executables:
+######################
+#
+#BUILDING FROM SOURCE:
+#
+######################
+
+All sources are on the github link: https://github.com/TheChed/PSXMSFS
+
+The executable has been compiled under Linux under a Mingw64 environnent so to be able to create Windows compatible executables. A minimal Makefile is provided for the compile options I used.
+
+The same Mingw64 environment for windws can be downloaded at: 
+  https://www.mingw-w64.org/
+
+Please make sure to include the pthread option when installing Mingw64 in your environement.
+
+More info about the project:
   https://en.wikipedia.org/wiki/MinGW
 
-  You will also need the following files, included in the Include directory to link the executable.
+You will also need the following files, included in the Include directory to link the executable.
     * Simconnect.h
     * SimConnect.lib
 
