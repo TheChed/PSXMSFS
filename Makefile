@@ -6,8 +6,10 @@ OBJ = PSXMSFS.o PSX.o connect.o
 
 all: PSXMSFS hash move win
 
+comp: PSXMSFS hash move
+
 PSXMSFS: $(OBJ) $(DEPS)
-	$(CC) -static $(OBJ) -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthreadGC2
+	$(CC) -static $(OBJ) -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthread
 
 %.o : %.cpp
 	$(CC) $(CFLAGS) -c $<

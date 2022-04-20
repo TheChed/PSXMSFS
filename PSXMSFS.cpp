@@ -35,43 +35,6 @@ TCAS tcas_acft[7];
 double min_dist = 999999;
 int nb_acft = 0;
 
-#define max_send_records 10
-
-// Declare a structure to hold the send IDs and identification strings
-struct record_struct {
-    char call[256];
-    DWORD sendid;
-};
-
-int record_count = 0;
-struct record_struct send_record[max_send_records];
-
-// Record the ID along with the identification string in the send_record structure
-void addSendRecord(char *c) {
-    DWORD id;
-
-    if (record_count < max_send_records) {
-        int hr = SimConnect_GetLastSentPacketID(hSimConnect, &id);
-
-        strncpy_s(send_record[record_count].call, 255, c, 255);
-        send_record[record_count].sendid = id;
-        ++record_count;
-    }
-}
-
-// Given the ID of an erroneous packet, find the identification string of the call
-
-char *findSendRecord(DWORD id) {
-    bool found = false;
-    int count = 0;
-    while (!found && count < record_count) {
-        if (id == send_record[count].sendid)
-            return send_record[count].call;
-        ++count;
-    }
-    return "Send Record not found";
-}
-
 void update_TCAS(AI_TCAS *ai, double d);
 
 double dist(double lat1, double lat2, double long1, double long2) {
@@ -148,18 +111,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     } break;
-    case SIMCONNECT_RECV_ID_EXCEPTION: {
-        SIMCONNECT_RECV_EXCEPTION *except = (SIMCONNECT_RECV_EXCEPTION *)pData;
-        printf("\n\n***** EXCEPTION=%ld  SendID=%ld  Index=%ld  cbData=%ld\n", except->dwException, except->dwSendID,
-               except->dwIndex, cbData);
-        //  Locate the bad call and print it out
-        char *s = findSendRecord(except->dwSendID);
-        printf("%s\n", s);
-        fprintf(fdebug, "***** EXCEPTION=%ld  SendID=%ld  Index=%ld  cbData=%ld\n", except->dwException, except->dwSendID,
-                except->dwIndex, cbData);
-        fprintf(fdebug, "%s\n", s);
-        break;
-    }
 
     case SIMCONNECT_RECV_ID_EVENT: {
         SIMCONNECT_RECV_EVENT *evt = (SIMCONNECT_RECV_EVENT *)pData;
