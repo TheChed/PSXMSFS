@@ -489,9 +489,18 @@ void SetMSFSPos(void) {
     if (T.onGround == 2) {
         APos.altitude = ground_elev + 15.6;
         APos.GearDown = 1.0;
+        //send to PSX the ground_elev
+        //
+        char tmpchn[128]={0};
+        char sQi198[128];
+        sprintf(tmpchn, "%d",(int)(ground_elev*100));
+        printf("Qi198=%s\n",tmpchn);
+        strcat(sQi198,"Qi198=");
+        sendQPSX(strcat(sQi198,tmpchn));
     } else {
         APos.altitude = T.altitude;
         APos.GearDown = ((T.GearLever == 3) ? 1.0 : 0.0);
+        sendQPSX("Qi198=-9999999");
     }
     APos.latitude = T.latitude;
     APos.longitude = T.longitude;

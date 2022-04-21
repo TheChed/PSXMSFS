@@ -25,3 +25,6 @@ move:
 
 win:
 	cp bin/*.exe /home/stephan/NAS/TRANSFERT/pfpx
+
+src:
+	cp *.h *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
