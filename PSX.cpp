@@ -373,10 +373,11 @@ int umainBoost(Target *T) {
         } else {
             if (DEBUG) {
                 printf("Wrong boost string received: %s", chaine);
+                fprintf(fdebug, chaine);
             }
         }
     } else {
-        printf("Boost connection lost.... We have to exit now. Sorry Folks\n");
+        //  printf("Boost connection lost.... We have to exit now. Sorry Folks\n");
     }
 
     return nbread;

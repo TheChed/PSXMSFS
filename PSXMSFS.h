@@ -24,7 +24,9 @@ extern int PSXPort;
 extern int PSXBoostPort;
 
 struct Struct_MSFS {
-    double ground; // ground altitude
+    double ground_altitude; // ground altitude
+    double alt_above_ground; // altitude of MSFS plane above ground
+    double alt_above_ground_minus_CG; // altitude of MSFS wheels above ground (not settable in MSFS)
 }; 
 
 

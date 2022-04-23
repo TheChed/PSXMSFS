@@ -13,8 +13,14 @@
 #include "SimConnect.h"
 
 int quit = 0;
-Target T;
+
+// indicates whether there is a data of ground elevation received from MSFS in the callback procedure
+double MSFS_plane_alt, CG_height;
+int ground_elev_avail = 0;
 float ground_elev = 0;
+int Qi198Sent = 0;
+
+Target T;
 pthread_mutex_t mutex;
 int updateLights, UTCupdate = 1;
 int validtime = 0;
@@ -117,7 +123,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         switch (evt->uEventID) {
         case EVENT_SIM_START: {
-            printf("Inside EVENT_SIM_START\n");
         } break;
 
         case EVENT_ONE_SEC: {
@@ -146,12 +151,11 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_QUIT: {
             quit = 1;
-            printf("Preparing to close PSXMSFS...\n");
 
         } break;
 
         default:
-            printf("Another event received\n");
+            printf("Default Event\n");
         }
         break;
     }
@@ -163,7 +167,10 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case MSFS_CLIENT_DATA: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
-            ground_elev = pS->ground;
+            ground_elev = pS->ground_altitude;
+            MSFS_plane_alt = pS->alt_above_ground;
+            CG_height = pS->alt_above_ground_minus_CG;
+            ground_elev_avail = (ground_elev != 0);
         } break;
 
         default:
@@ -309,6 +316,8 @@ int init_MS_data(void) {
 
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND MINUS CG", "feet");
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_SECOND);
 
@@ -487,20 +496,27 @@ void SetMSFSPos(void) {
     HRESULT hr = 0;
 
     if (T.onGround == 2) {
-        APos.altitude = ground_elev + 15.6;
+        APos.altitude = ground_elev + 15.13; // magic number to have the default 747-8 from MSFS touch the gound
         APos.GearDown = 1.0;
-        //send to PSX the ground_elev
+        // send to PSX the ground_elev
         //
-        char tmpchn[128]={0};
-        char sQi198[128];
-        sprintf(tmpchn, "%d",(int)(ground_elev*100));
-        printf("Qi198=%s\n",tmpchn);
-        strcat(sQi198,"Qi198=");
-        sendQPSX(strcat(sQi198,tmpchn));
+        if (ground_elev_avail) {
+            char tmpchn[128] = {0};
+            char sQi198[128] = "Qi198=";
+            if (!Qi198Sent) {
+                Qi198Sent = 1;              // No need to resend this variable
+                sendQPSX("Qi198=-9999920"); // Allow (9999xx) seconds with no crash, no inertia
+            }
+            sprintf(tmpchn, "%d", (int)(ground_elev * 100));
+            strcat(sQi198, tmpchn);
+            sendQPSX(sQi198);
+            ground_elev_avail = 0;
+        }
     } else {
         APos.altitude = T.altitude;
         APos.GearDown = ((T.GearLever == 3) ? 1.0 : 0.0);
-        sendQPSX("Qi198=-9999999");
+        sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
+        Qi198Sent = 0;
     }
     APos.latitude = T.latitude;
     APos.longitude = T.longitude;
@@ -761,11 +777,11 @@ int main(int argc, char **argv) {
 
     // and gracefully close main + boost sockets
     printf("Closing PSX boost connection...\n");
-    if (!close_PSX_socket(sPSXBOOST)) {
+    if (close_PSX_socket(sPSXBOOST)) {
         printf("Could not close boost PSX socket...\n");
     }
     printf("Closing PSX main connection...\n");
-    if (!close_PSX_socket(sPSX)) {
+    if (close_PSX_socket(sPSX)) {
         printf("Could not close main PSX socket...\n");
     }
 
