@@ -360,7 +360,7 @@ void Decode_Boost(Target *T, char *s) {
         T->longitude = strtod(token, &ptr);
     }
 
-    T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch / 180.0 * M_PI) + 15.63;
+    T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch / 180.0 * M_PI) + 15.13;
 }
 
 int umainBoost(Target *T) {

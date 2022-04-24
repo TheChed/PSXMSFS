@@ -616,7 +616,7 @@ void usage() {
     printf("usage: [-h] [-v] [-m IP [-p port]] [-b IP [-c port]]\n");
     printf("\t -h, --help");
     printf("\t Prints this help\n");
-    printf("\t --verbose");
+    printf("\t -v");
     printf("\t verbose. Prints out debug into on console and in file DEBUG.TXT. Warning: can be very verbose\n");
     printf("\t -m");
     printf("\t Main server IP. Default is 127.0.0.1\n");
