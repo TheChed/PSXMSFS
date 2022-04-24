@@ -20,7 +20,7 @@ int ground_elev_avail = 0;
 float ground_elev = 0;
 int Qi198Sent = 0;
 
-Target T;
+Target Tmain, Tboost;
 pthread_mutex_t mutex;
 int updateLights, UTCupdate = 1;
 int validtime = 0;
@@ -52,13 +52,13 @@ double dist(double lat1, double lat2, double long1, double long2) {
 void SetUTCTime(void) {
 
     if (UTCupdate && validtime) {
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, T.hour,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, Tmain.hour,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, T.minute,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, Tmain.minute,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, T.day,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, Tmain.day,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, T.year,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, Tmain.year,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
         UTCupdate = 1; // continous update of UTC time
@@ -67,20 +67,20 @@ void SetUTCTime(void) {
 
 void SetCOMM(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, T.XPDR,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, Tmain.XPDR,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, T.IDENT,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, Tmain.IDENT,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, T.COM1,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, Tmain.COM1,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, T.COM2,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, Tmain.COM2,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 void SetBARO(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, T.altimeter * 16.0,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, Tmain.altimeter * 16.0,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    if (T.STD) {
+    if (Tmain.STD) {
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
@@ -189,12 +189,12 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             char QsTfcPos[999] = {0}; // max lenght = 999
 
             if (pObjData->dwentrynumber > 1) {
-                d = dist(ai->latitude, T.latitude, ai->longitude, T.longitude) / NM;
-                if ((d < 40) &&                              // less than 40 NM away
-                    abs(ai->altitude - T.altitude) < 2700 && // below or above 2700 feet
-                    (!(T.onGround == 2) ||
-                     ((T.onGround == 2) &&
-                      abs(ai->altitude - T.altitude) > 500))) { // onground dont show acft below 500 above us
+                d = dist(ai->latitude, Tboost.latitude, ai->longitude, Tboost.longitude) / NM;
+                if ((d < 40) &&                                   // less than 40 NM away
+                    abs(ai->altitude - Tboost.altitude) < 2700 && // below or above 2700 feet
+                    (!(Tboost.onGround == 2) ||
+                     ((Tboost.onGround == 2) &&
+                      abs(ai->altitude - Tboost.altitude) > 500))) { // onground dont show acft below 500 above us
 
                     update_TCAS(ai, d);
                 }
@@ -409,7 +409,7 @@ int init_MS_data(void) {
 void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
-        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
+        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
         sleep(1);
     }
     return NULL;
@@ -419,7 +419,7 @@ void *ptUmainboost(void *thread_param) {
     (void)(&thread_param);
 
     while (!quit) {
-        if (umainBoost(&T)) {
+        if (umainBoost(&Tboost)) {
 
             SetMSFSPos();
         }
@@ -432,7 +432,7 @@ void *ptUmain(void *thread_param) {
     (void)(&thread_param);
 
     while (!quit) {
-        if (umain(&T)) {
+        if (umain(&Tmain)) {
             SetMSFSPos();
         }
     }
@@ -491,11 +491,10 @@ void init_pos() {
 void SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
-
     AcftPosition APos;
     HRESULT hr = 0;
 
-    if (T.onGround == 2) {
+    if (Tboost.onGround == 2) {
         APos.altitude = ground_elev + 15.13; // magic number to have the default 747-8 from MSFS touch the gound
         APos.GearDown = 1.0;
         // send to PSX the ground_elev
@@ -513,39 +512,39 @@ void SetMSFSPos(void) {
             ground_elev_avail = 0;
         }
     } else {
-        APos.altitude = T.altitude;
-        APos.GearDown = ((T.GearLever == 3) ? 1.0 : 0.0);
+        APos.altitude = Tboost.altitude;
+        APos.GearDown = ((Tmain.GearLever == 3) ? 1.0 : 0.0);
         sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
         Qi198Sent = 0;
     }
-    APos.latitude = T.latitude;
-    APos.longitude = T.longitude;
-    APos.heading = T.heading;
-    APos.pitch = -T.pitch;
-    APos.bank = T.bank;
-    APos.tas = T.TAS;
-    APos.ias = T.IAS;
-    APos.vertical_speed = T.VerticalSpeed;
-    APos.FlapsPosition = T.FlapLever;
-    APos.Speedbrake = T.SpdBrkLever / 800.0;
+    APos.latitude = Tboost.latitude;
+    APos.longitude = Tboost.longitude;
+    APos.heading = Tboost.heading;
+    APos.pitch = -Tboost.pitch;
+    APos.bank = Tboost.bank;
+    APos.tas = Tmain.TAS;
+    APos.ias = Tmain.IAS;
+    APos.vertical_speed = Tmain.VerticalSpeed;
+    APos.FlapsPosition = Tmain.FlapLever;
+    APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
 
     // Update lights
-    APos.LandLeftOutboard = T.light[0];
-    APos.LandLeftInboard = T.light[2];
-    APos.LandRightInboard = T.light[3];
-    APos.LandRightOutboard = T.light[1];
-    APos.LeftRwyTurnoff = T.light[4];
-    APos.RightRwyTurnoff = T.light[5];
-    APos.LightTaxi = T.light[6];
-    APos.Strobe = T.light[11];
-    APos.LightNav = T.light[9] || T.light[10];
-    APos.Beacon = T.light[7];
-    APos.BeaconLwr = T.light[8];
-    APos.LightWing = T.light[12];
-    APos.LightLogo = T.light[13];
+    APos.LandLeftOutboard = Tmain.light[0];
+    APos.LandLeftInboard = Tmain.light[2];
+    APos.LandRightInboard = Tmain.light[3];
+    APos.LandRightOutboard = Tmain.light[1];
+    APos.LeftRwyTurnoff = Tmain.light[4];
+    APos.RightRwyTurnoff = Tmain.light[5];
+    APos.LightTaxi = Tmain.light[6];
+    APos.Strobe = Tmain.light[11];
+    APos.LightNav = Tmain.light[9] || Tmain.light[10];
+    APos.Beacon = Tmain.light[7];
+    APos.BeaconLwr = Tmain.light[8];
+    APos.LightWing = Tmain.light[12];
+    APos.LightLogo = Tmain.light[13];
 
     // Taxi lights disabled airborne
-    if (T.onGround != 2) {
+    if (Tboost.onGround != 2) {
         APos.LeftRwyTurnoff = 0.0;
         APos.RightRwyTurnoff = 0.0;
     }
@@ -563,9 +562,9 @@ void SetMSFSPos(void) {
      * Set the moving surfaces: aileron, rudder, elevator
      */
 
-    APos.rudder = T.rudder;
-    APos.ailerons = T.aileron;
-    APos.elevator = T.elevator;
+    APos.rudder = Tmain.rudder;
+    APos.ailerons = Tmain.aileron;
+    APos.elevator = Tmain.elevator;
 
     /*
      * finally update everything
@@ -603,11 +602,10 @@ void SetMSFSPos(void) {
      * PArking break and Steering wheel are updated via events ant not via the APos structure
      */
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, Tmain.parkbreak,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, Tmain.steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-
     pthread_mutex_unlock(&mutex);
 }
 
@@ -616,7 +614,7 @@ void usage() {
     printf("usage: [-h] [-v] [-m IP [-p port]] [-b IP [-c port]]\n");
     printf("\t -h, --help");
     printf("\t Prints this help\n");
-    printf("\t --verbose");
+    printf("\t -v");
     printf("\t verbose. Prints out debug into on console and in file DEBUG.TXT. Warning: can be very verbose\n");
     printf("\t -m");
     printf("\t Main server IP. Default is 127.0.0.1\n");
@@ -755,15 +753,15 @@ int main(int argc, char **argv) {
      * Thread 3: callback function in MSFS
      */
 
-    if (pthread_create(&t1, NULL, &ptUmain, &T) != 0) {
+    if (pthread_create(&t1, NULL, &ptUmain, &Tmain) != 0) {
         err_n_die("Error creating thread Umain");
     }
 
-    if (pthread_create(&t2, NULL, &ptUmainboost, &T) != 0) {
+    if (pthread_create(&t2, NULL, &ptUmainboost, &Tboost) != 0) {
         err_n_die("Error creating thread Umainboost");
     }
 
-    if (pthread_create(&t3, NULL, &ptDatafromMSFS, &T) != 0) {
+    if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
         err_n_die("Error creating thread DatafromMSFS");
     }
 
