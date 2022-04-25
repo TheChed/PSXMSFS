@@ -8,10 +8,11 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <windows.h>
+//#include <windows.h>
 #include "PSXMSFS.h"
-#include "SimConnect.h"
 
+typedef int32_t HANDLE;
+typedef int32_t HRESULT;
 int quit = 0;
 Target T;
 float ground_elev = 0;
@@ -46,14 +47,14 @@ double dist(double lat1, double lat2, double long1, double long2) {
 void SetUTCTime(void) {
 
     if (UTCupdate && validtime) {
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, T.hour,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, T.minute,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, T.day,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, T.year,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, T.hour,
+        //                               SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, T.minute,
+        //                               SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, T.day,
+        //                               SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, T.year,
+        //                               SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
         UTCupdate = 1; // continous update of UTC time
     }
@@ -61,29 +62,22 @@ void SetUTCTime(void) {
 
 void SetCOMM(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, T.XPDR,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, T.IDENT,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, T.COM1,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, T.COM2,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, T.XPDR,                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, T.IDENT,                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, T.COM1,                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, T.COM2,                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 void SetBARO(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, T.altimeter * 16.0,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, T.altimeter * 16.0,                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     if (T.STD) {
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
 }
 
 void IA_update() {
 
-    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 40 * NM,
-                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+    //hr = //SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 40 * NM,                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
     for (int acft_id = 0; acft_id < 7; acft_id++) {
         tcas_acft[acft_id].latitude = 0.0;
         tcas_acft[acft_id].longitude = 0.0;
@@ -95,139 +89,6 @@ void IA_update() {
     nb_acft = 0;
 }
 
-void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
-
-    (void)(cbData);
-    (void)(&pContext);
-
-    switch (pData->dwID) {
-
-    case SIMCONNECT_RECV_ID_OPEN: {
-
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    } break;
-
-    case SIMCONNECT_RECV_ID_EVENT: {
-        SIMCONNECT_RECV_EVENT *evt = (SIMCONNECT_RECV_EVENT *)pData;
-
-        switch (evt->uEventID) {
-        case EVENT_SIM_START: {
-            printf("Inside EVENT_SIM_START\n");
-        } break;
-
-        case EVENT_ONE_SEC: {
-
-        } break;
-
-        case EVENT_6_HZ: {
-        } break;
-
-        case EVENT_4_SEC: {
-            /*
-             * TCAS injection every 4 seconds but only if TCAS switch is on
-             */
-            if (TCAS_INJECT) {
-                IA_update();
-            }
-
-        } break;
-
-        case EVENT_FREEZE_ALT: {
-
-        } break;
-
-        case EVENT_PRINT: {
-        } break;
-
-        case EVENT_QUIT: {
-            quit = 1;
-            printf("Preparing to close PSXMSFS...\n");
-
-        } break;
-
-        default:
-            printf("Another event received\n");
-        }
-        break;
-    }
-
-    case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
-        SIMCONNECT_RECV_SIMOBJECT_DATA *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA *)pData;
-
-        switch (pObjData->dwRequestID) {
-
-        case MSFS_CLIENT_DATA: {
-            Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
-            ground_elev = pS->ground;
-        } break;
-
-        default:
-            break;
-        }
-        break;
-    }
-    case SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE: {
-        SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *)pData;
-
-        switch (pObjData->dwRequestID) {
-        case DATA_REQUEST_TCAS: {
-            AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
-            double d;
-            char tmpchn[128] = {0};
-            char QsTfcPos[999] = {0}; // max lenght = 999
-
-            if (pObjData->dwentrynumber > 1) {
-                d = dist(ai->latitude, T.latitude, ai->longitude, T.longitude) / NM;
-                if ((d < 40) &&                              // less than 40 NM away
-                    abs(ai->altitude - T.altitude) < 2700 && // below or above 2700 feet
-                    (!(T.onGround == 2) ||
-                     ((T.onGround == 2) &&
-                      abs(ai->altitude - T.altitude) > 500))) { // onground dont show acft below 500 above us
-
-                    update_TCAS(ai, d);
-                }
-
-                /*
-                 * We have scanned all the planes in the vicinity{
-                 */
-                if (pObjData->dwentrynumber == pObjData->dwoutof) {
-                    strcpy(QsTfcPos, "Qs450=");
-                    for (int i = 0; i < 7; i++) {
-                        sprintf(tmpchn, "%lf", tcas_acft[i].latitude);
-                        strcat(strcat(QsTfcPos, tmpchn), ";");
-                        sprintf(tmpchn, "%lf", tcas_acft[i].longitude);
-                        strcat(strcat(QsTfcPos, tmpchn), ";");
-                        sprintf(tmpchn, "%d", tcas_acft[i].altitude);
-                        strcat(strcat(QsTfcPos, tmpchn), ";");
-                        sprintf(tmpchn, "%d", tcas_acft[i].heading);
-                        strcat(strcat(QsTfcPos, tmpchn), ";");
-                    }
-
-                    /* and now we can send the string to PSX */
-                    sendQPSX("Qi201=1");
-                    sendQPSX(QsTfcPos);
-                }
-            }
-
-        } break;
-        }
-        break;
-    }
-
-    case SIMCONNECT_RECV_ID_QUIT: {
-
-        printf("\nSIMCONNECT_RECV_ID_QUIT received and data sent");
-    } break;
-
-    default:
-        break;
-    }
-}
 
 void update_TCAS(AI_TCAS *ai, double d) {
 
@@ -261,22 +122,22 @@ int init_MS_data(void) {
      * defined in PSXMSFS.h
      */
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "degrees");
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knot");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED INDICATED", "knot");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "VERTICAL SPEED", "feet per minute");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knot");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED INDICATED", "knot");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "VERTICAL SPEED", "feet per minute");
 
     /*Surfaces attributes*/
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR HANDLE POSITION", "percent over 100");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "GEAR HANDLE POSITION", "percent over 100");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "FLAPS HANDLE INDEX", "number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "SPOILERS HANDLE POSITION", "position");
 
     /*
      * Data definition for lights. Even though in the SDK documentation they are defined as non settable,
@@ -284,51 +145,49 @@ int init_MS_data(void) {
      *  light switches cannot be synchronised.
      */
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:3", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:4", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:3", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT NAV", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT STROBE", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT BEACON:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT BEACON:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT WING", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LOGO", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:1", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:2", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:3", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LANDING:4", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:1", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:2", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT TAXI:3", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT NAV", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT STROBE", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT BEACON:1", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT BEACON:2", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT WING", "Number");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "LIGHT LOGO", "Number");
 
     /*
      * Moving Surfaces: Ailerons, rudder , elevator
      *
      */
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "RUDDER POSITION", "position 16K");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "ELEVATOR POSITION", "position 16K");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AILERON POSITION", "position 16K");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "RUDDER POSITION", "position 16K");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "ELEVATOR POSITION", "position 16K");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AILERON POSITION", "position 16K");
 
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
-    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_SECOND);
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
+    //hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,                                           SIMCONNECT_PERIOD_SECOND);
 
     /*
      * This is the data that will be fetched from the aircraft in vicinity of PSX
      * And will be used in the PSX TCAS
      */
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES TRUE", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE ALTITUDE", "feet");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "degrees");
+    //hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES TRUE", "degrees");
 
-    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_SECOND);
+    //hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
 
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
-    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
+    //hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
+    //hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
 
     /* Mapping Events to the client*/
 
@@ -336,48 +195,48 @@ int init_MS_data(void) {
      * from PSX
      */
 
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
 
     /*
      * EVENTS used to set the time
      */
 
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_DAY, "ZULU_DAY_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_HOURS, "ZULU_HOURS_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_MINUTES, "ZULU_MINUTES_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_YEAR, "ZULU_YEAR_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_DAY, "ZULU_DAY_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_HOURS, "ZULU_HOURS_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_MINUTES, "ZULU_MINUTES_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_YEAR, "ZULU_YEAR_SET");
 
     /*
      * EVENT used to set the parking break
      */
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PARKING, "PARKING_BRAKE_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PARKING, "PARKING_BRAKE_SET");
 
     /*
      * EVENT used for steering wheel
      */
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_STEERING, "STEERING_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_STEERING, "STEERING_SET");
 
     /*
      * EVENT used for XPDR
      */
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_XPDR, "XPNDR_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_XPDR_IDENT, "XPNDR_IDENT_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_XPDR, "XPNDR_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_XPDR_IDENT, "XPNDR_IDENT_SET");
 
     /*
      * EVENT used for COMM & stdy COMM
      */
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM, "COM_RADIO_SET_HZ");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET_HZ");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM, "COM_RADIO_SET_HZ");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET_HZ");
 
     /*
      * EVENT Barometer settings
      *
      */
 
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO, "KOHLSMAN_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO_STD, "BAROMETRIC");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO, "KOHLSMAN_SET");
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO_STD, "BAROMETRIC");
 
     /* Custom EVENTS
      *
@@ -386,13 +245,13 @@ int init_MS_data(void) {
      *
      */
 
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
-    hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
-    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_PRINT);
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
+    //hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
+    //hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_PRINT);
 
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_QUIT, "My.CTRLQ");
-    hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
-    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT);
+    //hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_QUIT, "My.CTRLQ");
+    //hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
+    //hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT);
 
     return hr;
 }
@@ -400,7 +259,7 @@ int init_MS_data(void) {
 void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
-        hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
+        //hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, &T);
         sleep(1);
     }
     return NULL;
@@ -473,10 +332,10 @@ void init_pos() {
     APos.ailerons = 0.0;
     APos.elevator = 0.0;
 
-    if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
-                                      &APos) != S_OK) {
-        err_n_die("Could not update position");
-    };
+    //if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
+    //                                  &APos) != S_OK) {
+    //    err_n_die("Could not update position");
+    //};
 }
 
 void SetMSFSPos(void) {
@@ -484,7 +343,7 @@ void SetMSFSPos(void) {
     pthread_mutex_lock(&mutex);
 
     AcftPosition APos;
-    HRESULT hr = 0;
+    int hr = 0;
 
     if (T.onGround == 2) {
         APos.altitude = ground_elev + 15.6;
@@ -546,8 +405,7 @@ void SetMSFSPos(void) {
      * finally update everything
      */
 
-    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
-                                       &APos);
+    //hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),                                       &APos);
     if (hr < 0) {
 
         time_t result = time(NULL);
@@ -555,18 +413,18 @@ void SetMSFSPos(void) {
         fprintf(fdebug, "ERROR in SimConnect_SetDataOnSimObject\n");
         fprintf(fdebug, "\tTrying to reinitialize the connection to Simconnect.....\n");
         fprintf(fdebug, "\tClosing faulty connection.....\n");
-        SimConnect_Close(hSimConnect);
+        //SimConnect_Close(hSimConnect);
 
         /*
          * First start by clearing the data definition, in case we call this function after an error
          */
 
-        hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
-        hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
-        hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
+        //hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
+        //hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
+        //hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
         fprintf(fdebug, "\tOpening new connection.....\n");
 
-        init_connect_MSFS(&hSimConnect);
+     //   init_connect_MSFS(&hSimConnect);
         if (init_MS_data() < 0) {
             fprintf(fdebug, "\tUnable to reinitilize....Sorry folks, quitting now\n");
             fflush(NULL);
@@ -578,10 +436,8 @@ void SetMSFSPos(void) {
      * PArking break and Steering wheel are updated via events ant not via the APos structure
      */
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T.parkbreak, SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    //SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T.steering,SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 
     pthread_mutex_unlock(&mutex);
 }
@@ -748,7 +604,7 @@ int main(int argc, char **argv) {
     pthread_mutex_destroy(&mutex);
 
     printf("Closing MSFS connection...\n");
-    SimConnect_Close(hSimConnect);
+    //SimConnect_Close(hSimConnect);
 
     // and gracefully close main + boost sockets
     printf("Closing PSX boost connection...\n");
@@ -761,7 +617,8 @@ int main(int argc, char **argv) {
     }
 
     // Finally clean up the Win32 sockets
-    WSACleanup();
+    //:w
+    //WSACleanup();
 
     // and close the debug file
     fclose(fdebug);

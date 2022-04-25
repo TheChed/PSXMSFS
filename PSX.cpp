@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/socket.h>
 #include <sys/time.h>
-#include <windows.h>
 #include "PSXMSFS.h"
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings

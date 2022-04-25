@@ -8,10 +8,10 @@
 #define PRINT 1
 #define NM 1852     //meters in a nm
 #define EARTH_RAD   6371008  //earth radius in meters
-
+typedef int32_t HANDLE;
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
-extern HRESULT hr;
+//extern HRESULT hr;
 
 extern int updateLights;
 extern int validtime ; // has one light been toggled?
@@ -145,10 +145,10 @@ typedef struct {
     double IAS;
     double VerticalSpeed;
     int onGround;          // 1 if PSX is on groud, 0 otherwise
-    double GearDown = 0.0; // Gear down =1, gear up =0;
-    int GearLever = 3.0;   // 1=up, 2=off, 3=down
-    int FlapLever = 0.0;   // 0 (up) to 6 (30)
-    int SpdBrkLever = 0.0; // 0 (up) to 800 max deployed
+    double GearDown ; // Gear down =1, gear up =0;
+    int GearLever  ;   // 1=up, 2=off, 3=down
+    int FlapLever  ;   // 0 (up) to 6 (30)
+    int SpdBrkLever ; // 0 (up) to 800 max deployed
     int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
                    // logo
@@ -160,14 +160,14 @@ typedef struct {
     double steering;
 
     //COMMS & XPDR
-    int XPDR=0;
+    int XPDR;
     int IDENT;
     int COM1;
     int COM2;
 
     //Altimeter
-    double altimeter=1013.25;
-    int STD = 1;
+    double altimeter;
+    int STD ;
 
 } Target;
 
