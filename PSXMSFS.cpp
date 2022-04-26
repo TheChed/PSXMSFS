@@ -19,6 +19,7 @@ double MSFS_plane_alt, CG_height;
 int ground_elev_avail = 0;
 float ground_elev = 0;
 int Qi198Sent = 0;
+struct Struct_MSFS MSFS_POS;
 
 Target Tmain, Tboost;
 pthread_mutex_t mutex;
@@ -31,6 +32,8 @@ char PSXMainServer[] = "127.0.0.1";
 char PSXBoostServer[] = "0.0.0.0";
 int PSXPort;
 int PSXBoostPort;
+int SLAVE = 0; // 0=PSX is master, 1=MSFS is master
+
 FILE *fdebug;
 
 /*
@@ -101,6 +104,35 @@ void IA_update() {
     nb_acft = 0;
 }
 
+void Inject_MSFS_PSX(void){
+            char tmpchn[128] = {0};
+            char Qs122[200] = {0}; // max lenght = 200 
+                    strcpy(Qs122, "Qs122=1;");
+                        sprintf(tmpchn, "%lf", MSFS_POS.pitch);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%lf", MSFS_POS.bank);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%lf", MSFS_POS.heading);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%lf", MSFS_POS.alt_above_ground);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%lf", MSFS_POS.VS);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%d", MSFS_POS.TAS);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        strcat(strcat(Qs122, tmpchn), "0;"); //yaw
+                        sprintf(tmpchn, "%d", MSFS_POS.heading);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%d", MSFS_POS.latitude);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%d", MSFS_POS.longitude);
+                        strcat(strcat(Qs122, tmpchn), ";");
+                        sprintf(tmpchn, "%d", MSFS_POS.ground_altitude);
+                        strcat(strcat(Qs122, tmpchn), ";");
+        printf("%s\n",Qs122);
+
+}
+
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
 
     (void)(cbData);
@@ -130,6 +162,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_6_HZ: {
+            if(SLAVE){
+                Inject_MSFS_PSX();
+            }
         } break;
 
         case EVENT_4_SEC: {
@@ -146,7 +181,21 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         } break;
 
-        case EVENT_PRINT: {
+        case EVENT_P_PRESS: {
+            SLAVE=!SLAVE;
+            if(SLAVE){
+                printf("Injecting position to PSX from MSFS.\n");
+
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 0,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 0,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 0,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+                }
+            else{
+                printf("Injecting position to MSFS from PSX\n");
+            }
         } break;
 
         case EVENT_QUIT: {
@@ -171,6 +220,13 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             MSFS_plane_alt = pS->alt_above_ground;
             CG_height = pS->alt_above_ground_minus_CG;
             ground_elev_avail = (ground_elev != 0);
+            MSFS_POS.latitude=pS->latitude;
+            MSFS_POS.longitude=pS->longitude;
+            MSFS_POS.pitch=pS->pitch;
+            MSFS_POS.bank=pS->bank;
+            MSFS_POS.heading=pS->heading;
+            MSFS_POS.VS=pS->VS;
+            MSFS_POS.TAS=pS->TAS;
         } break;
 
         default:
@@ -316,8 +372,15 @@ int init_MS_data(void) {
 
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND MINUS CG", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LATITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LONGITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PLANE BANK DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED", "feet per second");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
+    
+
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_SECOND);
 
@@ -338,6 +401,7 @@ int init_MS_data(void) {
 
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
+    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
 
     /* Mapping Events to the client*/
 
@@ -395,9 +459,9 @@ int init_MS_data(void) {
      *
      */
 
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PRINT, "My.CTRLP");
-    hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_PRINT, "p", EVENT_PRINT);
-    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_PRINT);
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_P_PRESS, "My.CTRLP");
+    hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_P_PRESS, "p", EVENT_P_PRESS);
+    hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_P_PRESS);
 
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_QUIT, "My.CTRLQ");
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
@@ -410,7 +474,7 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
-        sleep(1);
+       // sleep(1);
     }
     return NULL;
 }
@@ -421,7 +485,9 @@ void *ptUmainboost(void *thread_param) {
     while (!quit) {
         if (umainBoost(&Tboost)) {
 
-            SetMSFSPos();
+            if (!SLAVE) {
+                SetMSFSPos();
+            }
         }
     }
 
@@ -433,7 +499,9 @@ void *ptUmain(void *thread_param) {
 
     while (!quit) {
         if (umain(&Tmain)) {
-            SetMSFSPos();
+            if (!SLAVE) {
+                SetMSFSPos();
+            }
         }
     }
 
@@ -689,6 +757,9 @@ int main(int argc, char **argv) {
             break;
         case 'v':
             DEBUG = 1;
+            break;
+        case 's':
+            SLAVE = 1;
             break;
 
         case '?':

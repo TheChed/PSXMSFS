@@ -17,6 +17,7 @@ extern int updateLights;
 extern int validtime ; // has one light been toggled?
 
 extern int DEBUG;
+extern int SLAVE;
 extern FILE *fdebug;
 extern char PSXMainServer[];
 extern char PSXBoostServer[];
@@ -27,6 +28,13 @@ struct Struct_MSFS {
     double ground_altitude; // ground altitude
     double alt_above_ground; // altitude of MSFS plane above ground
     double alt_above_ground_minus_CG; // altitude of MSFS wheels above ground (not settable in MSFS)
+    double latitude;
+    double longitude;
+    double pitch;
+    double bank;
+    double heading;
+    double VS;
+    double TAS;
 }; 
 
 
@@ -75,7 +83,7 @@ enum GROUP_ID {
 };
 
 enum INPUT_ID {
-    INPUT_PRINT,
+    INPUT_P_PRESS,
     INPUT_QUIT,
 };
 
@@ -85,7 +93,7 @@ enum EVENT_ID {
     EVENT_6_HZ,
     EVENT_4_SEC,
     EVENT_FRAME,
-    EVENT_PRINT,
+    EVENT_P_PRESS,
     EVENT_FREEZE_ALT,
     EVENT_FREEZE_ATT,
     EVENT_FREEZE_LAT_LONG,
