@@ -8,7 +8,8 @@
 #define PRINT 1
 #define NM 1852     //meters in a nm
 #define EARTH_RAD   6371008  //earth radius in meters
-
+#define FTM 0.3048   //feet to meters
+#define DEG2RAD  (M_PI/180.0)
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 extern HRESULT hr;
@@ -32,9 +33,10 @@ struct Struct_MSFS {
     double longitude;
     double pitch;
     double bank;
-    double heading;
+    double heading_true;
     double VS;
     double TAS;
+    double altitude;
 }; 
 
 
@@ -48,7 +50,7 @@ struct AcftPosition {
     double altitude;
     double latitude;
     double longitude;
-    double heading;
+    double heading_true;
     double pitch;
     double bank;
     double tas;
@@ -147,7 +149,7 @@ struct AI_TCAS {
 typedef struct {
     double pitch;
     double bank;
-    double heading;
+    double heading_true;
     float altitude;
     double latitude, longitude;
 

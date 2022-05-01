@@ -19,7 +19,7 @@ void state(Target *T, FILE *fd, int console) {
         printf("Alt: %.0f\t", T->altitude);
         printf("Lat: %.3f\t", T->latitude);
         printf("Long: %.3f\t", T->longitude);
-        printf("Head: %.1f\t", T->heading);
+        printf("Head: %.1f\t", T->heading_true);
         printf("Pitch: %.2f\t", T->pitch);
         printf("Bank: %.2f\t", T->bank);
         printf("TAS: %.1f\t", T->TAS);
@@ -32,7 +32,7 @@ void state(Target *T, FILE *fd, int console) {
     fprintf(fd, "Alt: %.0f\t", T->altitude);
     fprintf(fd, "Lat: %.3f\t", T->latitude);
     fprintf(fd, "Long: %.3f\t", T->longitude);
-    fprintf(fd, "Head: %.1f\t", T->heading);
+    fprintf(fd, "Head: %.1f\t", T->heading_true);
     fprintf(fd, "Pitch: %.2f\t", T->pitch);
     fprintf(fd, "Bank: %.2f\t", T->bank);
     fprintf(fd, "TAS: %.1f\t", T->TAS);
@@ -49,7 +49,7 @@ void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
     fprintf(fd, "Alt: %.0f\t", A->altitude);
     fprintf(fd, "Lat: %.3f\t", A->latitude);
     fprintf(fd, "Long: %.3f\t", A->longitude);
-    fprintf(fd, "Head: %.1f\t", A->heading);
+    fprintf(fd, "Head: %.1f\t", A->heading_true);
     fprintf(fd, "Pitch: %.2f\t", -A->pitch);
     fprintf(fd, "Bank: %.2f\t", A->bank);
     fprintf(fd, "TAS: %.1f\t", A->tas);
@@ -85,7 +85,7 @@ void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
         printf("Alt: %.0f\t", A->altitude);
         printf("Lat: %.3f\t", A->latitude);
         printf("Long: %.3f\t", A->longitude);
-        printf("Head: %.1f\t", A->heading);
+        printf("Head: %.1f\t", A->heading_true);
         printf("Pitch: %.2f\t", -A->pitch);
         printf("Bank: %.2f\t", A->bank);
         printf("TAS: %.1f\t", A->tas);
@@ -151,15 +151,15 @@ void S121(char *s, Target *T) {
     char *token, *ptr;
 
     if ((token = strtok(s + 6, delim)) != NULL) {
-        T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
+        T->pitch = strtol(token, &ptr, 10) / 100000.0;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 100000.0;
+        T->bank = strtol(token, &ptr, 10) / 100000.0;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->heading = strtod(token, &ptr);
+        T->heading_true = strtod(token, &ptr);
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
@@ -284,15 +284,15 @@ void S122(char *s, Target *T) {
     /* walk through other tokens */
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->pitch = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
+        T->pitch = strtol(token, &ptr, 10) / 1000.0;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->bank = strtol(token, &ptr, 10) * 180.0 / M_PI / 1000.0;
+        T->bank = strtol(token, &ptr, 10) / 1000.0;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->heading = strtod(token, &ptr) * 180 / M_PI / 1000.0;
+        T->heading_true = strtod(token, &ptr) / 1000.0;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
@@ -310,11 +310,11 @@ void S122(char *s, Target *T) {
     token = strtok(NULL, delim); // YAW is not needed
     if ((token = strtok(NULL, delim)) != NULL) {
         token = strtok(NULL, delim);
-        T->latitude = strtod(token, &ptr) * 180.0 / M_PI;
+        T->latitude = strtod(token, &ptr);
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->longitude = strtod(token, &ptr) * 180 / M_PI;
+        T->longitude = strtod(token, &ptr);
     }
 }
 
@@ -341,26 +341,26 @@ void Decode_Boost(Target *T, char *s) {
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->heading = strtol(token, &ptr, 10) / 100.0;
+        T->heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->pitch = strtol(token, &ptr, 10) / 100.0;
+        T->pitch = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->bank = strtol(token, &ptr, 10) / 100.0;
+        T->bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->latitude = strtod(token, &ptr);
+        T->latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->longitude = strtod(token, &ptr);
+        T->longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
     }
 
-    T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch / 180.0 * M_PI) + 15.13;
+    T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch) + 15.13;
 }
 
 int umainBoost(Target *T) {

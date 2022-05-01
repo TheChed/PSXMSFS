@@ -17,6 +17,10 @@ int quit = 0;
 // indicates whether there is a data of ground elevation received from MSFS in the callback procedure
 double MSFS_plane_alt, CG_height;
 int ground_elev_avail = 0;
+int MSFS_POS_avail = 0;
+double latMSFS, longMSFS;
+int key_press = 0;
+
 float ground_elev = 0;
 int Qi198Sent = 0;
 struct Struct_MSFS MSFS_POS;
@@ -46,11 +50,16 @@ int nb_acft = 0;
 
 void update_TCAS(AI_TCAS *ai, double d);
 
+void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr) {
+
+    *latr = asin(sin(lato) * cos(dist * FTM / EARTH_RAD) + cos(lato) * sin(dist * FTM / EARTH_RAD) * cos(bearing));
+    *longr = longo + atan2(sin(bearing) * sin(dist * FTM / EARTH_RAD) * cos(lato),
+                           cos(dist * FTM / EARTH_RAD) - sin(lato) * sin(*latr));
+}
+
 double dist(double lat1, double lat2, double long1, double long2) {
     return 2 * EARTH_RAD *
-           (sqrt(pow(sin((lat2 * M_PI / 180 - lat1 * M_PI / 180) / 2), 2) +
-                 cos(lat1 * M_PI / 180) * cos(lat2 * M_PI / 180) *
-                     pow(sin((long2 * M_PI / 180 - long1 * M_PI / 180) / 2), 2)));
+           (sqrt(pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2)));
 }
 void SetUTCTime(void) {
 
@@ -103,34 +112,39 @@ void IA_update() {
     min_dist = 999999;
     nb_acft = 0;
 }
+void print_MSFS(struct Struct_MSFS *M) {
 
-void Inject_MSFS_PSX(void){
-            char tmpchn[128] = {0};
-            char Qs122[200] = {0}; // max lenght = 200 
-                    strcpy(Qs122, "Qs122=1;");
-                        sprintf(tmpchn, "%lf", MSFS_POS.pitch);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%lf", MSFS_POS.bank);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%lf", MSFS_POS.heading);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%lf", MSFS_POS.alt_above_ground);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%lf", MSFS_POS.VS);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%d", MSFS_POS.TAS);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        strcat(strcat(Qs122, tmpchn), "0;"); //yaw
-                        sprintf(tmpchn, "%d", MSFS_POS.heading);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%d", MSFS_POS.latitude);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%d", MSFS_POS.longitude);
-                        strcat(strcat(Qs122, tmpchn), ";");
-                        sprintf(tmpchn, "%d", MSFS_POS.ground_altitude);
-                        strcat(strcat(Qs122, tmpchn), ";");
-        printf("%s\n",Qs122);
+    printf("Lat: %.15lf\t Long: %.15lf\t head: %.5f\n", M->latitude, M->longitude, M->heading_true);
+    printf("Latdeg: %.15lf\t Longdeg: %.15lf\t head: %.5f\n\n", M->latitude * 180 / M_PI, M->longitude * 180 / M_PI,
+           M->heading_true * 180 / M_PI);
+}
 
+void Inject_MSFS_PSX(void) {
+    char tmpchn[128] = {0};
+    char Qs122[200] = {0}; // max lenght = 200
+    strcpy(Qs122, "Qs122=1;");
+    sprintf(tmpchn, "%d", (int)(-MSFS_POS.pitch * 1000));
+    strcat(Qs122, strcat(tmpchn, ";"));
+    sprintf(tmpchn, "%d", (int)(MSFS_POS.bank * 1000));
+    strcat(Qs122, strcat(tmpchn, ";"));
+    sprintf(tmpchn, "%d", (int)(MSFS_POS.heading_true * 1000));
+    strcat(Qs122, strcat(tmpchn, ";"));
+    sprintf(tmpchn, "%d", (int)MSFS_POS.ground_altitude);
+    strcat(Qs122, strcat(tmpchn, ";"));
+    sprintf(tmpchn, "%d", (int)MSFS_POS.VS);
+    strcat(Qs122, strcat(tmpchn, ";"));
+    sprintf(tmpchn, "%d", (int)MSFS_POS.TAS);
+    strcat(Qs122, strcat(tmpchn, ";0;"));
+    sprintf(tmpchn, "%.15lf", MSFS_POS.latitude);
+    strcat(Qs122, strcat(tmpchn, ";"));
+    sprintf(tmpchn, "%.15lf", MSFS_POS.longitude);
+    strcat(Qs122, strcat(tmpchn, ";"));
+    sprintf(tmpchn, "%d", (int)(MSFS_POS.ground_altitude * 10));
+    strcat(Qs122, tmpchn);
+    if (MSFS_POS_avail) {
+        sendQPSX(Qs122);
+    }
+    MSFS_POS_avail = 0;
 }
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
@@ -159,10 +173,21 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case EVENT_ONE_SEC: {
 
+            key_press = 0;
         } break;
 
         case EVENT_6_HZ: {
-            if(SLAVE){
+            if (SLAVE) {
+
+                SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 0,
+                                               SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                               SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+                SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 0,
+                                               SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                               SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+                SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 0,
+                                               SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                               SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
                 Inject_MSFS_PSX();
             }
         } break;
@@ -182,19 +207,15 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_P_PRESS: {
-            SLAVE=!SLAVE;
-            if(SLAVE){
-                printf("Injecting position to PSX from MSFS.\n");
+            if (!key_press) {
+                SLAVE = !SLAVE;
+                key_press = 1;
 
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 0,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 0,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 0,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+                if (!SLAVE) {
+                    printf("Injecting position to MSFS from PSX\n");
+                } else {
+                    printf("Injection position to PSX from MSFS\n");
                 }
-            else{
-                printf("Injecting position to MSFS from PSX\n");
             }
         } break;
 
@@ -216,17 +237,24 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         case MSFS_CLIENT_DATA: {
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
-            ground_elev = pS->ground_altitude;
+            MSFS_POS_avail = 1;
+            MSFS_POS.ground_altitude = pS->ground_altitude;
+            MSFS_POS.alt_above_ground = pS->alt_above_ground;
+            MSFS_POS.alt_above_ground_minus_CG = pS->alt_above_ground_minus_CG;
+            MSFS_POS.pitch = pS->pitch;
+            MSFS_POS.bank = pS->bank;
+            MSFS_POS.heading_true = pS->heading_true;
+            MSFS_POS.VS = pS->VS;
+            MSFS_POS.TAS = pS->TAS;
+            MSFS_POS.altitude = pS->altitude;
+
+            MSFS_POS.latitude = pS->latitude;
+            MSFS_POS.longitude = pS->longitude;
+
             MSFS_plane_alt = pS->alt_above_ground;
             CG_height = pS->alt_above_ground_minus_CG;
+            ground_elev = pS->ground_altitude;
             ground_elev_avail = (ground_elev != 0);
-            MSFS_POS.latitude=pS->latitude;
-            MSFS_POS.longitude=pS->longitude;
-            MSFS_POS.pitch=pS->pitch;
-            MSFS_POS.bank=pS->bank;
-            MSFS_POS.heading=pS->heading;
-            MSFS_POS.VS=pS->VS;
-            MSFS_POS.TAS=pS->TAS;
         } break;
 
         default:
@@ -303,8 +331,8 @@ void update_TCAS(AI_TCAS *ai, double d) {
             tcas_acft[i].distance = tcas_acft[i - 1].distance;
             min_dist = MAX(d, tcas_acft[i].distance);
         }
-        tcas_acft[0].latitude = ai->latitude * M_PI / 180.0;
-        tcas_acft[0].longitude = ai->longitude * M_PI / 180.0;
+        tcas_acft[0].latitude = ai->latitude;
+        tcas_acft[0].longitude = ai->longitude;
         tcas_acft[0].altitude = (int)(ai->altitude * 10);
         tcas_acft[0].heading = (int)(ai->heading * 100);
         tcas_acft[0].distance = d;
@@ -325,11 +353,11 @@ int init_MS_data(void) {
      */
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "degrees");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE PITCH DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE BANK DEGREES", "radians");
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED TRUE", "knot");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "AIRSPEED INDICATED", "knot");
@@ -372,14 +400,16 @@ int init_MS_data(void) {
 
     /* This is to get the ground altitude when positionning the aircraft at initialization or once on ground */
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND MINUS CG", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LATITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LONGITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PLANE BANK DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED", "feet per second");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
-    
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_SECOND);
@@ -390,9 +420,9 @@ int init_MS_data(void) {
      */
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "degrees");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES TRUE", "degrees");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES MAGNETIC", "radians");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_SECOND);
@@ -401,6 +431,7 @@ int init_MS_data(void) {
 
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
+    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
 
     /* Mapping Events to the client*/
@@ -474,7 +505,7 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
-       // sleep(1);
+        // sleep(1);
     }
     return NULL;
 }
@@ -519,7 +550,7 @@ void init_pos() {
     APos.altitude = 360.5; // 358 + 15.6;
     APos.latitude = 49.0012;
     APos.longitude = 2.57728;
-    APos.heading = 356.0;
+    APos.heading_true = 356.0;
     APos.pitch = -1.36;
     APos.bank = 0.0;
     APos.tas = 0.0;
@@ -560,6 +591,7 @@ void SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
     AcftPosition APos;
+    double lat, longi;
     HRESULT hr = 0;
 
     if (Tboost.onGround == 2) {
@@ -580,14 +612,25 @@ void SetMSFSPos(void) {
             ground_elev_avail = 0;
         }
     } else {
-        APos.altitude = Tboost.altitude;
+
+        //        APos.altitude = Tboost.altitude;
+
+        /*
+         * Boost servers gives altitude of flight deck
+         */
+
+        APos.altitude = Tboost.altitude - (28.412073 + 92.5 * sin(Tboost.pitch));
         APos.GearDown = ((Tmain.GearLever == 3) ? 1.0 : 0.0);
         sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
         Qi198Sent = 0;
     }
-    APos.latitude = Tboost.latitude;
-    APos.longitude = Tboost.longitude;
-    APos.heading = Tboost.heading;
+
+    // Calculate coordinates from centre aircraft;
+    CalcCoord(Tboost.heading_true + M_PI, 92.5, Tboost.latitude, Tboost.longitude, &lat, &longi);
+
+    APos.latitude = lat;
+    APos.longitude = longi;
+    APos.heading_true = Tboost.heading_true;
     APos.pitch = -Tboost.pitch;
     APos.bank = Tboost.bank;
     APos.tas = Tmain.TAS;
@@ -694,6 +737,8 @@ void usage() {
     printf("\t Boost server port. Default is 10749\n");
     printf("\t -t");
     printf("\t Disables TCAS injection from MSFS to PSX\n");
+    printf("\t -s");
+    printf("\t Starts with PSX enslaved to MSFS\n");
 
     exit(-1);
 }
@@ -716,11 +761,12 @@ int main(int argc, char **argv) {
                                                {"main", required_argument, 0, 'm'},
                                                {"boost-port", required_argument, 0, 'c'},
                                                {"main-port", required_argument, 0, 'p'},
+                                               {"slave", required_argument, 0, 's'},
                                                {0, 0, 0, 0}};
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "thvm:b:c:p:f:", long_options, &option_index);
+        c = getopt_long(argc, argv, "thvsm:b:c:p:f:", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -799,8 +845,10 @@ int main(int argc, char **argv) {
     init_MS_data();
 
     // set a default location for the plane
-    // Here at LFPG stand E22
-    init_pos();
+    // Here at LFPG stand E22 if PSX is not enslaved to MSFS
+    if (!SLAVE) {
+        init_pos();
+    }
 
     /*
      * Sending Q423 DEMAND variable to PSX for the winds
