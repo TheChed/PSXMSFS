@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <windows.h>
 #include "PSXMSFS.h"
@@ -282,7 +283,13 @@ void S122(char *s, Target *T) {
     /* get the first token */
     token = strtok(s + 6, delim);
     /* walk through other tokens */
+    if (strcmp(token, "1") == 1) {
+        MSFS_on_ground = 0;
+    }
 
+    if ((token = strtok(NULL, delim)) != NULL) {
+        T->pitch = strtol(token, &ptr, 10) / 1000.0;
+    }
     if ((token = strtok(NULL, delim)) != NULL) {
         T->pitch = strtol(token, &ptr, 10) / 1000.0;
     }
@@ -324,6 +331,7 @@ void I204(char *s, Target *T) {
     T->IDENT = (int)(s[7] - '0');
 }
 void I257(char *s, Target *T) { T->onGround = (int)(s[6] - '0'); }
+void I219(char *s) { MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10); }
 
 void Decode_Boost(Target *T, char *s) {
 
@@ -334,6 +342,7 @@ void Decode_Boost(Target *T, char *s) {
     /* get the first token */
     if ((token = strtok(s, delim)) != NULL) {
         T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
+        // MSFS_on_ground=(T->onGround==2);
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
@@ -417,6 +426,12 @@ int umain(Target *T) {
     if (strstr(cBuf, "Qs122=")) {
         S122(strstr(cBuf, "Qs122="), T);
         update = 1;
+    }
+
+    // New situ loaded
+    if (strstr(cBuf, "load3")) {
+        sleep(1); // let's wait a few seconds to get everyone ready
+        MSFS_on_ground = 0;
     }
 
     // ExtLts : External lights, Mode=XECON

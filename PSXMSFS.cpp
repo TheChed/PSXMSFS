@@ -16,13 +16,15 @@ int quit = 0;
 
 // indicates whether there is a data of ground elevation received from MSFS in the callback procedure
 double MSFS_plane_alt, CG_height;
-int ground_elev_avail = 0;
+int ground_altitude_avail = 0;
+int MSFS_on_ground = 0;
 int MSFS_POS_avail = 0;
 double latMSFS, longMSFS;
 int key_press = 0;
 
-float ground_elev = 0;
-int Qi198Sent = 0;
+float ground_altitude = 0;
+int Qi198SentLand = 0;
+int Qi198SentAirborne = 0;
 struct Struct_MSFS MSFS_POS;
 
 Target Tmain, Tboost;
@@ -129,7 +131,7 @@ void Inject_MSFS_PSX(void) {
     strcat(Qs122, strcat(tmpchn, ";"));
     sprintf(tmpchn, "%d", (int)(MSFS_POS.heading_true * 1000));
     strcat(Qs122, strcat(tmpchn, ";"));
-    sprintf(tmpchn, "%d", (int)MSFS_POS.ground_altitude);
+    sprintf(tmpchn, "%d", (int)MSFS_POS.altitude);
     strcat(Qs122, strcat(tmpchn, ";"));
     sprintf(tmpchn, "%d", (int)MSFS_POS.VS);
     strcat(Qs122, strcat(tmpchn, ";"));
@@ -142,6 +144,7 @@ void Inject_MSFS_PSX(void) {
     sprintf(tmpchn, "%d", (int)(MSFS_POS.ground_altitude * 10));
     strcat(Qs122, tmpchn);
     if (MSFS_POS_avail) {
+        //   printf("Injecting:%s\n",Qs122);
         sendQPSX(Qs122);
     }
     MSFS_POS_avail = 0;
@@ -214,7 +217,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
                 if (!SLAVE) {
                     printf("Injecting position to MSFS from PSX\n");
                 } else {
-                    printf("Injection position to PSX from MSFS\n");
+                    printf("Injecting position to PSX from MSFS\n");
                 }
             }
         } break;
@@ -241,6 +244,9 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             MSFS_POS.ground_altitude = pS->ground_altitude;
             MSFS_POS.alt_above_ground = pS->alt_above_ground;
             MSFS_POS.alt_above_ground_minus_CG = pS->alt_above_ground_minus_CG;
+            // printf("Tmain: %.4f\t psalt: %.4f\t: CG:
+            // %.4f\n",Tboost.altitude,pS->altitude,MSFS_POS.alt_above_ground_minus_CG);
+            MSFS_on_ground = (MSFS_POS.alt_above_ground_minus_CG < 1) && (Tboost.altitude) < 50;
             MSFS_POS.pitch = pS->pitch;
             MSFS_POS.bank = pS->bank;
             MSFS_POS.heading_true = pS->heading_true;
@@ -253,8 +259,8 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
             MSFS_plane_alt = pS->alt_above_ground;
             CG_height = pS->alt_above_ground_minus_CG;
-            ground_elev = pS->ground_altitude;
-            ground_elev_avail = (ground_elev != 0);
+            ground_altitude = pS->ground_altitude;
+            ground_altitude_avail = (ground_altitude != 0);
         } break;
 
         default:
@@ -353,6 +359,7 @@ int init_MS_data(void) {
      */
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALT ABOVE GROUND", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "radians");
@@ -412,7 +419,8 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_SECOND);
+                                           SIMCONNECT_PERIOD_VISUAL_FRAME);
+    //    SIMCONNECT_PERIOD_SECOND);
 
     /*
      * This is the data that will be fetched from the aircraft in vicinity of PSX
@@ -594,35 +602,46 @@ void SetMSFSPos(void) {
     double lat, longi;
     HRESULT hr = 0;
 
-    if (Tboost.onGround == 2) {
-        APos.altitude = ground_elev + 15.13; // magic number to have the default 747-8 from MSFS touch the gound
-        APos.GearDown = 1.0;
-        // send to PSX the ground_elev
-        //
-        if (ground_elev_avail) {
-            char tmpchn[128] = {0};
-            char sQi198[128] = "Qi198=";
-            if (!Qi198Sent) {
-                Qi198Sent = 1;              // No need to resend this variable
-                sendQPSX("Qi198=-9999920"); // Allow (9999xx) seconds with no crash, no inertia
-            }
-            sprintf(tmpchn, "%d", (int)(ground_elev * 100));
-            strcat(sQi198, tmpchn);
-            sendQPSX(sQi198);
-            ground_elev_avail = 0;
-        }
-    } else {
+    /*
+     * Before touching landing of after take off
+     * switch from MSFS elevation to PSX elevation
+     * and vice versa
+     */
 
-        //        APos.altitude = Tboost.altitude;
+    if (Tboost.onGround == 2 || MSFS_on_ground) {
+        printf("On ground\n");
+        APos.altitude_above_ground = 15.13; // magic number to have the default 747-8 from MSFS touch the gound
+        APos.GearDown = 1.0;
+    } else {
 
         /*
          * Boost servers gives altitude of flight deck
          */
-
+        printf("In flight\n");
         APos.altitude = Tboost.altitude - (28.412073 + 92.5 * sin(Tboost.pitch));
+        APos.altitude_above_ground = APos.altitude - ground_altitude;
         APos.GearDown = ((Tmain.GearLever == 3) ? 1.0 : 0.0);
-        sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
-        Qi198Sent = 0;
+    }
+
+    if (ground_altitude_avail && APos.altitude_above_ground < 100) {
+        char tmpchn[128] = {0};
+        char sQi198[128] = "Qi198=";
+        if (!Qi198SentLand) {
+            printf("Below 100 ft above gnd => using MSFS elevation\n");
+            sendQPSX("Qi198=-9999910"); // Allow (9999xx) seconds with no crash, no inertia
+            Qi198SentLand = 1;
+        }
+        Qi198SentAirborne = 0;
+        sprintf(tmpchn, "%d", (int)(ground_altitude * 100));
+        strcat(sQi198, tmpchn);
+        sendQPSX(sQi198);
+    } else if (APos.altitude_above_ground > 100) {
+        if (!Qi198SentAirborne) {
+            printf("Above 100 ft above gnd => using PSX elevation\n");
+            sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
+            Qi198SentAirborne = 1;
+        }
+        Qi198SentLand = 0;
     }
 
     // Calculate coordinates from centre aircraft;

@@ -16,6 +16,7 @@ extern HRESULT hr;
 
 extern int updateLights;
 extern int validtime ; // has one light been toggled?
+extern int MSFS_on_ground;
 
 extern int DEBUG;
 extern int SLAVE;
@@ -26,7 +27,7 @@ extern int PSXPort;
 extern int PSXBoostPort;
 
 struct Struct_MSFS {
-    double ground_altitude; // ground altitude
+    double ground_altitude; // ground altitude above MSL
     double alt_above_ground; // altitude of MSFS plane above ground
     double alt_above_ground_minus_CG; // altitude of MSFS wheels above ground (not settable in MSFS)
     double latitude;
@@ -36,7 +37,7 @@ struct Struct_MSFS {
     double heading_true;
     double VS;
     double TAS;
-    double altitude;
+    double altitude; //plane altitude above MSL
 }; 
 
 
@@ -48,6 +49,7 @@ struct Struct_MSFS {
  */
 struct AcftPosition {
     double altitude;
+    double altitude_above_ground;
     double latitude;
     double longitude;
     double heading_true;
