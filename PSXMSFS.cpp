@@ -246,7 +246,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             MSFS_POS.alt_above_ground_minus_CG = pS->alt_above_ground_minus_CG;
             // printf("Tmain: %.4f\t psalt: %.4f\t: CG:
             // %.4f\n",Tboost.altitude,pS->altitude,MSFS_POS.alt_above_ground_minus_CG);
-            MSFS_on_ground = (MSFS_POS.alt_above_ground_minus_CG < 1) && (Tboost.altitude) < 50;
+            MSFS_on_ground = (MSFS_POS.alt_above_ground_minus_CG < 1);
             MSFS_POS.pitch = pS->pitch;
             MSFS_POS.bank = pS->bank;
             MSFS_POS.heading_true = pS->heading_true;
@@ -359,7 +359,7 @@ int init_MS_data(void) {
      */
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALT ABOVE GROUND", "feet");
+    //    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE ALT ABOVE GROUND", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LATITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE LONGITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_PSX_TO_MSFS, "PLANE HEADING DEGREES TRUE", "radians");
@@ -599,7 +599,9 @@ void SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
     AcftPosition APos;
-    double lat, longi;
+    double lat, longi, altitude;
+    static double delta = 0;
+    int ground_to_air=0;
     HRESULT hr = 0;
 
     /*
@@ -608,22 +610,27 @@ void SetMSFSPos(void) {
      * and vice versa
      */
 
-    if (Tboost.onGround == 2 || MSFS_on_ground) {
-        printf("On ground\n");
-        APos.altitude_above_ground = 15.13; // magic number to have the default 747-8 from MSFS touch the gound
+    /*
+     * Boost servers gives altitude of flight deck
+     */
+    altitude = Tboost.altitude - (28.412073 + 92.5 * sin(Tboost.pitch));
+
+    if (Tboost.onGround == 2) {
+        APos.altitude = ground_altitude + 15.13;
         APos.GearDown = 1.0;
+        ground_to_air=1;    //are we taking off ?
+        delta = altitude - APos.altitude; // record in a static variable the last difference between PSX and MSFS height
+        //  printf("On ground: Alt: %.2f  Tboostalt: %.2f\t delta: %.2f\n",APos.altitude,altitude,delta);
     } else {
 
-        /*
-         * Boost servers gives altitude of flight deck
-         */
-        printf("In flight\n");
-        APos.altitude = Tboost.altitude - (28.412073 + 92.5 * sin(Tboost.pitch));
-        APos.altitude_above_ground = APos.altitude - ground_altitude;
+        APos.altitude = altitude - delta;
         APos.GearDown = ((Tmain.GearLever == 3) ? 1.0 : 0.0);
+        ground_to_air=0; //next phase is landing
+
+        //   printf("In flight: Alt: %.2f  Tboostalt: %.2f\t delta: %.2f\n",APos.altitude,altitude,delta);
     }
 
-    if (ground_altitude_avail && APos.altitude_above_ground < 100) {
+    if (APos.altitude-ground_altitude < 100) {
         char tmpchn[128] = {0};
         char sQi198[128] = "Qi198=";
         if (!Qi198SentLand) {
@@ -635,9 +642,25 @@ void SetMSFSPos(void) {
         sprintf(tmpchn, "%d", (int)(ground_altitude * 100));
         strcat(sQi198, tmpchn);
         sendQPSX(sQi198);
-    } else if (APos.altitude_above_ground > 100) {
+    } else {
+
+        // smoothly resetting static variable for the landing
+        if (abs(delta) > 1) {
+            if (delta > 0) {
+                delta--;
+            } else {
+                delta++;
+            }
+        } else {
+            delta = 0;
+        }
+
+        APos.altitude = altitude - delta;
+           printf("In flight: Alt: %.2f  Tboostalt: %.2f\t delta: %.2f\n",APos.altitude,altitude,delta);
+
         if (!Qi198SentAirborne) {
-            printf("Above 100 ft above gnd => using PSX elevation\n");
+
+            printf("Above 100 ft above gnd => using PSX elevation. Delta = %.3f\n", delta);
             sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
             Qi198SentAirborne = 1;
         }

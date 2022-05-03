@@ -49,7 +49,6 @@ struct Struct_MSFS {
  */
 struct AcftPosition {
     double altitude;
-    double altitude_above_ground;
     double latitude;
     double longitude;
     double heading_true;
