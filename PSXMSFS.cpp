@@ -1,5 +1,3 @@
-#include "PSXMSFS.h"
-#include "SimConnect.h"
 #include <assert.h>
 #include <cstddef>
 #include <cstdint>
@@ -11,6 +9,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <windows.h>
+#include "PSXMSFS.h"
+#include "SimConnect.h"
 
 int quit = 0;
 
@@ -720,7 +720,7 @@ double SetAltitude(int onGround) {
     static double delta = 0;
     static double deltaTarget = 0;
     char sQi198[128];
-    int takingoff = 0;
+    static int takingoff = 0;
 
     /*
      * Before touching landing of after take off
@@ -740,8 +740,7 @@ double SetAltitude(int onGround) {
 
     if (onGround) {
         altitude = ground_altitude + 15.13;
-        delta =
-            boostAltitude - altitude; // record in a static variable the last
+        delta = boostAltitude - altitude; // record in a static variable the last
                                       // difference between PSX and MSFS height
         takingoff = 1;
     } else {
@@ -755,6 +754,7 @@ double SetAltitude(int onGround) {
         altitude = boostAltitude - delta;
     }
 
+
     if (altitude - ground_altitude < 100) {
         if (!Qi198SentLand) {
             printf("Below 100 ft above gnd => using MSFS elevation\n");
@@ -765,6 +765,7 @@ double SetAltitude(int onGround) {
         Qi198SentAirborne = 0;
         sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
         sendQPSX(sQi198);
+    }
         else {
 
             if (!Qi198SentAirborne) {
@@ -776,15 +777,15 @@ double SetAltitude(int onGround) {
             }
             Qi198SentLand = 0;
         }
-    }
+    
 
-    if (takingoff) {
+    if(takingoff) {
         /*
          * smoothly resetting static variable delta for the landing
          * and make boost and MSFS altitude coincide
          */
 
-        if (altitude - gound_altitude > 100) {
+        if (altitude - ground_altitude > 100) {
             if (abs(delta) > 1) {
                 if (delta > 0) {
                     delta--;
@@ -794,7 +795,7 @@ double SetAltitude(int onGround) {
             } else {
                 delta = 0;
             }
-
+        //    printf("Inside take off: Alt: %.2f\t Boost: %.2f\t delta:%.2f\n",altitude, boostAltitude,delta);
             altitude = boostAltitude - delta;
         }
     } else {
@@ -802,11 +803,12 @@ double SetAltitude(int onGround) {
          * prepare boost / msfs altitude adjustment for landing
          */
         if (altitude - ground_altitude > 100) {
-            deltaTarget = boostAltitude - ground_altitude - 15.13;
+            //deltaTarget = boostAltitude - ground_altitude - 15.13;
+            deltaTarget = boostAltitude-altitude-15.13;
         } else {
-            if (abs(delta - deltatarget) > 1) {
+            if (abs(delta - deltaTarget) > 1) {
                 if (delta < deltaTarget) {
-                    delta++
+                    delta++;
                 } else {
                     delta--;
                 }
@@ -815,6 +817,7 @@ double SetAltitude(int onGround) {
             }
         }
 
+            printf("Inside take off: Alt: %.2f\t Boost: %.2f\t delta:%.2f\t deltatarget: %.2f\n",altitude, boostAltitude,delta,deltaTarget);
         altitude = boostAltitude - delta;
     }
 
@@ -825,16 +828,14 @@ void SetMSFSPos(void) {
 
     pthread_mutex_lock(&mutex);
     AcftPosition APos;
-    double lat, longi, altitude;
-    static double delta = 0;
-    int ground_to_air = 0;
+    double lat, longi;
     HRESULT hr = 0;
 
     // Calculate coordinates from centre aircraft;
     CalcCoord(Tboost.heading_true + M_PI, 92.5, Tboost.latitude,
               Tboost.longitude, &lat, &longi);
 
-    APos.altitude = SetAltitude(Tboost.onground == 2);
+    APos.altitude = SetAltitude(Tboost.onGround == 2);
 
     APos.latitude = lat;
     APos.longitude = longi;
