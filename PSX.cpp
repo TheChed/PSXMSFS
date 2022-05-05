@@ -369,7 +369,8 @@ void Decode_Boost(Target *T, char *s) {
         T->longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
     }
 
-    T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch) + 15.13;
+    // T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch);
+    T->altitude = flightDeckAlt;
 }
 
 int umainBoost(Target *T) {
@@ -430,7 +431,8 @@ int umain(Target *T) {
 
     // New situ loaded
     if (strstr(cBuf, "load3")) {
-        sleep(1); // let's wait a few seconds to get everyone ready
+        sendQPSX("Qi198=999920"); // no crash detection fort 10 seconds
+        sleep(1);                 // let's wait a few seconds to get everyone ready
         MSFS_on_ground = 0;
     }
 
