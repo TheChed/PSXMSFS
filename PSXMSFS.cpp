@@ -132,7 +132,7 @@ void Inject_MSFS_PSX(void) {
     strcat(Qs122, strcat(tmpchn, ";"));
     sprintf(tmpchn, "%d", (int)(MSFS_POS.heading_true * 1000));
     strcat(Qs122, strcat(tmpchn, ";"));
-    sprintf(tmpchn, "%d", (int)MSFS_POS.altitude);
+    sprintf(tmpchn, "%d", (int)(MSFS_POS.altitude-MSFSHEIGHT));
     strcat(Qs122, strcat(tmpchn, ";"));
     sprintf(tmpchn, "%d", (int)MSFS_POS.VS);
     strcat(Qs122, strcat(tmpchn, ";"));
@@ -245,8 +245,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             MSFS_POS.ground_altitude = pS->ground_altitude;
             MSFS_POS.alt_above_ground = pS->alt_above_ground;
             MSFS_POS.alt_above_ground_minus_CG = pS->alt_above_ground_minus_CG;
-            // printf("Tmain: %.4f\t psalt: %.4f\t: CG:
-            // %.4f\n",Tboost.altitude,pS->altitude,MSFS_POS.alt_above_ground_minus_CG);
             MSFS_on_ground = (MSFS_POS.alt_above_ground_minus_CG < 1);
             MSFS_POS.pitch = pS->pitch;
             MSFS_POS.bank = pS->bank;
@@ -602,7 +600,6 @@ void init_pos() {
 double SetAltitude(int onGround) {
 
     double ctrAltitude;
-    static double delta=0;
     char sQi198[128];
 
     /*
@@ -623,35 +620,31 @@ double SetAltitude(int onGround) {
     if (ground_altitude_avail) {
         if (onGround || ctrAltitude - ground_altitude < 300) {
             if (!Qi198SentLand) {
-                printf("Below 300 ft AGL => using MSFS elevation\n");
+                if(DEBUG) printf("Below 300 ft AGL => using MSFS elevation\n");
                 sendQPSX("Qi198=-999910"); // Allow (9999xx) seconds with no
                                            // crash, no inertia
                 Qi198SentLand = 1;
             }
             Qi198SentAirborne = 0;
-            delta=MSFS_POS.alt_above_ground_minus_CG;
             sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
             sendQPSX(sQi198);
         } else {
 
             if (!Qi198SentAirborne) {
 
-                printf("Above 300 ft AGL => using PSX elevation.");
+                if(DEBUG) printf("Above 300 ft AGL => using PSX elevation.\n");
                 sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
                 Qi198SentAirborne = 1;
             }
             Qi198SentLand = 0;
         }
     } else {
-        printf("No ground elevation availble\n");
         Qi198SentLand = 0;
         Qi198SentAirborne = 0;
-        delta=0;
     }
 
-     printf("ground: %.2f\t CtrAcft: %.2f\t Tboost: %.2f\t %s\n",ground_altitude, ctrAltitude,Tboost.altitude,sQi198);
 
-    return ctrAltitude + 15.13-delta;
+        return ctrAltitude + MSFSHEIGHT;
 }
 
 void SetMSFSPos(void) {

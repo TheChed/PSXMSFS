@@ -10,6 +10,7 @@
 #define EARTH_RAD   6371008  //earth radius in meters
 #define FTM 0.3048   //feet to meters
 #define DEG2RAD  (M_PI/180.0)
+#define MSFSHEIGHT 15.13    //offset when on ground compared to PSX
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 extern HRESULT hr;
