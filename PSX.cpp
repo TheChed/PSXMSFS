@@ -190,6 +190,18 @@ void S483(char *s, Target *T) {
         T->IAS = strtol(token, &ptr, 10) / 10.0;
     }
 }
+
+void S78(const char *s) {
+
+    if (strstr(s, "MSFS")) {
+        SLAVE = 1;
+    } else {
+        if (strstr(s, "PSX")) {
+            SLAVE = 0;
+        }
+    }
+}
+
 void S448(char *s, Target *T) {
 
     char *token, *ptr;
@@ -508,6 +520,11 @@ int umain(Target *T) {
     // Altimeter
     if (strstr(cBuf, "Qs448")) {
         S448(strstr(cBuf, "Qs448"), T);
+        update = 1;
+    }
+    // MSFS slave-Master
+    if (strstr(cBuf, "Qs78")) {
+        S78(strstr(cBuf, "Qs78"));
         update = 1;
     }
 

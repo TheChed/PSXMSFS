@@ -132,7 +132,7 @@ void Inject_MSFS_PSX(void) {
     strcat(Qs122, strcat(tmpchn, ";"));
     sprintf(tmpchn, "%d", (int)(MSFS_POS.heading_true * 1000));
     strcat(Qs122, strcat(tmpchn, ";"));
-    sprintf(tmpchn, "%d", (int)(MSFS_POS.altitude-MSFSHEIGHT));
+    sprintf(tmpchn, "%d", (int)(MSFS_POS.altitude - MSFSHEIGHT));
     strcat(Qs122, strcat(tmpchn, ";"));
     sprintf(tmpchn, "%d", (int)MSFS_POS.VS);
     strcat(Qs122, strcat(tmpchn, ";"));
@@ -178,6 +178,13 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         case EVENT_ONE_SEC: {
 
             key_press = 0;
+            if (DEBUG) {
+                if (!SLAVE) {
+                    printf("Injecting position to MSFS from PSX\n");
+                } else {
+                    printf("Injecting position to PSX from MSFS\n");
+                }
+            }
         } break;
 
         case EVENT_6_HZ: {
@@ -214,11 +221,12 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             if (!key_press) {
                 SLAVE = !SLAVE;
                 key_press = 1;
-
-                if (!SLAVE) {
-                    printf("Injecting position to MSFS from PSX\n");
-                } else {
-                    printf("Injecting position to PSX from MSFS\n");
+                if (DEBUG) {
+                    if (!SLAVE) {
+                        printf("Injecting position to MSFS from PSX\n");
+                    } else {
+                        printf("Injecting position to PSX from MSFS\n");
+                    }
                 }
             }
         } break;
@@ -620,7 +628,8 @@ double SetAltitude(int onGround) {
     if (ground_altitude_avail) {
         if (onGround || ctrAltitude - ground_altitude < 300) {
             if (!Qi198SentLand) {
-                if(DEBUG) printf("Below 300 ft AGL => using MSFS elevation\n");
+                if (DEBUG)
+                    printf("Below 300 ft AGL => using MSFS elevation\n");
                 sendQPSX("Qi198=-999910"); // Allow (9999xx) seconds with no
                                            // crash, no inertia
                 Qi198SentLand = 1;
@@ -632,7 +641,8 @@ double SetAltitude(int onGround) {
 
             if (!Qi198SentAirborne) {
 
-                if(DEBUG) printf("Above 300 ft AGL => using PSX elevation.\n");
+                if (DEBUG)
+                    printf("Above 300 ft AGL => using PSX elevation.\n");
                 sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
                 Qi198SentAirborne = 1;
             }
@@ -643,8 +653,7 @@ double SetAltitude(int onGround) {
         Qi198SentAirborne = 0;
     }
 
-
-        return ctrAltitude + MSFSHEIGHT;
+    return ctrAltitude + MSFSHEIGHT;
 }
 
 void SetMSFSPos(void) {
@@ -878,12 +887,6 @@ int main(int argc, char **argv) {
 
     // initialize the data to be received as well as all EVENTS
     init_MS_data();
-
-    // set a default location for the plane
-    // Here at LFPG stand E22 if PSX is not enslaved to MSFS
-    if (!SLAVE) {
-        init_pos();
-    }
 
     /*
      * Sending Q423 DEMAND variable to PSX for the winds
