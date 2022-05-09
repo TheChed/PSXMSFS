@@ -443,7 +443,7 @@ int umain(Target *T) {
 
     // New situ loaded
     if (strstr(cBuf, "load3")) {
-        sendQPSX("Qi198=999920"); // no crash detection fort 10 seconds
+        sendQPSX("Qi198=-999920"); // no crash detection fort 10 seconds
         sleep(1);                 // let's wait a few seconds to get everyone ready
         MSFS_on_ground = 0;
     }
