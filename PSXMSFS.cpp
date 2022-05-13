@@ -176,15 +176,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         } break;
 
         case EVENT_ONE_SEC: {
-
             key_press = 0;
-            if (DEBUG) {
-                if (!SLAVE) {
-                    printf("Injecting position to MSFS from PSX\n");
-                } else {
-                    printf("Injecting position to PSX from MSFS\n");
-                }
-            }
         } break;
 
         case EVENT_6_HZ: {
@@ -223,8 +215,10 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
                 key_press = 1;
                 if (DEBUG) {
                     if (!SLAVE) {
+                    sendQPSX("Qs419=");
                         printf("Injecting position to MSFS from PSX\n");
                     } else {
+                    sendQPSX("Qs419=>MSFS MASTER");
                         printf("Injecting position to PSX from MSFS\n");
                     }
                 }
