@@ -145,7 +145,6 @@ void Inject_MSFS_PSX(void) {
     sprintf(tmpchn, "%d", (int)(MSFS_POS.ground_altitude * 10));
     strcat(Qs122, tmpchn);
     if (MSFS_POS_avail) {
-        //   printf("Injecting:%s\n",Qs122);
         sendQPSX(Qs122);
     }
     MSFS_POS_avail = 0;
@@ -172,8 +171,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         SIMCONNECT_RECV_EVENT *evt = (SIMCONNECT_RECV_EVENT *)pData;
 
         switch (evt->uEventID) {
-        case EVENT_SIM_START: {
-        } break;
 
         case EVENT_ONE_SEC: {
             key_press = 0;
@@ -205,20 +202,16 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
 
         } break;
 
-        case EVENT_FREEZE_ALT: {
-
-        } break;
-
         case EVENT_P_PRESS: {
             if (!key_press) {
                 SLAVE = !SLAVE;
                 key_press = 1;
                 if (DEBUG) {
                     if (!SLAVE) {
-                    sendQPSX("Qs419=");
+                        sendQPSX("Qs419=");
                         printf("Injecting position to MSFS from PSX\n");
                     } else {
-                    sendQPSX("Qs419=>MSFS MASTER");
+                        sendQPSX("Qs419=>MSFS MASTER");
                         printf("Injecting position to PSX from MSFS\n");
                     }
                 }
