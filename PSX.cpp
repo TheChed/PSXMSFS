@@ -12,6 +12,16 @@
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
+void printDebug(const char *debugInfo, int freq) {
+    struct timespec tsend;
+    clock_gettime(CLOCK_MONOTONIC, &tsend);
+
+    if (DEBUG) {
+        fprintf(fdebug, "[%lld.%.03ld]\t%s", tsend.tv_sec, tsend.tv_nsec / 1000000, debugInfo);
+        fprintf(fdebug, "\n");
+    }
+}
+
 void state(Target *T, FILE *fd, int console) {
 
     time_t result = time(NULL);

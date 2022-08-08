@@ -40,7 +40,7 @@ char PSXBoostServer[] = "0.0.0.0";
 int PSXPort;
 int PSXBoostPort;
 int SLAVE = 0; // 0=PSX is master, 1=MSFS is master
-
+char debugInfo[256] = {0};
 FILE *fdebug;
 
 /*
@@ -103,8 +103,6 @@ void SetBARO(void) {
 
 void IA_update() {
 
-    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 40 * NM,
-                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
     for (int acft_id = 0; acft_id < 7; acft_id++) {
         tcas_acft[acft_id].latitude = 0.0;
         tcas_acft[acft_id].longitude = 0.0;
@@ -254,7 +252,7 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             MSFS_plane_alt = pS->alt_above_ground;
             CG_height = pS->alt_above_ground_minus_CG;
             ground_altitude = pS->ground_altitude;
-            ground_altitude_avail = (ground_altitude != 0);
+            ground_altitude_avail = 1;
         } break;
 
         default:
@@ -503,6 +501,12 @@ int init_MS_data(void) {
     hr = SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
     hr = SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT);
 
+    /*
+     * TCAS EVENT INITIALIZATION
+     */
+    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 40 * NM,
+                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+
     return hr;
 }
 
@@ -510,6 +514,33 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
+        sleep(1);
+        if (hr < 0) {
+
+            time_t result = time(NULL);
+            fprintf(fdebug, "On:%s", asctime(gmtime(&result)));
+            fprintf(fdebug, "ERROR in SimConnect_CallDispatch\n");
+            fprintf(fdebug, "\tTrying to reinitialize the connection to Simconnect.....\n");
+            fprintf(fdebug, "\tClosing faulty connection.....\n");
+            SimConnect_Close(hSimConnect);
+
+            /*
+             * First start by clearing the data definition, in case we call this
+             * function after an error
+             */
+
+            hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
+            hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
+            hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
+            fprintf(fdebug, "\tOpening new connection.....\n");
+
+            init_connect_MSFS(&hSimConnect);
+            if (init_MS_data() < 0) {
+                fprintf(fdebug, "\tUnable to reinitilize....Sorry folks, quitting now\n");
+                fflush(NULL);
+                quit = 1;
+            };
+        }
         // sleep(1);
     }
     return NULL;
@@ -612,11 +643,12 @@ double SetAltitude(int onGround) {
      * Calculate the altitude if PSX is on the ground
      * or in flight
      */
+    // return ctrAltitude + MSFSHEIGHT;
+
     if (ground_altitude_avail) {
         if (onGround || ctrAltitude - ground_altitude < 300) {
             if (!Qi198SentLand) {
-                if (DEBUG)
-                    printf("Below 300 ft AGL => using MSFS elevation\n");
+                printDebug("Below 300 ft AGL => using MSFS elevation");
                 sendQPSX("Qi198=-999910"); // Allow (9999xx) seconds with no
                                            // crash, no inertia
                 Qi198SentLand = 1;
@@ -628,19 +660,26 @@ double SetAltitude(int onGround) {
 
             if (!Qi198SentAirborne) {
 
-                if (DEBUG)
-                    printf("Above 300 ft AGL => using PSX elevation.\n");
+                printDebug("Above 300 ft AGL => using PSX elevation.");
                 sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
                 Qi198SentAirborne = 1;
             }
             Qi198SentLand = 0;
         }
     } else {
+        printDebug("Ground elevation from MSFS not available");
         Qi198SentLand = 0;
         Qi198SentAirborne = 0;
     }
+    sprintf(debugInfo, "MSFSPOS_ground: %.2f\tMSFS height: %.2f\tBoost Alt: %.2f\tAltitude Set: %.2f",
+            MSFS_POS.ground_altitude, MSFSHEIGHT, ctrAltitude, ctrAltitude + MSFSHEIGHT);
 
-    return ctrAltitude + MSFSHEIGHT;
+    printDebug(debugInfo);
+    if (ground_altitude_avail && onGround) {
+        return (MSFS_POS.ground_altitude + MSFSHEIGHT);
+    } else {
+        return ctrAltitude + MSFSHEIGHT;
+    }
 }
 
 void SetMSFSPos(void) {
