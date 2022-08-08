@@ -194,7 +194,7 @@ void open_connections();
 void state(Target *T, FILE *fdebug, int console); // prints PSX information 
 void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints MSFS information 
 char *convert(double, int);
-void printDebug(const char *debugInfo,int freq);
+void printDebug(const char *debugInfo);
 int umain(Target *T);
 int umainBoost(Target *T);
 int umainBoost2(Target *T);

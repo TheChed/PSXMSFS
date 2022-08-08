@@ -12,7 +12,7 @@
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
-void printDebug(const char *debugInfo, int freq) {
+void printDebug(const char *debugInfo) {
     struct timespec tsend;
     clock_gettime(CLOCK_MONOTONIC, &tsend);
 
