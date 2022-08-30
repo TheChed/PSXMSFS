@@ -6,7 +6,7 @@
 
 #define MAXLEN 8192
 #define PRINT 1
-#define M_PI 3.141592653589793
+#define M_PI 3.14159265358979323846
 #define NM 1852     //meters in a nm
 #define EARTH_RAD   6371008  //earth radius in meters
 #define FTM 0.3048   //feet to meters
@@ -31,6 +31,8 @@ extern char MSFSServer[];
 extern char PSXBoostServer[];
 extern int PSXPort;
 extern int PSXBoostPort;
+
+extern char debugInfo[];
 
 struct Struct_MSFS {
     double ground_altitude; // ground altitude above MSL
