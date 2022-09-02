@@ -12,13 +12,19 @@
 #include "PSXMSFS.h"
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
+    
+/*Global variable used in readin boost socket*/
+#define MAXBUFF 4096
+char inbuf[MAXBUFF];
+size_t inbuf_used = 0;
 
 void printDebug(const char *debugInfo, int console) {
     struct timespec tsend;
     clock_gettime(CLOCK_MONOTONIC, &tsend);
 
     if (DEBUG) {
-        fprintf(fdebug, "[%lld.%.03ld]\t%s", tsend.tv_sec, tsend.tv_nsec / 1000000, debugInfo);
+        fprintf(fdebug, "[%lld.%.03ld]\t%s", tsend.tv_sec,
+                tsend.tv_nsec / 1000000, debugInfo);
         fprintf(fdebug, "\n");
     }
     if (console) {
@@ -74,7 +80,8 @@ void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
     fprintf(fd, "FlapsPosition: %.1f\t", A->FlapsPosition);
     fprintf(fd, "Speedbrake: %.1f\t", A->Speedbrake);
     // Lights
-    fprintf(fd, "Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
+    fprintf(fd,
+            "Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
             A->LandLeftOutboard,  // L Outboard
             A->LandLeftInboard,   // L Inboard
             A->LandRightInboard,  // R Inboard
@@ -246,8 +253,8 @@ void S458(char *s, Target *T) {
     char COM1[9] = {0}, COM2[9] = {0};
 
     /*
-     * discard the last digit from the Qs string as it is not taken into MSFS. and
-     * start at second digit, as first one is always 1
+     * discard the last digit from the Qs string as it is not taken into MSFS.
+     * and start at second digit, as first one is always 1
      */
     strncpy(COM1, s + 6, 3);
     strncat(COM1, s + 10, 3);
@@ -269,9 +276,12 @@ void S480(char *s, Target *T) {
         val[i] = (s[2 * i + 6] - '0') * 10 + (s[2 * i + 1 + 6] - '0');
     }
 
-    T->rudder = 16384 * ((val[8] + val[9]) / 2 - 32) / 32.0; // maximum deflection = 64
-    T->aileron = -16384 * (val[0] - 20) / 20.0;              // maximum deflection in PSX  = 40
-    T->elevator = 16384 * (val[6] - 21) / 21.0;              // maximum deflection in PSX = 42
+    T->rudder =
+        16384 * ((val[8] + val[9]) / 2 - 32) / 32.0; // maximum deflection = 64
+    T->aileron =
+        -16384 * (val[0] - 20) / 20.0; // maximum deflection in PSX  = 40
+    T->elevator =
+        16384 * (val[6] - 21) / 21.0; // maximum deflection in PSX = 42
 }
 
 void S124(char *s, Target *T) {
@@ -287,7 +297,7 @@ void S124(char *s, Target *T) {
     }
 
     T->year = time_PSX->tm_year + 1900; // year starts in 1900
-    T->day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
+    T->day = time_PSX->tm_yday + 1; // nb days since January 1st, starts at 0
     T->hour = time_PSX->tm_hour;
     T->minute = time_PSX->tm_min;
 
@@ -336,7 +346,7 @@ void S122(char *s, Target *T) {
 
     if ((token = strtok(NULL, delim)) != NULL) {
         T->VerticalSpeed = strtol(token, &ptr, 10);
-        printDebug(token,1);
+        printDebug(token, 1);
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
@@ -391,11 +401,13 @@ void Decode_Boost(Target *T, char *s) {
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
+        T->latitude =
+            strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
     }
 
     if ((token = strtok(NULL, delim)) != NULL) {
-        T->longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
+        T->longitude =
+            strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
     }
 
     // T->altitude = flightDeckAlt - 28.412073 - 92.5 * sin(T->pitch);
@@ -403,6 +415,48 @@ void Decode_Boost(Target *T, char *s) {
 }
 
 int umainBoost(Target *T) {
+    size_t inbuf_remain = sizeof(inbuf) - inbuf_used;
+
+    if (inbuf_remain == 0) {
+        fprintf(stderr, "Line exceeded buffer length!\n");
+        abort();
+    }
+
+    int nbread =
+        recv(sPSXBOOST, (char *)&inbuf[inbuf_used], inbuf_remain,0);
+    if (nbread == 0) {
+        fprintf(stderr, "Connection closed.\n");
+        abort();
+    }
+    if (nbread < 0 && errno == EAGAIN) {
+        /* no data for now, call back when the socket is readable */
+        return 0;
+    }
+    if (nbread < 0) {
+        perror("Connection error");
+        abort();
+    }
+    inbuf_used += nbread;
+
+    /* Scan for newlines in the line buffer; we're careful here to deal with
+     * embedded \0s an evil server may send, as well as only processing lines
+     * that are complete.
+     */
+    char *line_start = inbuf;
+    char *line_end;
+    while ((line_end = (char *)memchr((void *)line_start, '\n',
+                                      inbuf_used - (line_start - inbuf)))) {
+        *line_end = 0;
+        Decode_Boost(T, line_start);
+        line_start = line_end + 1;
+    }
+    /* Shift buffer down so the unprocessed data is at the start */
+    inbuf_used -= (line_start - inbuf);
+    memmove(inbuf, line_start, inbuf_used);
+    return nbread;
+}
+
+/*int umainBoost(Target *T) {
     char chaine[128] = {0};
 
     int nbread = recv(sPSXBOOST, chaine, 127, 0);
@@ -410,16 +464,18 @@ int umainBoost(Target *T) {
         if (chaine[0] == 'F' || chaine[0] == 'G') {
             Decode_Boost(T, chaine);
         } else {
-                assert(strlen(debugInfo)<128);
-                sprintf(debugInfo,"Wrong boost string received: %s", chaine);
-                printDebug(debugInfo, CONSOLE);
+            assert(strlen(debugInfo) < 128);
+            sprintf(debugInfo, "Wrong boost string received: %s", chaine);
+            printDebug(debugInfo, CONSOLE);
         }
     } else {
-        //  printf("Boost connection lost.... We have to exit now. Sorry Folks\n");
+        //  printf("Boost connection lost.... We have to exit now. Sorry
+        //  Folks\n");
     }
 
     return nbread;
 }
+*/
 
 int sendQPSX(const char *s) {
 
@@ -460,7 +516,7 @@ int umain(Target *T) {
     // New situ loaded
     if (strstr(cBuf, "load3")) {
         sendQPSX("Qi198=-999920"); // no crash detection fort 10 seconds
-        sleep(1);                  // let's wait a few seconds to get everyone ready
+        sleep(1); // let's wait a few seconds to get everyone ready
         MSFS_on_ground = 0;
     }
 
