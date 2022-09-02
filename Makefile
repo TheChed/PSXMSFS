@@ -1,5 +1,5 @@
 CC = x86_64-w64-mingw32-gcc  
-CFLAGS = -IInclude -Wall -Wextra -pedantic
+CFLAGS = -IInclude -Wall -Wextra -Wpedantic -Werror
 
 DEPS = PSXMSFS.h
 OBJ = PSXMSFS.o PSX.o connect.o
