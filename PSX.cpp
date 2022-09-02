@@ -34,7 +34,6 @@ void printDebug(const char *debugInfo, int console) {
 
 void state(Target *T, FILE *fd, int console) {
 
-    time_t result = time(NULL);
     if (console) {
         printf("PSX:\t  ");
         printf("Alt: %.0f\t", T->altitude);
@@ -48,7 +47,6 @@ void state(Target *T, FILE *fd, int console) {
         printf("VS: %.1f\t", T->VerticalSpeed);
         printf("\n");
     }
-    fprintf(fd, "%s", asctime(gmtime(&result)));
     fprintf(fd, "PSX:\t  ");
     fprintf(fd, "Alt: %.0f\t", T->altitude);
     fprintf(fd, "Lat: %.3f\t", T->latitude);
@@ -63,9 +61,7 @@ void state(Target *T, FILE *fd, int console) {
 }
 void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
 
-    time_t result = time(NULL);
     // printing to debug file
-    fprintf(fd, "%s", asctime(gmtime(&result)));
     fprintf(fd, "MSFS:\t  ");
     fprintf(fd, "Alt: %.0f\t", A->altitude);
     fprintf(fd, "Lat: %.3f\t", A->latitude);
@@ -103,7 +99,6 @@ void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
     fflush(NULL);
     // And printing to stdout if console is set
     if (console) {
-        printf("%s", asctime(gmtime(&result)));
         printf("MSFS:\t  ");
         printf("Alt: %.0f\t", A->altitude);
         printf("Lat: %.3f\t", A->latitude);
