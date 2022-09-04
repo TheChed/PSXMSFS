@@ -36,7 +36,7 @@ HRESULT hr;
 int DEBUG;
 int TCAS_INJECT = 1; /*TCAS injection on by default*/
 int SLAVE = 0;       // 0=PSX is master, 1=MSFS is master
-char debugInfo[256] = {0};
+char debugInfo[MAXBUFF] = {0};
 FILE *fdebug;
 
 /*
@@ -411,7 +411,7 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED", "feet per second");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED", "feet per minute");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
@@ -669,16 +669,10 @@ double SetAltitude(int onGround) {
             Qi198SentLand = 0;
         }
     } else {
-        printDebug("Ground elevation from MSFS not available",0);
+        printDebug("Ground elevation from MSFS not available", 0);
         Qi198SentLand = 0;
         Qi198SentAirborne = 0;
     }
-    sprintf(debugInfo,
-            "MSFSPOS_ground: %.2f\tMSFS height: %.2f\tBoost Alt: %.2f\tAltitude "
-            "Set: %.2f",
-            MSFS_POS.ground_altitude, MSFSHEIGHT, ctrAltitude, ctrAltitude + MSFSHEIGHT);
-
-    printDebug(debugInfo, 0);
     if (ground_altitude_avail && onGround) {
         return (MSFS_POS.ground_altitude + MSFSHEIGHT);
     } else {
@@ -705,7 +699,7 @@ void SetMSFSPos(void) {
     APos.bank = Tboost.bank;
     APos.tas = Tmain.TAS;
     APos.ias = Tmain.IAS;
-    APos.vertical_speed = Tmain.VerticalSpeed/60.0;
+    APos.vertical_speed = Tboost.VerticalSpeed ;
     APos.FlapsPosition = Tmain.FlapLever;
     APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
     APos.GearDown = ((Tmain.GearLever == 3) ? 1.0 : 0.0);
@@ -869,9 +863,9 @@ int init_param() {
     strcpy(MSFSServer, "127.0.0.1");
     PSXPort = 10747;
     PSXBoostPort = 10749;
-    SLAVE=0;
-    DEBUG=0;
-    TCAS_INJECT=1;
+    SLAVE = 0;
+    DEBUG = 0;
+    TCAS_INJECT = 1;
 
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
@@ -975,7 +969,6 @@ void parse_arguments(int argc, char **argv) {
 
 int main(int argc, char **argv) {
     pthread_t t1, t2, t3;
-
 
     /* Read from .ini file the various values
      * used in the program

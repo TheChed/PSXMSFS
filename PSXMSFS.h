@@ -13,6 +13,13 @@
 #define DEG2RAD  (M_PI/180.0)
 #define MSFSHEIGHT 15.13    //offset when on ground compared to PSX
 #define CONSOLE 1   //print debug info on the console
+#define MAXBUFF 165536
+
+/*Global variable used in readin boost socket*/
+extern char bufboost[MAXBUFF];
+extern char bufmain[MAXBUFF];
+extern size_t bufboost_used ;
+extern size_t bufmain_used ;
 
 
 extern int sPSX, sPSXBOOST;
