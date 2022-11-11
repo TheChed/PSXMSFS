@@ -1,6 +1,7 @@
 #ifndef __PSXMSFS_H_
 #define __PSXMSFS_H_
 
+#include <pthread.h>
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -21,6 +22,11 @@ extern char bufmain[MAXBUFF];
 extern size_t bufboost_used ;
 extern size_t bufmain_used ;
 
+extern struct timespec TimeStart;
+extern struct timespec TimeCurrent;
+
+
+extern pthread_mutex_t mutex;
 
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
@@ -133,7 +139,7 @@ enum EVENT_ID {
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
     DATA_PSX_TO_MSFS,
-    DATA_TCAS_TRAFFIC,  //This is the DATA to be returned for the aircraft in the vicinity
+    TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
 };
 
 enum DATA_REQUEST_ID {
@@ -173,10 +179,10 @@ typedef struct {
     double IAS;
     double VerticalSpeed;
     int onGround;          // 1 if PSX is on groud, 0 otherwise
-    double GearDown = 0.0; // Gear down =1, gear up =0;
-    int GearLever = 3.0;   // 1=up, 2=off, 3=down
-    int FlapLever = 0.0;   // 0 (up) to 6 (30)
-    int SpdBrkLever = 0.0; // 0 (up) to 800 max deployed
+    double GearDown ; // Gear down =1, gear up =0;
+    int GearLever  ;   // 1=up, 2=off, 3=down
+    int FlapLever ;   // 0 (up) to 6 (30)
+    int SpdBrkLever ; // 0 (up) to 800 max deployed
     int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
                    // logo
@@ -194,8 +200,8 @@ typedef struct {
     int COM2;
 
     //Altimeter
-    double altimeter=1013.25;
-    int STD = 1;
+    double altimeter;
+    int STD ;
 
 } Target;
 
@@ -203,7 +209,7 @@ typedef struct {
 int check_param(const char *);
 int init_socket(void);
 int close_PSX_socket(int socket);
-void Decode(int, char, char *, Target *);
+//void Decode(int, char, char *, Target *);
 int open_connections();
 void state(Target *T, FILE *fdebug, int console); // prints PSX information 
 void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints MSFS information 

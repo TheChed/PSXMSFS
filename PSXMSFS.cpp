@@ -1,12 +1,14 @@
 #include <assert.h>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <getopt.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
@@ -28,6 +30,8 @@ int Qi198SentLand = 0;
 int Qi198SentAirborne = 0;
 struct Struct_MSFS MSFS_POS;
 
+struct timespec TimeStart;
+struct timespec TimeCurrent;
 Target Tmain, Tboost;
 pthread_mutex_t mutex;
 int updateLights, UTCupdate = 1;
@@ -196,6 +200,8 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             /*
              * TCAS injection every 4 seconds but only if TCAS switch is on
              */
+            hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, TCAS_TRAFFIC_DATA, 40 * NM,
+                                                       SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
             if (TCAS_INJECT) {
                 IA_update();
             }
@@ -268,27 +274,42 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         switch (pObjData->dwRequestID) {
         case DATA_REQUEST_TCAS: {
             AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
-            double d;
+            double d, lat,lon,alt;
             char tmpchn[128] = {0};
             char QsTfcPos[999] = {0}; // max lenght = 999
 
+            lat=MSFS_POS.latitude;
+            lon=MSFS_POS.longitude;
+            alt=MSFS_POS.altitude;
+            
+         //   printf("INside the Devil, but exiting....lat:%lf\tlon:%lf\tAlt:%lf\n",lat,lon,alt);
+         //   break;
+
             if (pObjData->dwentrynumber > 1) {
-                d = dist(ai->latitude, Tboost.latitude, ai->longitude, Tboost.longitude) / NM;
-                if ((d < 40) &&                                   // less than 40 NM away
-                    abs(ai->altitude - Tboost.altitude) < 2700 && // below or above 2700 feet
-                    (!(Tboost.onGround == 2) ||
-                     ((Tboost.onGround == 2) &&
-                      abs(ai->altitude - Tboost.altitude) > 500))) { // onground dont show acft below 500 above us
-
-                    update_TCAS(ai, d);
+                d = dist(ai->latitude,lat, ai->longitude, lon) / NM;
+             //   printf("Distance: %lf\n",d);
+             //   printf("Diff Alt: %lf\n",ai->altitude-alt);
+                if (d < 40) {                                         // show only aircraft less than 40NM away from us
+                    if (abs(ai->altitude - alt) < 2700) { // show only aircraft 2700 above or below us
+                        if (Tboost.onGround == 2) {
+                            if (abs(ai->altitude - alt) < 500) { // on the ground only update if 500 above
+                                                                             // us
+                                update_TCAS(ai, d);
+                            }
+                        } else {
+                            update_TCAS(ai, d);
+                        }
+                    }
                 }
+            }
 
-                /*
-                 * We have scanned all the planes in the vicinity{
-                 */
-                if (pObjData->dwentrynumber == pObjData->dwoutof) {
-                    strcpy(QsTfcPos, "Qs450=");
-                    for (int i = 0; i < 7; i++) {
+            /*
+             * We have scanned all the planes in the vicinity{
+             */
+            if (pObjData->dwentrynumber == pObjData->dwoutof) {
+                strcpy(QsTfcPos, "Qs450=");
+                for (int i = 0; i < 7; i++) {
+                    if (i < nb_acft) {
                         sprintf(tmpchn, "%lf", tcas_acft[i].latitude);
                         strcat(strcat(QsTfcPos, tmpchn), ";");
                         sprintf(tmpchn, "%lf", tcas_acft[i].longitude);
@@ -297,12 +318,15 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
                         strcat(strcat(QsTfcPos, tmpchn), ";");
                         sprintf(tmpchn, "%d", tcas_acft[i].heading);
                         strcat(strcat(QsTfcPos, tmpchn), ";");
+                    } else {
+                        strcat(QsTfcPos, "0;0;0;0;");
                     }
-
-                    /* and now we can send the string to PSX */
-                    sendQPSX("Qi201=1");
-                    sendQPSX(QsTfcPos);
                 }
+
+                /* and now we can send the string to PSX */
+                sendQPSX("Qi201=1");
+                sendQPSX(QsTfcPos);
+                //    printDebug(QsTfcPos, CONSOLE);
             }
 
         } break;
@@ -334,7 +358,7 @@ void update_TCAS(AI_TCAS *ai, double d) {
         tcas_acft[0].latitude = ai->latitude;
         tcas_acft[0].longitude = ai->longitude;
         tcas_acft[0].altitude = (int)(ai->altitude * 10);
-        tcas_acft[0].heading = (int)(ai->heading * 100);
+        tcas_acft[0].heading = (int)(ai->heading / M_PI * 180 * 100);
         tcas_acft[0].distance = d;
         nb_acft++;
     }
@@ -417,20 +441,6 @@ int init_MS_data(void) {
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_VISUAL_FRAME);
-    //    SIMCONNECT_PERIOD_SECOND);
-
-    /*
-     * This is the data that will be fetched from the aircraft in vicinity of
-     * PSX And will be used in the PSX TCAS
-     */
-
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LATITUDE", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE LONGITUDE", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC, "PLANE HEADING DEGREES MAGNETIC", "radians");
-
-    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
 
@@ -506,9 +516,16 @@ int init_MS_data(void) {
     /*
      * TCAS EVENT INITIALIZATION
      */
-    hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, DATA_TCAS_TRAFFIC, 40 * NM,
-                                               SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
 
+    /*
+     * This is the data that will be fetched from the aircraft in vicinity of
+     * PSX And will be used in the PSX TCAS
+     */
+
+    hr = SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LATITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LONGITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE HEADING DEGREES MAGNETIC", "radians");
     return hr;
 }
 
@@ -516,7 +533,7 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
-        sleep(1);
+        Sleep(1);
         if (hr < 0) {
 
             time_t result = time(NULL);
@@ -532,7 +549,7 @@ void *ptDatafromMSFS(void *thread_param) {
              */
 
             hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
-            hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
+            hr = SimConnect_ClearDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA);
             hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
             fprintf(fdebug, "\tOpening new connection.....\n");
 
@@ -543,37 +560,41 @@ void *ptDatafromMSFS(void *thread_param) {
                 quit = 1;
             };
         }
-        // sleep(1);
     }
     return NULL;
 }
 
 void *ptUmainboost(void *thread_param) {
-    (void)(&thread_param);
-
+    (void)(thread_param);
     while (!quit) {
-        if (umainBoost(&Tboost)) {
-
-            if (!SLAVE) {
-                SetMSFSPos();
-            }
-        }
+        umainBoost(&Tboost);
     }
-
     return NULL;
 }
 
-void *ptUmain(void *thread_param) {
-    (void)(&thread_param);
-
+void *pttimer(void *thread_param) {
+    (void)(thread_param);
+    int print = 1;
     while (!quit) {
-        if (umain(&Tmain)) {
-            if (!SLAVE) {
-                SetMSFSPos();
+        clock_gettime(CLOCK_MONOTONIC, &TimeCurrent);
+        if ((TimeCurrent.tv_sec % 3) == 0) {
+            if (print) {
+                fprintf(fdebug, "Time is: [%lld.%.03ld]\t%s", TimeCurrent.tv_sec - TimeStart.tv_sec,
+                        abs((TimeCurrent.tv_nsec - TimeStart.tv_nsec)) / 1000000, debugInfo);
+                print = 0;
             }
+        } else {
+            print = 1;
         }
     }
+    return NULL;
+}
+void *ptUmain(void *thread_param) {
+    (void)(thread_param);
 
+    while (!quit) {
+        umain(&Tmain);
+    }
     return NULL;
 }
 
@@ -645,25 +666,25 @@ double SetAltitude(int onGround) {
      * Calculate the altitude if PSX is on the ground
      * or in flight
      */
-    // return ctrAltitude + MSFSHEIGHT;
 
     if (ground_altitude_avail) {
-        if (onGround || ctrAltitude - ground_altitude < 300) {
+        if (onGround || (ctrAltitude - ground_altitude < 300)) {
             if (!Qi198SentLand) {
                 printDebug("Below 300 ft AGL => using MSFS elevation", CONSOLE);
-                sendQPSX("Qi198=-999910"); // Allow (9999xx) seconds with no
-                                           // crash, no inertia
+                // sendQPSX("Qi198=-9999910"); // Allow (9999xx) seconds with no
+                //  crash, no inertia
                 Qi198SentLand = 1;
             }
             Qi198SentAirborne = 0;
             sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
+            // printDebug(sQi198, 1);
             sendQPSX(sQi198);
         } else {
 
             if (!Qi198SentAirborne) {
 
                 printDebug("Above 300 ft AGL => using PSX elevation.", CONSOLE);
-                sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
+                // sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
                 Qi198SentAirborne = 1;
             }
             Qi198SentLand = 0;
@@ -682,7 +703,6 @@ double SetAltitude(int onGround) {
 
 void SetMSFSPos(void) {
 
-    pthread_mutex_lock(&mutex);
     AcftPosition APos;
     double lat, longi;
     HRESULT hr = 0;
@@ -699,7 +719,7 @@ void SetMSFSPos(void) {
     APos.bank = Tboost.bank;
     APos.tas = Tmain.TAS;
     APos.ias = Tmain.IAS;
-    APos.vertical_speed = Tboost.VerticalSpeed ;
+    APos.vertical_speed = Tboost.VerticalSpeed;
     APos.FlapsPosition = Tmain.FlapLever;
     APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
     APos.GearDown = ((Tmain.GearLever == 3) ? 1.0 : 0.0);
@@ -763,7 +783,7 @@ void SetMSFSPos(void) {
          */
 
         hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
-        hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_TCAS_TRAFFIC);
+        hr = SimConnect_ClearDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA);
         hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
         fprintf(fdebug, "\tOpening new connection.....\n");
 
@@ -784,7 +804,6 @@ void SetMSFSPos(void) {
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, Tmain.steering,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    pthread_mutex_unlock(&mutex);
 }
 
 void usage() {
@@ -832,7 +851,7 @@ int write_ini_file() {
 
     /* Switches */
     fprintf(f, "DEBUG=%d\n", DEBUG);
-    fprintf(f, "TCAS=%d\n", TCAS_INJECT);
+    fprintf(f, "TCAS_INJECT=%d\n", TCAS_INJECT);
     fprintf(f, "SLAVE=%d\n", SLAVE);
 
     fclose(f);
@@ -967,8 +986,16 @@ void parse_arguments(int argc, char **argv) {
     }
 }
 
+int init_timer() {
+    /*
+     * Start both initial and current clocks
+     */
+
+    return (clock_gettime(CLOCK_MONOTONIC, &TimeStart) && clock_gettime(CLOCK_MONOTONIC, &TimeCurrent));
+}
+
 int main(int argc, char **argv) {
-    pthread_t t1, t2, t3;
+    pthread_t t1, t2, t3, t4;
 
     /* Read from .ini file the various values
      * used in the program
@@ -982,6 +1009,15 @@ int main(int argc, char **argv) {
      * from command line
      */
     parse_arguments(argc, argv);
+
+    /*
+     * Initialise clocks and timers
+     */
+
+    if (init_timer() != 0) {
+        printf("Could not initilize timers... Quitting\n");
+        exit(EXIT_FAILURE);
+    }
 
     /*
      * open debug file
@@ -1013,6 +1049,14 @@ int main(int argc, char **argv) {
     sendQPSX("demand=Qs480");
 
     /*
+     * Initializing position of the plane
+     * as boost and main threads are not yet available
+     */
+
+    printDebug("Initializing position", CONSOLE);
+    init_pos();
+
+    /*
      * Create a thread mutex so that two threads cannot change simulataneously
      * the position of the aircraft
      */
@@ -1030,7 +1074,8 @@ int main(int argc, char **argv) {
         err_n_die("Error creating thread Umain");
     }
 
-    if (pthread_create(&t2, NULL, &ptUmainboost, &Tboost) != 0) {
+    // if (pthread_create(&t2, NULL, &ptUmainboost, &Tboost) != 0) {
+    if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
         err_n_die("Error creating thread Umainboost");
     }
 
@@ -1038,13 +1083,29 @@ int main(int argc, char **argv) {
         err_n_die("Error creating thread DatafromMSFS");
     }
 
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
-    pthread_join(t3, NULL);
+    if (pthread_create(&t4, NULL, &pttimer, NULL) != 0) {
+        err_n_die("Error creating thread Timer");
+    }
+
+    if (pthread_join(t1, NULL) != 0) {
+        printDebug("Failed to join Main thread", 1);
+    }
+    if (pthread_join(t2, NULL) != 0) {
+        printDebug("Failed to join Boost thread", 1);
+    }
+    if (pthread_join(t3, NULL) != 0) {
+        printDebug("Failed to join MSFS thread", 1);
+    }
+    if (pthread_join(t4, NULL) != 0) {
+        printDebug("Failed to join timer thread", 1);
+    }
     pthread_mutex_destroy(&mutex);
 
     printf("Closing MSFS connection...\n");
     SimConnect_Close(hSimConnect);
+
+    // Signaling PSX that we are quitting
+    sendQPSX("exit");
 
     // and gracefully close main + boost sockets
     printf("Closing PSX boost connection...\n");

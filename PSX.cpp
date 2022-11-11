@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <pthread.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 #include <windows.h>
@@ -19,11 +21,10 @@ char bufboost[MAXBUFF];
 char bufmain[MAXBUFF];
 
 void printDebug(const char *debugInfo, int console) {
-    struct timespec tsend;
-    clock_gettime(CLOCK_MONOTONIC, &tsend);
 
     if (DEBUG) {
-        fprintf(fdebug, "[%lld.%.03ld]\t%s", tsend.tv_sec, tsend.tv_nsec / 1000000, debugInfo);
+        fprintf(fdebug, "[%lld.%.03ld]\t%s", TimeCurrent.tv_sec - TimeStart.tv_sec,
+                (TimeCurrent.tv_nsec - TimeStart.tv_nsec) / 1000000, debugInfo);
         fprintf(fdebug, "\n");
     }
     if (console) {
@@ -166,6 +167,7 @@ void H388(char *s, Target *T) {
 void S121(char *s, Target *T) {
 
     char *token, *ptr;
+    assert(strlen(s) >= 9 && strlen(s) <= 200);
 
     if ((token = strtok(s + 6, delim)) != NULL) {
         T->pitch = strtol(token, &ptr, 10) / 100000.0;
@@ -243,6 +245,7 @@ void S448(char *s, Target *T) {
 }
 
 void S458(char *s, Target *T) {
+    int C1, C2;
     char COM1[9] = {0}, COM2[9] = {0};
     /*
      * discard the last digit from the Qs string as it is not taken into MSFS.
@@ -252,13 +255,22 @@ void S458(char *s, Target *T) {
     strncat(COM1, s + 10, 3);
     strcat(COM1, "000");
 
-    T->COM1 = strtol(COM1, NULL, 10);
+    C1 = strtol(COM1, NULL, 10);
+
+    if (C1 < 118000000 || C1 > 136990000) {
+        C1 = 122800000;
+    }
+    T->COM1 = C1;
 
     strncpy(COM2, s + 13, 3);
     strncat(COM2, s + 17, 3);
     strcat(COM2, "000");
 
-    T->COM2 = strtol(COM2, NULL, 10);
+    C2 = strtol(COM2, NULL, 10);
+    if (C2 < 118000000 || C2 > 136990000) {
+        C2 = 122800000;
+    }
+    T->COM2 = C2;
 }
 void S480(char *s, Target *T) {
 
@@ -305,7 +317,7 @@ void S122(char *s, Target *T) {
 
     const char delim[2] = ";";
     char *token, *ptr;
-
+    assert(strlen(s) >= 9 && strlen(s) <= 200);
     /* get the first token */
     token = strtok(s + 6, delim);
     /* walk through other tokens */
@@ -359,133 +371,141 @@ void I204(char *s, Target *T) {
 void I257(char *s, Target *T) { T->onGround = (int)(s[6] - '0'); }
 void I219(char *s) { MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10); }
 
-void Decode_Boost(Target *T, char *s) {
+void Decode(Target *T, char *s, int boost) {
 
     const char delim[2] = ";";
-    static float Tms=0;
-    static float alt=0;
-    float vs,tvs,altdiff;
+    static float Tms = 0;
+    static float alt = 0;
+    float vs, tvs, altdiff;
     char *token, *ptr;
     float flightDeckAlt = 0.0;
 
-    /* get the first token */
-    if ((token = strtok(s, delim)) != NULL) {
-        T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
-        // MSFS_on_ground=(T->onGround==2);
-    }
-
-    if ((token = strtok(NULL, delim)) != NULL) {
-       
-        flightDeckAlt = strtol(token, &ptr, 10);
-        T->altitude = flightDeckAlt/100.0;
-        altdiff=flightDeckAlt-alt;
-        alt=flightDeckAlt;
-        
-    }
-
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-    }
-
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->pitch = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-    }
-
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-    }
-
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
-    }
-
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
-    }
-    if ((token = strtok(NULL, delim)) != NULL) {
-       vs=strtol(token,NULL,10);
-       if(vs<=Tms){
-           tvs=vs-Tms+1000;
-       } else {
-            tvs=vs-Tms;
-       }
-       if(tvs)
-        T->VerticalSpeed=10*(altdiff/tvs)*60.0; 
-       Tms=vs;
-    }
-
-}
-
-int umainBoost(Target *T) {
-    size_t bufboost_remain = sizeof(bufboost) - bufboost_used;
-
-    if (bufboost_remain == 0) {
-        printDebug("Boost Line exceeded buffer length!", 1);
-        return 0;
-    }
-
-    int nbread = recv(sPSXBOOST, (char *)&bufboost[bufboost_used], bufboost_remain, 0);
-    if (nbread == 0) {
-        printDebug("Boost connection closed.", 1);
-        return 0;
-    }
-    if (nbread < 0 && errno == EAGAIN) {
-        printDebug("no data for now, call back when the socket is readable",1);
-        return 0;
-    }
-    if (nbread < 0) {
-        printDebug("Boost Connection error", 1);
-        return 0;
-    }
-    bufboost_used += nbread;
-
-    /* Scan for newlines in the line buffer; we're careful here to deal with
-     * embedded \0s an evil server may send, as well as only processing lines
-     * that are complete.
-     */
-    char *line_start = bufboost;
-    char *line_end;
-    while ((line_end = (char *)memchr((void *)line_start, '\n', bufboost_used - (line_start - bufboost)))) {
-        *line_end = 0;
-
-        if (line_start[0] != 'F' && line_start[0] != 'G') {
-            printDebug(line_start, 1);
+    if (boost) {
+        /* get the first token */
+        if ((token = strtok(s, delim)) != NULL) {
+            T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
         }
-        if (line_start[0] == 'F' || line_start[0] == 'G') {
-            Decode_Boost(T, line_start);
-        } else {
-            sprintf(debugInfo, "Wrong boost string received: %s", line_start);
-            printDebug(debugInfo, CONSOLE);
+
+        if ((token = strtok(NULL, delim)) != NULL) {
+
+            flightDeckAlt = strtol(token, &ptr, 10);
+            T->altitude = flightDeckAlt / 100.0;
+            altdiff = flightDeckAlt - alt;
+            alt = flightDeckAlt;
         }
-        line_start = line_end + 1;
-    }
-    /* Shift buffer down so the unprocessed data is at the start */
-    bufboost_used -= (line_start - bufboost);
-    memmove(bufboost, line_start, bufboost_used);
-    return nbread;
-}
 
-/*int umainBoost(Target *T) {
-    char chaine[128] = {0};
+        if ((token = strtok(NULL, delim)) != NULL) {
+            T->heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+        }
 
-    int nbread = recv(sPSXBOOST, chaine, 127, 0);
-    if (nbread > 0) {
-        if (chaine[0] == 'F' || chaine[0] == 'G') {
-            Decode_Boost(T, chaine);
-        } else {
-            assert(strlen(debugInfo) < 128);
-            sprintf(debugInfo, "Wrong boost string received: %s", chaine);
-            printDebug(debugInfo, CONSOLE);
+        if ((token = strtok(NULL, delim)) != NULL) {
+            T->pitch = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+        }
+
+        if ((token = strtok(NULL, delim)) != NULL) {
+            T->bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+        }
+
+        if ((token = strtok(NULL, delim)) != NULL) {
+            T->latitude = strtod(token, &ptr) * DEG2RAD; // B)oost gives lat & long in degrees
+        }
+
+        if ((token = strtok(NULL, delim)) != NULL) {
+            T->longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
+        }
+        if ((token = strtok(NULL, delim)) != NULL) {
+            vs = strtol(token, NULL, 10);
+            if (vs <= Tms) {
+                tvs = vs - Tms + 1000;
+            } else {
+                tvs = vs - Tms;
+            }
+            if (tvs)
+                T->VerticalSpeed = 10 * (altdiff / tvs) * 60.0;
+            Tms = vs;
         }
     } else {
-        //  printf("Boost connection lost.... We have to exit now. Sorry
-        //  Folks\n");
+
+        if (strstr(s, "Qs122=")) {
+            S122(strstr(s, "Qs122="), T);
+        }
+
+        // New situ loaded
+        if (strstr(s, "load3")) {
+            printDebug("New situ loaded, no crash detection for 10 seconds.", CONSOLE);
+            sendQPSX("Qi198=-9999910"); // no crash detection fort 20 seconds
+            // sleep(10);                  // let's wait a few seconds to get everyone ready
+            MSFS_on_ground = 0;
+        }
+
+        // ExtLts : External lights, Mode=XECON
+        if (strstr(s, "Qs443")) {
+            S443(strstr(s, "Qs443="), T);
+        }
+
+        //// PSX on groud
+        if (strstr(s, "Qi257")) {
+            I257(strstr(s, "Qi257"), T);
+        }
+
+        //// Update Gear position
+        if (strstr(s, "Qh170")) {
+            H170(strstr(s, "Qh170"), T);
+        }
+
+        //// Update PArking break
+        if (strstr(s, "Qh397")) {
+            H397(strstr(s, "Qh397"), T);
+        }
+
+        //// Update Flap position
+        if (strstr(s, "Qh389")) {
+            H389(strstr(s, "Qh389"), T);
+        }
+        //// Speedbrake
+        if (strstr(s, "Qh388")) {
+            H388(strstr(s, "Qh388"), T);
+        }
+
+        // Update Time
+        if (strstr(s, "Qs124")) {
+            S124(strstr(s, "Qs124"), T);
+        }
+
+        // Indicated Airspeed IAS
+        if (strstr(s, "Qs483")) {
+            S483(strstr(s, "Qs483"), T);
+        }
+
+        // Rudder+aileron+elevator
+        if (strstr(s, "Qs480")) {
+            S480(strstr(s, "Qs480"), T);
+        }
+
+        // COMMS
+        if (strstr(s, "Qs458")) {
+            S458(strstr(s, "Qs458"), T);
+        }
+
+        // Steering wheel
+        if (strstr(s, "Qh426")) {
+            H426(strstr(s, "Qh426"), T);
+        }
+
+        // Steering wheel
+        if (strstr(s, "Qi204")) {
+            I204(strstr(s, "Qi204"), T);
+        }
+        // Altimeter
+        if (strstr(s, "Qs448")) {
+            S448(strstr(s, "Qs448"), T);
+        }
+        // MSFS slave-Master
+        if (strstr(s, "Qs78")) {
+            S78(strstr(s, "Qs78"));
+        }
     }
-
-    return nbread;
 }
-*/
-
 int sendQPSX(const char *s) {
 
     char *dem;
@@ -504,105 +524,9 @@ int sendQPSX(const char *s) {
     return nbsend;
 }
 
-int Decode_Main(Target *T, const char *s) {
-    int update = 0;
-    if (strstr(s, "Qs122=")) {
-        S122(strstr(s, "Qs122="), T);
-        update = 1;
-    }
-
-    // New situ loaded
-    if (strstr(s, "load3")) {
-    printf("In load3\n");
-        sendQPSX("Qi198=-999920"); // no crash detection fort 10 seconds
-        sleep(1);                  // let's wait a few seconds to get everyone ready
-        MSFS_on_ground = 0;
-    }
-
-    // ExtLts : External lights, Mode=XECON
-    if (strstr(s, "Qs443")) {
-        S443(strstr(s, "Qs443="), T);
-        update = 1;
-    }
-
-    //// PSX on groud
-    if (strstr(s, "Qi257")) {
-        I257(strstr(s, "Qi257"), T);
-        update = 1;
-    }
-
-    //// Update Gear position
-    if (strstr(s, "Qh170")) {
-        H170(strstr(s, "Qh170"), T);
-        update = 1;
-    }
-    //// Update PArking break
-    if (strstr(s, "Qh397")) {
-        H397(strstr(s, "Qh397"), T);
-        update = 1;
-    }
-
-    //// Update Flap position
-    if (strstr(s, "Qh389")) {
-        H389(strstr(s, "Qh389"), T);
-        update = 1;
-    }
-    //// Speedbrake
-    if (strstr(s, "Qh388")) {
-        H388(strstr(s, "Qh388"), T);
-        update = 1;
-    }
-
-    // Update Time
-    if (strstr(s, "Qs124")) {
-        S124(strstr(s, "Qs124"), T);
-        update = 1;
-    }
-
-    // Indicated Airspeed IAS
-    if (strstr(s, "Qs483")) {
-        S483(strstr(s, "Qs483"), T);
-        update = 1;
-    }
-
-    // Rudder+aileron+elevator
-    if (strstr(s, "Qs480")) {
-        S480(strstr(s, "Qs480"), T);
-        update = 1;
-    }
-
-    // COMMS
-    if (strstr(s, "Qs458")) {
-        S458(strstr(s, "Qs458"), T);
-        update = 1;
-    }
-
-    // Steering wheel
-    if (strstr(s, "Qh426")) {
-        H426(strstr(s, "Qh426"), T);
-        update = 1;
-    }
-
-    // Steering wheel
-    if (strstr(s, "Qi204")) {
-        I204(strstr(s, "Qi204"), T);
-        update = 1;
-    }
-    // Altimeter
-    if (strstr(s, "Qs448")) {
-        S448(strstr(s, "Qs448"), T);
-        update = 1;
-    }
-    // MSFS slave-Master
-    if (strstr(s, "Qs78")) {
-        S78(strstr(s, "Qs78"));
-        update = 1;
-    }
-    return update;
-}
-
 int umain(Target *T) {
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
+
     if (bufmain_remain == 0) {
         printDebug("Main socket line exceeded buffer length! Discarding input", 1);
         bufmain_used = 0;
@@ -635,8 +559,14 @@ int umain(Target *T) {
     char *line_end;
     while ((line_end = (char *)memchr((void *)line_start, '\n', bufmain_used - (line_start - bufmain)))) {
         *line_end = 0;
-        printDebug(line_start,0);
-        Decode_Main(T, line_start);
+
+        pthread_mutex_lock(&mutex);
+        Decode(T, line_start, 0);
+        if (!SLAVE) {
+            SetMSFSPos();
+        }
+        pthread_mutex_unlock(&mutex);
+
         line_start = line_end + 1;
     }
     /* Shift buffer down so the unprocessed data is at the start */
@@ -645,19 +575,57 @@ int umain(Target *T) {
     return nbread;
 }
 
-/*int umain(Target *T) {
-    char cBuf[MAXLEN] = {0};
-    int update = 0; // shall we update the aircraft in MSFS ?
+int umainBoost(Target *T) {
 
-    bzero(cBuf, MAXLEN);
-    int nbread = recv(sPSX, cBuf, MAXLEN - 1, 0);
+    size_t bufboost_remain = sizeof(bufboost) - bufboost_used;
 
-    if (nbread == 0) {
-        // Socket is closed
-        printDebug("Error in main PSX socket. Unfortunately we are closing....",1);
-        exit(EXIT_FAILURE);
+    if (bufboost_remain == 0) {
+        printDebug("Boost Line exceeded buffer length!", 1);
+        return 0;
     }
 
+    int nbread = recv(sPSXBOOST, (char *)&bufboost[bufboost_used], bufboost_remain, 0);
+    if (nbread == 0) {
+        printDebug("Boost connection closed.", 1);
+        return 0;
+    }
+    if (nbread < 0 && errno == EAGAIN) {
+        printDebug("no data for now, call back when the socket is readable", 1);
+        return 0;
+    }
+    if (nbread < 0) {
+        printDebug("Boost Connection error", 1);
+        return 0;
+    }
+    bufboost_used += nbread;
 
-    return update;
-}*/
+    /* Scan for newlines in the line buffer; we're careful here to deal with
+     * embedded \0s an evil server may send, as well as only processing lines
+     * that are complete.
+     */
+    char *line_start = bufboost;
+    char *line_end;
+    while ((line_end = (char *)memchr((void *)line_start, '\n', bufboost_used - (line_start - bufboost)))) {
+        *line_end = 0;
+
+        if (line_start[0] != 'F' && line_start[0] != 'G') {
+            printDebug(line_start, 1);
+        }
+        if (line_start[0] == 'F' || line_start[0] == 'G') {
+            pthread_mutex_lock(&mutex);
+            Decode(T, line_start, 1);
+            if (!SLAVE) {
+                SetMSFSPos();
+            }
+            pthread_mutex_unlock(&mutex);
+        } else {
+            sprintf(debugInfo, "Wrong boost string received: %s", line_start);
+            printDebug(debugInfo, CONSOLE);
+        }
+        line_start = line_end + 1;
+    }
+    /* Shift buffer down so the unprocessed data is at the start */
+    bufboost_used -= (line_start - bufboost);
+    memmove(bufboost, line_start, bufboost_used);
+    return nbread;
+}
