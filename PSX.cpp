@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <cstdlib>
 #include <cassert>
 #include <math.h>
@@ -12,6 +13,7 @@
 #include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
+#include "util.h"
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
@@ -21,10 +23,9 @@ char bufboost[MAXBUFF];
 char bufmain[MAXBUFF];
 
 void printDebug(const char *debugInfo, int console) {
-
+    
     if (DEBUG) {
-        fprintf(fdebug, "[%lld.%.03ld]\t%s", TimeCurrent.tv_sec - TimeStart.tv_sec,
-                (TimeCurrent.tv_nsec - TimeStart.tv_nsec) / 1000000, debugInfo);
+        fprintf(fdebug, "[%ld.%.03d]\t%s",(long)elapsedMs(TimeStart)/1000,(int)elapsedMs(TimeStart), debugInfo);
         fprintf(fdebug, "\n");
     }
     if (console) {
@@ -377,16 +378,16 @@ void Decode(Target *T, char *s, int boost) {
     static float Tms = 0;
     static float alt = 0;
     float vs, tvs, altdiff;
-    char *token, *ptr;
+    char *token, *ptr, *savptr;
     float flightDeckAlt = 0.0;
 
     if (boost) {
         /* get the first token */
-        if ((token = strtok(s, delim)) != NULL) {
+        if ((token = strtok_r(s, delim, &savptr)) != NULL) {
             T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
         }
 
-        if ((token = strtok(NULL, delim)) != NULL) {
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
 
             flightDeckAlt = strtol(token, &ptr, 10);
             T->altitude = flightDeckAlt / 100.0;
@@ -394,26 +395,26 @@ void Decode(Target *T, char *s, int boost) {
             alt = flightDeckAlt;
         }
 
-        if ((token = strtok(NULL, delim)) != NULL) {
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             T->heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
         }
 
-        if ((token = strtok(NULL, delim)) != NULL) {
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             T->pitch = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
         }
 
-        if ((token = strtok(NULL, delim)) != NULL) {
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             T->bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
         }
 
-        if ((token = strtok(NULL, delim)) != NULL) {
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             T->latitude = strtod(token, &ptr) * DEG2RAD; // B)oost gives lat & long in degrees
         }
 
-        if ((token = strtok(NULL, delim)) != NULL) {
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             T->longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
         }
-        if ((token = strtok(NULL, delim)) != NULL) {
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             vs = strtol(token, NULL, 10);
             if (vs <= Tms) {
                 tvs = vs - Tms + 1000;
@@ -428,14 +429,6 @@ void Decode(Target *T, char *s, int boost) {
 
         if (strstr(s, "Qs122=")) {
             S122(strstr(s, "Qs122="), T);
-        }
-
-        // New situ loaded
-        if (strstr(s, "load3")) {
-            printDebug("New situ loaded, no crash detection for 10 seconds.", CONSOLE);
-            sendQPSX("Qi198=-9999910"); // no crash detection fort 20 seconds
-            // sleep(10);                  // let's wait a few seconds to get everyone ready
-            MSFS_on_ground = 0;
         }
 
         // ExtLts : External lights, Mode=XECON
@@ -560,13 +553,23 @@ int umain(Target *T) {
     while ((line_end = (char *)memchr((void *)line_start, '\n', bufmain_used - (line_start - bufmain)))) {
         *line_end = 0;
 
-        pthread_mutex_lock(&mutex);
-        Decode(T, line_start, 0);
-        if (!SLAVE) {
-            SetMSFSPos();
+        // New situ loaded
+        if (strstr(line_start, "load3")) {
+            printDebug("New situ loaded: no crash detection for 10 seconds", CONSOLE);
+            printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
+            sendQPSX("Qi198=-9999910"); // no crash detection fort 20 seconds
+            sleep(5);                   // let's wait a few seconds to get everyone ready
+            printDebug("Resuming normal operations.", CONSOLE);
+            MSFS_on_ground = 0;
         }
-        pthread_mutex_unlock(&mutex);
-
+        if (line_start[0] == 'Q' || strstr(line_start, "load3")) {
+            pthread_mutex_lock(&mutex);
+            Decode(T, line_start, 0);
+            if (!SLAVE) {
+                //    SetMSFSPos();
+            }
+            pthread_mutex_unlock(&mutex);
+        }
         line_start = line_end + 1;
     }
     /* Shift buffer down so the unprocessed data is at the start */

@@ -11,10 +11,14 @@
 #include <time.h>
 #include <unistd.h>
 #include <windows.h>
+#include <imagehlp.h>
 #include "PSXMSFS.h"
+#include "util.h"
 #include "SimConnect.h"
 
+
 int quit = 0;
+long unsigned dwLastID;
 
 // indicates whether there is a data of ground elevation received from MSFS in
 // the callback procedure
@@ -30,8 +34,6 @@ int Qi198SentLand = 0;
 int Qi198SentAirborne = 0;
 struct Struct_MSFS MSFS_POS;
 
-struct timespec TimeStart;
-struct timespec TimeCurrent;
 Target Tmain, Tboost;
 pthread_mutex_t mutex;
 int updateLights, UTCupdate = 1;
@@ -49,7 +51,7 @@ FILE *fdebug;
 
 TCAS tcas_acft[7];
 double min_dist = 999999;
-int nb_acft = 0;
+static int nb_acft = 0;
 
 char PSXMainServer[] = "999.999.999.999";
 char MSFSServer[] = "999.999.999.999";
@@ -58,6 +60,128 @@ int PSXPort = 10747;
 int PSXBoostPort = 10749;
 
 void update_TCAS(AI_TCAS *ai, double d);
+
+static char const *icky_global_program_name;
+
+int addr2line(char const *const program_name, void const *const addr) {
+    char addr2line_cmd[512] = {0};
+
+/* have addr2line map the address to the relent line in the code */
+#ifdef __APPLE__
+    /* apple does things differently... */
+    sprintf(addr2line_cmd, "atos -o %.256s %p", program_name, addr);
+#else
+    sprintf(addr2line_cmd, "addr2line -f -p -e %.256s 0x%p", program_name, addr);
+#endif
+
+    /* This will print a nicely formatted string specifying the
+       function and source line of the address */
+    printf("cmd:%s\n", addr2line_cmd);
+    return system(addr2line_cmd);
+}
+
+void windows_print_stacktrace(CONTEXT *context) {
+    SymInitialize(GetCurrentProcess(), 0, true);
+
+    STACKFRAME64 frame = {};
+
+    /* setup initial stack frame */
+    frame.AddrPC.Offset = context->Rip;
+    frame.AddrPC.Mode = AddrModeFlat;
+    frame.AddrStack.Offset = context->Rsp;
+    frame.AddrStack.Mode = AddrModeFlat;
+    frame.AddrFrame.Offset = context->Rbp;
+    frame.AddrFrame.Mode = AddrModeFlat;
+
+    while (StackWalk64(IMAGE_FILE_MACHINE_AMD64, GetCurrentProcess(), GetCurrentThread(), &frame, context, 0,
+                       SymFunctionTableAccess64, SymGetModuleBase64, 0)) {
+        addr2line(icky_global_program_name, (void *)frame.AddrPC.Offset);
+        addr2line(icky_global_program_name, (void *)frame.AddrStack.Offset);
+        addr2line(icky_global_program_name, (void *)frame.AddrFrame.Offset);
+    }
+
+    SymCleanup(GetCurrentProcess());
+}
+
+LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS *ExceptionInfo) {
+    switch (ExceptionInfo->ExceptionRecord->ExceptionCode) {
+    case EXCEPTION_ACCESS_VIOLATION:
+        fputs("Error: EXCEPTION_ACCESS_VIOLATION\n", stderr);
+        break;
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+        fputs("Error: EXCEPTION_ARRAY_BOUNDS_EXCEEDED\n", stderr);
+        break;
+    case EXCEPTION_BREAKPOINT:
+        fputs("Error: EXCEPTION_BREAKPOINT\n", stderr);
+        break;
+    case EXCEPTION_DATATYPE_MISALIGNMENT:
+        fputs("Error: EXCEPTION_DATATYPE_MISALIGNMENT\n", stderr);
+        break;
+    case EXCEPTION_FLT_DENORMAL_OPERAND:
+        fputs("Error: EXCEPTION_FLT_DENORMAL_OPERAND\n", stderr);
+        break;
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+        fputs("Error: EXCEPTION_FLT_DIVIDE_BY_ZERO\n", stderr);
+        break;
+    case EXCEPTION_FLT_INEXACT_RESULT:
+        fputs("Error: EXCEPTION_FLT_INEXACT_RESULT\n", stderr);
+        break;
+    case EXCEPTION_FLT_INVALID_OPERATION:
+        fputs("Error: EXCEPTION_FLT_INVALID_OPERATION\n", stderr);
+        break;
+    case EXCEPTION_FLT_OVERFLOW:
+        fputs("Error: EXCEPTION_FLT_OVERFLOW\n", stderr);
+        break;
+    case EXCEPTION_FLT_STACK_CHECK:
+        fputs("Error: EXCEPTION_FLT_STACK_CHECK\n", stderr);
+        break;
+    case EXCEPTION_FLT_UNDERFLOW:
+        fputs("Error: EXCEPTION_FLT_UNDERFLOW\n", stderr);
+        break;
+    case EXCEPTION_ILLEGAL_INSTRUCTION:
+        fputs("Error: EXCEPTION_ILLEGAL_INSTRUCTION\n", stderr);
+        break;
+    case EXCEPTION_IN_PAGE_ERROR:
+        fputs("Error: EXCEPTION_IN_PAGE_ERROR\n", stderr);
+        break;
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:
+        fputs("Error: EXCEPTION_INT_DIVIDE_BY_ZERO\n", stderr);
+        break;
+    case EXCEPTION_INT_OVERFLOW:
+        fputs("Error: EXCEPTION_INT_OVERFLOW\n", stderr);
+        break;
+    case EXCEPTION_INVALID_DISPOSITION:
+        fputs("Error: EXCEPTION_INVALID_DISPOSITION\n", stderr);
+        break;
+    case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+        fputs("Error: EXCEPTION_NONCONTINUABLE_EXCEPTION\n", stderr);
+        break;
+    case EXCEPTION_PRIV_INSTRUCTION:
+        fputs("Error: EXCEPTION_PRIV_INSTRUCTION\n", stderr);
+        break;
+    case EXCEPTION_SINGLE_STEP:
+        fputs("Error: EXCEPTION_SINGLE_STEP\n", stderr);
+        break;
+    case EXCEPTION_STACK_OVERFLOW:
+        fputs("Error: EXCEPTION_STACK_OVERFLOW\n", stderr);
+        break;
+    default:
+        fputs("Error: Unrecognized Exception\n", stderr);
+        break;
+    }
+    fflush(stderr);
+    /* If this is a stack overflow then we can't walk the stack, so just show
+      where the error happened */
+    if (EXCEPTION_STACK_OVERFLOW != ExceptionInfo->ExceptionRecord->ExceptionCode) {
+        windows_print_stacktrace(ExceptionInfo->ContextRecord);
+    } else {
+        addr2line(icky_global_program_name, (void *)ExceptionInfo->ContextRecord->Rbp);
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+
+void set_signal_handler() { SetUnhandledExceptionFilter(windows_exception_handler); }
 
 void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr) {
 
@@ -155,20 +279,32 @@ void Inject_MSFS_PSX(void) {
 }
 
 void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext) {
-
     (void)(cbData);
     (void)(&pContext);
 
     switch (pData->dwID) {
 
+    case SIMCONNECT_RECV_ID_EXCEPTION: {
+        SIMCONNECT_RECV_EXCEPTION *evt = (SIMCONNECT_RECV_EXCEPTION *)pData;
+        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+        printf("Exception risen: %ld, by sender: %ld at index: %ld, dwLastID: %ld\n", evt->dwException, evt->dwSendID,
+               evt->dwIndex, dwLastID);
+    } break;
+
     case SIMCONNECT_RECV_ID_OPEN: {
 
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+        printf("Init Client ID:%ld\n", dwLastID);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+        printf("Init Client 2 ID:%ld\n", dwLastID);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+        printf("Init Client 3 ID:%ld\n", dwLastID);
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -202,6 +338,8 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
              */
             hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, TCAS_TRAFFIC_DATA, 40 * NM,
                                                        SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+            hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+            printf("Request Data on Sim object TCAS:%ld\n", dwLastID);
             if (TCAS_INJECT) {
                 IA_update();
             }
@@ -274,33 +412,37 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
         switch (pObjData->dwRequestID) {
         case DATA_REQUEST_TCAS: {
             AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
-            double d, lat,lon,alt;
+            double d, lat, lon, alt;
             char tmpchn[128] = {0};
             char QsTfcPos[999] = {0}; // max lenght = 999
 
-            lat=MSFS_POS.latitude;
-            lon=MSFS_POS.longitude;
-            alt=MSFS_POS.altitude;
-            
-         //   printf("INside the Devil, but exiting....lat:%lf\tlon:%lf\tAlt:%lf\n",lat,lon,alt);
-         //   break;
+            lat = MSFS_POS.latitude;
+            lon = MSFS_POS.longitude;
+            alt = MSFS_POS.altitude;
 
             if (pObjData->dwentrynumber > 1) {
-                d = dist(ai->latitude,lat, ai->longitude, lon) / NM;
-             //   printf("Distance: %lf\n",d);
-             //   printf("Diff Alt: %lf\n",ai->altitude-alt);
-                if (d < 40) {                                         // show only aircraft less than 40NM away from us
-                    if (abs(ai->altitude - alt) < 2700) { // show only aircraft 2700 above or below us
-                        if (Tboost.onGround == 2) {
-                            if (abs(ai->altitude - alt) < 500) { // on the ground only update if 500 above
-                                                                             // us
-                                update_TCAS(ai, d);
-                            }
+                d = dist(ai->latitude, lat, ai->longitude, lon) / NM;
+                //   if (d < 40) {                             // show only aircraft less than 40NM away from us
+                if (abs(ai->altitude - alt) < 7000) { // show only aircraft 2700 above or below us
+                    if (Tboost.onGround == 2) {
+                        if (abs(ai->altitude - alt) < 500) { // on the ground only update if 500 above
+                                                             // us
+                            update_TCAS(ai, d);
+                            // printf("Acft[%ld/%ld]:\tai.lat:%lf\t ai.long:%lf\tlat:%lf\tlon:%lf\tAlt:%lf\t",
+                            //        pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, lat, lon,
+                            //        alt);
+                            // printf("Distance: %lf\n", d);
+
                         } else {
+                            //  printf("Acft[%ld/%ld]:\tai.lat:%lf\t ai.long:%lf\tlat:%lf\tlon:%lf\tAlt:%lf\t",
+                            //         pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, lat,
+                            //         lon, alt);
+                            //  printf("Distance: %lf\n", d);
                             update_TCAS(ai, d);
                         }
                     }
                 }
+                // }
             }
 
             /*
@@ -326,7 +468,6 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
                 /* and now we can send the string to PSX */
                 sendQPSX("Qi201=1");
                 sendQPSX(QsTfcPos);
-                //    printDebug(QsTfcPos, CONSOLE);
             }
 
         } break;
@@ -533,33 +674,7 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
-        Sleep(1);
-        if (hr < 0) {
-
-            time_t result = time(NULL);
-            fprintf(fdebug, "On:%s", asctime(gmtime(&result)));
-            fprintf(fdebug, "ERROR in SimConnect_CallDispatch\n");
-            fprintf(fdebug, "\tTrying to reinitialize the connection to Simconnect.....\n");
-            fprintf(fdebug, "\tClosing faulty connection.....\n");
-            SimConnect_Close(hSimConnect);
-
-            /*
-             * First start by clearing the data definition, in case we call this
-             * function after an error
-             */
-
-            hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
-            hr = SimConnect_ClearDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA);
-            hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
-            fprintf(fdebug, "\tOpening new connection.....\n");
-
-            init_connect_MSFS(&hSimConnect);
-            if (init_MS_data() < 0) {
-                fprintf(fdebug, "\tUnable to reinitilize....Sorry folks, quitting now\n");
-                fflush(NULL);
-                quit = 1;
-            };
-        }
+        Sleep(15); // We sleep for 15 ms (Sleep is a Win32 API with parameter in ms) to avoid heavy polling
     }
     return NULL;
 }
@@ -574,8 +689,7 @@ void *ptUmainboost(void *thread_param) {
 
 void *pttimer(void *thread_param) {
     (void)(thread_param);
-    int print = 1;
-    while (!quit) {
+    /*while (!quit) {
         clock_gettime(CLOCK_MONOTONIC, &TimeCurrent);
         if ((TimeCurrent.tv_sec % 3) == 0) {
             if (print) {
@@ -586,7 +700,7 @@ void *pttimer(void *thread_param) {
         } else {
             print = 1;
         }
-    }
+    }*/
     return NULL;
 }
 void *ptUmain(void *thread_param) {
@@ -763,18 +877,29 @@ void SetMSFSPos(void) {
     APos.elevator = Tmain.elevator;
 
     /*
+     * PArking break and Steering wheel are updated via events ant not via the
+     * APos structure
+     */
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, Tmain.parkbreak,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, Tmain.steering,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+
+    /*
      * finally update everything
      */
 
+    // stateMSFS(&APos, fdebug,1);
     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
                                        &APos);
+
     if (hr < 0) {
 
-        time_t result = time(NULL);
-        fprintf(fdebug, "On:%s", asctime(gmtime(&result)));
-        fprintf(fdebug, "ERROR in SimConnect_SetDataOnSimObject\n");
-        fprintf(fdebug, "\tTrying to reinitialize the connection to Simconnect.....\n");
-        fprintf(fdebug, "\tClosing faulty connection.....\n");
+        // assert("MSFS_POS update failed" && !hr);
+        printDebug("MSFS_POS udpate failed", CONSOLE);
+        printDebug("ERROR in SimConnect_SetDataOnSimObject", CONSOLE);
+        printDebug("Trying to reinitialize the connection to Simconnect.....", CONSOLE);
+        printDebug("Closing faulty connection.....\n", CONSOLE);
         SimConnect_Close(hSimConnect);
 
         /*
@@ -782,28 +907,17 @@ void SetMSFSPos(void) {
          * function after an error
          */
 
+        init_connect_MSFS(&hSimConnect);
+        if (init_MS_data() < 0) {
+            printDebug("Unable to reinitilize....Sorry folks, quitting now", CONSOLE);
+            fflush(NULL);
+            quit = 1;
+        };
         hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_PSX_TO_MSFS);
         hr = SimConnect_ClearDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA);
         hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
         fprintf(fdebug, "\tOpening new connection.....\n");
-
-        init_connect_MSFS(&hSimConnect);
-        if (init_MS_data() < 0) {
-            fprintf(fdebug, "\tUnable to reinitilize....Sorry folks, quitting now\n");
-            fflush(NULL);
-            quit = 1;
-        };
     }
-
-    /*
-     * PArking break and Steering wheel are updated via events ant not via the
-     * APos structure
-     */
-
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, Tmain.parkbreak,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, Tmain.steering,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
 void usage() {
@@ -986,13 +1100,6 @@ void parse_arguments(int argc, char **argv) {
     }
 }
 
-int init_timer() {
-    /*
-     * Start both initial and current clocks
-     */
-
-    return (clock_gettime(CLOCK_MONOTONIC, &TimeStart) && clock_gettime(CLOCK_MONOTONIC, &TimeCurrent));
-}
 
 int main(int argc, char **argv) {
     pthread_t t1, t2, t3, t4;
@@ -1000,7 +1107,11 @@ int main(int argc, char **argv) {
     /* Read from .ini file the various values
      * used in the program
      */
+    icky_global_program_name = argv[0];
+    set_signal_handler();
 
+    /* Initialise the timer */
+    elapsedStart(&TimeStart);
     if (!init_param()) {
         printf("Could not initialize default parameters... Quitting\n");
         exit(EXIT_FAILURE);
@@ -1010,14 +1121,6 @@ int main(int argc, char **argv) {
      */
     parse_arguments(argc, argv);
 
-    /*
-     * Initialise clocks and timers
-     */
-
-    if (init_timer() != 0) {
-        printf("Could not initilize timers... Quitting\n");
-        exit(EXIT_FAILURE);
-    }
 
     /*
      * open debug file
@@ -1053,8 +1156,8 @@ int main(int argc, char **argv) {
      * as boost and main threads are not yet available
      */
 
-    printDebug("Initializing position", CONSOLE);
-    init_pos();
+    // printDebug("Initializing position", CONSOLE);
+    // init_pos();
 
     /*
      * Create a thread mutex so that two threads cannot change simulataneously
@@ -1074,7 +1177,6 @@ int main(int argc, char **argv) {
         err_n_die("Error creating thread Umain");
     }
 
-    // if (pthread_create(&t2, NULL, &ptUmainboost, &Tboost) != 0) {
     if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
         err_n_die("Error creating thread Umainboost");
     }

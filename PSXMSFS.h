@@ -22,8 +22,6 @@ extern char bufmain[MAXBUFF];
 extern size_t bufboost_used ;
 extern size_t bufmain_used ;
 
-extern struct timespec TimeStart;
-extern struct timespec TimeCurrent;
 
 
 extern pthread_mutex_t mutex;
