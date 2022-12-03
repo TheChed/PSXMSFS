@@ -43,6 +43,8 @@ move:
 	mv *.exe /home/stephan/Documents/C/src/PSX/bin
 
 win:
+	cp *.cpp /home/stephan/NAS/TRANSFERT/pfpx
+	cp *.h /home/stephan/NAS/TRANSFERT/pfpx
 	cp bin/*.exe /home/stephan/NAS/TRANSFERT/pfpx
 
 src:

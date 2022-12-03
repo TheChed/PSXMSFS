@@ -22,17 +22,6 @@ size_t bufmain_used = 0;
 char bufboost[MAXBUFF];
 char bufmain[MAXBUFF];
 
-void printDebug(const char *debugInfo, int console) {
-    
-    if (DEBUG) {
-        fprintf(fdebug, "[%ld.%.03d]\t%s",(long)elapsedMs(TimeStart)/1000,(int)elapsedMs(TimeStart), debugInfo);
-        fprintf(fdebug, "\n");
-    }
-    if (console) {
-        printf("%s\n", debugInfo);
-    }
-}
-
 void state(Target *T, FILE *fd, int console) {
 
     if (console) {
@@ -272,6 +261,9 @@ void S458(char *s, Target *T) {
         C2 = 122800000;
     }
     T->COM2 = C2;
+    snprintf(debugInfo, sizeof(debugInfo), "PSX COMM:%s", s);
+    printDebug(debugInfo, 0);
+    SetCOMM();
 }
 void S480(char *s, Target *T) {
 
@@ -301,8 +293,10 @@ void S124(char *s, Target *T) {
     T->day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
     T->hour = time_PSX->tm_hour;
     T->minute = time_PSX->tm_min;
+    snprintf(debugInfo, sizeof(debugInfo), "TimePSX:%s", s);
+    printDebug(debugInfo, 0);
 
-    validtime = 1; // we have read a valid time from PSX
+    SetUTCTime();
     return;
 }
 
@@ -554,6 +548,7 @@ int umain(Target *T) {
         *line_end = 0;
 
         // New situ loaded
+        pthread_mutex_lock(&mutex);
         if (strstr(line_start, "load3")) {
             printDebug("New situ loaded: no crash detection for 10 seconds", CONSOLE);
             printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
@@ -563,13 +558,12 @@ int umain(Target *T) {
             MSFS_on_ground = 0;
         }
         if (line_start[0] == 'Q' || strstr(line_start, "load3")) {
-            pthread_mutex_lock(&mutex);
             Decode(T, line_start, 0);
             if (!SLAVE) {
                 //    SetMSFSPos();
             }
-            pthread_mutex_unlock(&mutex);
         }
+        pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;
     }
     /* Shift buffer down so the unprocessed data is at the start */

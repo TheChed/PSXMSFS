@@ -16,7 +16,6 @@
 #include "util.h"
 #include "SimConnect.h"
 
-
 int quit = 0;
 long unsigned dwLastID;
 
@@ -42,7 +41,7 @@ HRESULT hr;
 int DEBUG;
 int TCAS_INJECT = 1; /*TCAS injection on by default*/
 int SLAVE = 0;       // 0=PSX is master, 1=MSFS is master
-char debugInfo[MAXBUFF] = {0};
+char debugInfo[256] = {0};
 FILE *fdebug;
 
 /*
@@ -183,31 +182,19 @@ LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS *ExceptionInfo) {
 
 void set_signal_handler() { SetUnhandledExceptionFilter(windows_exception_handler); }
 
-void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr) {
-
-    *latr = asin(sin(lato) * cos(dist * FTM / EARTH_RAD) + cos(lato) * sin(dist * FTM / EARTH_RAD) * cos(bearing));
-    *longr = longo + atan2(sin(bearing) * sin(dist * FTM / EARTH_RAD) * cos(lato),
-                           cos(dist * FTM / EARTH_RAD) - sin(lato) * sin(*latr));
-}
-
-double dist(double lat1, double lat2, double long1, double long2) {
-    return 2 * EARTH_RAD *
-           (sqrt(pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2)));
-}
 void SetUTCTime(void) {
 
-    if (UTCupdate && validtime) {
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, Tmain.hour,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, Tmain.minute,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, Tmain.day,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, Tmain.year,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-
-        UTCupdate = 1; // continous update of UTC time
-    }
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, Tmain.hour,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, Tmain.minute,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, Tmain.day,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, Tmain.year,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+    snprintf(debugInfo, sizeof(debugInfo), "SETUTCTIME SimmConnect Id:%ld", dwLastID);
+    printDebug(debugInfo, 0);
 }
 
 void SetCOMM(void) {
@@ -220,6 +207,9 @@ void SetCOMM(void) {
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, Tmain.COM2,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+    snprintf(debugInfo, sizeof(debugInfo), "SETCOMM SimmConnect Id:%ld\n", dwLastID);
+    printDebug(debugInfo, 0);
 }
 void SetBARO(void) {
 
@@ -228,6 +218,8 @@ void SetBARO(void) {
     if (Tmain.STD) {
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+        printf("SETBARO:%ld\n", dwLastID);
     }
 }
 
@@ -287,24 +279,19 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
     case SIMCONNECT_RECV_ID_EXCEPTION: {
         SIMCONNECT_RECV_EXCEPTION *evt = (SIMCONNECT_RECV_EXCEPTION *)pData;
         hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
-        printf("Exception risen: %ld, by sender: %ld at index: %ld, dwLastID: %ld\n", evt->dwException, evt->dwSendID,
-               evt->dwIndex, dwLastID);
+        snprintf(debugInfo, sizeof(debugInfo), "Exception risen: %ld, by sender: %ld at index: %ld, dwLastID: %ld\n",
+                 evt->dwException, evt->dwSendID, evt->dwIndex, dwLastID);
+        printDebug(debugInfo, 1);
     } break;
 
     case SIMCONNECT_RECV_ID_OPEN: {
 
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
-        printf("Init Client ID:%ld\n", dwLastID);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
-        printf("Init Client 2 ID:%ld\n", dwLastID);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
-        printf("Init Client 3 ID:%ld\n", dwLastID);
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -336,11 +323,12 @@ void CALLBACK ReadPositionFromMSFS(SIMCONNECT_RECV *pData, DWORD cbData, void *p
             /*
              * TCAS injection every 4 seconds but only if TCAS switch is on
              */
-            hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, TCAS_TRAFFIC_DATA, 40 * NM,
-                                                       SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
-            hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
-            printf("Request Data on Sim object TCAS:%ld\n", dwLastID);
             if (TCAS_INJECT) {
+                hr = SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, TCAS_TRAFFIC_DATA, 40 * NM,
+                                                           SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+                hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+                snprintf(debugInfo, sizeof(debugInfo), "Request Data on Sim object TCAS:%ld", dwLastID);
+                printDebug(debugInfo, 0);
                 IA_update();
             }
 
@@ -667,6 +655,8 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LATITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LONGITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE HEADING DEGREES MAGNETIC", "radians");
+    hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+    printf("DEFINITIONS:%ld\n", dwLastID);
     return hr;
 }
 
@@ -674,6 +664,8 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         hr = SimConnect_CallDispatch(hSimConnect, ReadPositionFromMSFS, NULL);
+        // hr = SimConnect_GetLastSentPacketID(hSimConnect, &dwLastID);
+        // printf("CALLDISPATCH:%ld\n", dwLastID);
         Sleep(15); // We sleep for 15 ms (Sleep is a Win32 API with parameter in ms) to avoid heavy polling
     }
     return NULL;
@@ -710,54 +702,6 @@ void *ptUmain(void *thread_param) {
         umain(&Tmain);
     }
     return NULL;
-}
-
-void init_pos() {
-
-    // Setting the aircraft at LFPG gate
-    AcftPosition APos;
-
-    /*
-     * Setting initial position at LFPG"
-     */
-    APos.altitude = 360.5; // 358 + 15.6;
-    APos.latitude = 49.0012;
-    APos.longitude = 2.57728;
-    APos.heading_true = 356.0;
-    APos.pitch = -1.36;
-    APos.bank = 0.0;
-    APos.tas = 0.0;
-    APos.ias = 0.0;
-    APos.vertical_speed = 0.0;
-    APos.FlapsPosition = 0.0; // Flaps down
-    APos.Speedbrake = 0.0;    // Spoilers down
-    APos.GearDown = 1.0;
-
-    // All lights off
-    APos.LandLeftOutboard = 0.0;
-    APos.LandLeftInboard = 0.0;
-    APos.LandRightInboard = 0.0;
-    APos.LandRightOutboard = 0.0;
-    APos.LeftRwyTurnoff = 0.0;
-    APos.RightRwyTurnoff = 0.0;
-    APos.LightTaxi = 0.0;
-    APos.Strobe = 0.0;
-    APos.LightNav = 0.0;
-    APos.Beacon = 0.0;
-    APos.BeaconLwr = 0.0;
-    APos.LightWing = 0.0;
-    APos.LightLogo = 0.0;
-
-    // All surfaces centered (ailerons, rudder, elevator
-
-    APos.rudder = 0.0;
-    APos.ailerons = 0.0;
-    APos.elevator = 0.0;
-
-    if (SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
-                                      &APos) != S_OK) {
-        err_n_die("Could not update position");
-    };
 }
 
 double SetAltitude(int onGround) {
@@ -860,10 +804,12 @@ void SetMSFSPos(void) {
     }
 
     // Set the UTC time
-    SetUTCTime();
+    // moved to PSX.cpp when we receive a Time Q variable
+    // SetUTCTime();
 
     // Set the XPDR and COMMS
-    SetCOMM();
+    // moved to PSX.cpp when we receive a COMM Q variable
+    // SetCOMM();
 
     // Set the altimeter
     SetBARO();
@@ -1100,7 +1046,6 @@ void parse_arguments(int argc, char **argv) {
     }
 }
 
-
 int main(int argc, char **argv) {
     pthread_t t1, t2, t3, t4;
 
@@ -1120,7 +1065,6 @@ int main(int argc, char **argv) {
      * from command line
      */
     parse_arguments(argc, argv);
-
 
     /*
      * open debug file

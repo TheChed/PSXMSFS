@@ -7,11 +7,6 @@
 
 #define MAXLEN 8192
 #define PRINT 1
-#define M_PI 3.14159265358979323846
-#define NM 1852     //meters in a nm
-#define EARTH_RAD   6371008  //earth radius in meters
-#define FTM 0.3048   //feet to meters
-#define DEG2RAD  (M_PI/180.0)
 #define MSFSHEIGHT 15.13    //offset when on ground compared to PSX
 #define CONSOLE 1   //print debug info on the console
 #define MAXBUFF 165536
@@ -43,7 +38,7 @@ extern char PSXBoostServer[];
 extern int PSXPort;
 extern int PSXBoostPort;
 
-extern char debugInfo[];
+extern char debugInfo[256];
 
 struct Struct_MSFS {
     double ground_altitude; // ground altitude above MSL
@@ -209,16 +204,11 @@ int init_socket(void);
 int close_PSX_socket(int socket);
 //void Decode(int, char, char *, Target *);
 int open_connections();
-void state(Target *T, FILE *fdebug, int console); // prints PSX information 
-void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints MSFS information 
-char *convert(double, int);
-void printDebug(const char *debugInfo, int console);
 int umain(Target *T);
 int umainBoost(Target *T);
 int umainBoost2(Target *T);
-void err_n_die(const char *fmt, ...);
-void SetMSFSPos(void);
-void SetUTCTime(Target *T);
+void SetUTCTime(void);
+void SetCOMM(void);
 int sendQPSX(const char *s);
 int init_connect_MSFS(HANDLE *p);
 #endif
