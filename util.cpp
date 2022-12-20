@@ -7,6 +7,7 @@
 #include <math.h>
 #include "util.h"
 #include "PSXMSFS.h"
+#include "SimConnect.h"
 
 monotime TimeStart;
 
@@ -16,7 +17,15 @@ monotime getMonotonicTime(void) {
     return ((uint64_t)ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
 }
 
-void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr) {
+// void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr) {
+void CalcCoord(struct DB *T, double *latr, double *longr) {
+
+    double bearing, dist, lato, longo;
+
+    bearing = T->heading_true + M_PI;
+    dist = 92.5;
+    lato = T->latitude;
+    longo = T->longitude;
 
     *latr = asin(sin(lato) * cos(dist * FTM / EARTH_RAD) + cos(lato) * sin(dist * FTM / EARTH_RAD) * cos(bearing));
     *longr = longo + atan2(sin(bearing) * sin(dist * FTM / EARTH_RAD) * cos(lato),
@@ -58,5 +67,108 @@ void printDebug(const char *debugInfo, int console) {
     }
     if (console) {
         printf("%s\n", debugInfo);
+    }
+}
+
+void state(Target *T, FILE *fd, int console) {
+
+    if (console) {
+        printf("PSX:\t  ");
+        printf("Alt: %.0f\t", T->altitude);
+        printf("Lat: %.3f\t", T->latitude);
+        printf("Long: %.3f\t", T->longitude);
+        printf("Head: %.1f\t", T->heading_true);
+        printf("Pitch: %.2f\t", T->pitch);
+        printf("Bank: %.2f\t", T->bank);
+        printf("TAS: %.1f\t", T->TAS);
+        printf("IAS: %.1f\t", T->IAS);
+        printf("VS: %.1f\t", T->VerticalSpeed);
+        printf("\n");
+    }
+    fprintf(fd, "PSX:\t  ");
+    fprintf(fd, "Alt: %.0f\t", T->altitude);
+    fprintf(fd, "Lat: %.3f\t", T->latitude);
+    fprintf(fd, "Long: %.3f\t", T->longitude);
+    fprintf(fd, "Head: %.1f\t", T->heading_true);
+    fprintf(fd, "Pitch: %.2f\t", T->pitch);
+    fprintf(fd, "Bank: %.2f\t", T->bank);
+    fprintf(fd, "TAS: %.1f\t", T->TAS);
+    fprintf(fd, "IAS: %.1f\t", T->IAS);
+    fprintf(fd, "VS: %.1f\t", T->VerticalSpeed);
+    fprintf(fd, "\n");
+    fflush(fd);
+}
+void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
+
+    // printing to debug file
+    fprintf(fd, "MSFS:\t  ");
+    //fprintf(fd, "Alt: %.0f\t", A->altitude);
+    //fprintf(fd, "Lat: %.3f\t", A->latitude);
+    //fprintf(fd, "Long: %.3f\t", A->longitude);
+    //fprintf(fd, "Head: %.1f\t", A->heading_true);
+    //fprintf(fd, "Pitch: %.2f\t", -A->pitch);
+    //fprintf(fd, "Bank: %.2f\t", A->bank);
+    fprintf(fd, "TAS: %.1f\t", A->tas);
+    fprintf(fd, "IAS: %.1f\t", A->ias);
+    fprintf(fd, "VS: %.1f\t", A->vertical_speed);
+    fprintf(fd, "GearDown: %.1f\t", A->GearDown);
+    fprintf(fd, "FlapsPosition: %.1f\t", A->FlapsPosition);
+    fprintf(fd, "Speedbrake: %.1f\t", A->Speedbrake);
+    // Lights
+    fprintf(fd, "Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
+            A->LandLeftOutboard,  // L Outboard
+            A->LandLeftInboard,   // L Inboard
+            A->LandRightInboard,  // R Inboard
+            A->LandRightOutboard, // R Outboard
+            A->LeftRwyTurnoff,    // L Runway Turnoff light
+            A->RightRwyTurnoff,   // R Runway Turnoff light
+            A->LightTaxi,         // Taxi light
+            A->LightNav,          // Nav light
+            A->Strobe,            // Strobe light
+            A->BeaconLwr,         // Lower Beacon light
+            A->Beacon,            // Both Beacon light
+            A->LightWing,         // Wing light
+            A->LightLogo);        // Wing light
+    // moving surfaces
+    fprintf(fd, "rudder: %.1f\t", A->rudder);
+    fprintf(fd, "elevator: %.1f\t", A->elevator);
+    fprintf(fd, "ailerons: %.1f\t", A->ailerons);
+    fprintf(fd, "\n");
+    fflush(fd);
+    // And printing to stdout if console is set
+    if (console) {
+        printf("MSFS:\t  ");
+        //printf("Alt: %.0f\t", A->altitude);
+        //printf("Lat: %.3f\t", A->latitude);
+        //printf("Long: %.3f\t", A->longitude);
+        //printf("Head: %.1f\t", A->heading_true);
+        //printf("Pitch: %.2f\t", -A->pitch);
+        //printf("Bank: %.2f\t", A->bank);
+        printf("TAS: %.1f\t", A->tas);
+        printf("IAS: %.1f\t", A->ias);
+        printf("VS: %.1f\t", A->vertical_speed);
+        printf("GearDown: %.1f\t", A->GearDown);
+        printf("FlapsPosition: %.1f\t", A->FlapsPosition);
+        printf("Speedbrake: %.1f\t", A->Speedbrake);
+        // Lights
+        printf("Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
+               A->LandLeftOutboard,  // L Outboard
+               A->LandLeftInboard,   // L Inboard
+               A->LandRightInboard,  // R Inboard
+               A->LandRightOutboard, // R Outboard
+               A->LeftRwyTurnoff,    // L Runway Turnoff light
+               A->RightRwyTurnoff,   // R Runway Turnoff light
+               A->LightTaxi,         // Taxi light
+               A->LightNav,          // Nav light
+               A->Strobe,            // Strobe light
+               A->BeaconLwr,         // Lower Beacon light
+               A->Beacon,            // Both Beacon light
+               A->LightWing,         // Wing light
+               A->LightLogo);        // Wing light
+        // moving surfaces
+        printf("rudder: %.1f\t", A->rudder);
+        printf("elevator: %.1f\t", A->elevator);
+        printf("ailerons: %.1f\t", A->ailerons);
+        printf("\n");
     }
 }

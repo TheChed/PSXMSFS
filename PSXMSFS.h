@@ -12,8 +12,8 @@
 #define MAXBUFF 165536
 
 /*Global variable used in readin boost socket*/
-extern char bufboost[MAXBUFF];
-extern char bufmain[MAXBUFF];
+extern char bufboost[256];
+extern char bufmain[4096];
 extern size_t bufboost_used ;
 extern size_t bufmain_used ;
 
@@ -40,6 +40,21 @@ extern int PSXBoostPort;
 
 extern char debugInfo[256];
 
+#pragma pack(push,1)
+struct DB{
+    double altitude;
+    double latitude;
+    double longitude;
+    double heading_true;
+    double pitch;
+    double bank;
+};
+
+
+#pragma pack(pop)
+
+extern struct DB ABoost;
+
 struct Struct_MSFS {
     double ground_altitude; // ground altitude above MSL
     double alt_above_ground; // altitude of MSFS plane above ground
@@ -62,12 +77,6 @@ struct Struct_MSFS {
  * same order as when mapping the variables in PSXMSFS.cpp
  */
 struct AcftPosition {
-    double altitude;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
     double tas;
     double ias;
     double vertical_speed;
@@ -94,6 +103,8 @@ struct AcftPosition {
     double ailerons;
 
 };
+
+
 enum GROUP_ID {
     GROUP0,
     GROUP1,
@@ -132,6 +143,7 @@ enum EVENT_ID {
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
     DATA_PSX_TO_MSFS,
+    DATA_BOOST,
     TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
 };
 
@@ -202,13 +214,14 @@ typedef struct {
 int check_param(const char *);
 int init_socket(void);
 int close_PSX_socket(int socket);
-//void Decode(int, char, char *, Target *);
 int open_connections();
 int umain(Target *T);
 int umainBoost(Target *T);
 int umainBoost2(Target *T);
 void SetUTCTime(void);
 void SetCOMM(void);
+void SetBARO(void);
+double SetAltitude(int onGround); 
 int sendQPSX(const char *s);
 int init_connect_MSFS(HANDLE *p);
 #endif

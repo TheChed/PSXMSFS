@@ -1,15 +1,18 @@
 CC = x86_64-w64-mingw32-gcc  
 #CFLAGS = -g -IInclude -Wall -Wextra -pedantic -Werror
-CFLAGS = -g -IInclude -Wall -Wextra -pedantic
+CFLAGS = -std=c++20 -g -IInclude -Wall -Wextra -pedantic
 
 DEPS = PSXMSFS.h
 OBJ = PSXMSFS.o PSX.o connect.o util.o
 OBJSIM = sim.o
+OBJDEBUG = debug.o
 OBJERR = err.o
 
 all: PSXMSFS hash move win
 
 simu: sim move win
+
+deb: debug move win
 
 error: err win
 
@@ -21,6 +24,9 @@ PSXMSFS: $(OBJ) $(DEPS)
 sim: $(OBJSIM) 
 	$(CC)  $(OBJSIM) -o sim.exe -LInclude -lSimConnect 
 
+debug: $(OBJDEBUG) 
+	$(CC)  $(OBJDEBUG) -o debug.exe -LInclude -lSimConnect 
+
 err: $(OBJERR) 
 	$(CC)  $(OBJERR) -g -o err.exe -limagehlp
 
@@ -28,6 +34,9 @@ err: $(OBJERR)
 	$(CC) $(CFLAGS) -c $<
 
 sim.o : sim.cpp
+	$(CC) -IInclude -c $<
+
+debug.o : debug.cpp
 	$(CC) -IInclude -c $<
 
 err.o : err.cpp

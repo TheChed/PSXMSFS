@@ -14,124 +14,29 @@
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "util.h"
+#include "SimConnect.h"
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
-char bufboost[MAXBUFF];
-char bufmain[MAXBUFF];
-
-void state(Target *T, FILE *fd, int console) {
-
-    if (console) {
-        printf("PSX:\t  ");
-        printf("Alt: %.0f\t", T->altitude);
-        printf("Lat: %.3f\t", T->latitude);
-        printf("Long: %.3f\t", T->longitude);
-        printf("Head: %.1f\t", T->heading_true);
-        printf("Pitch: %.2f\t", T->pitch);
-        printf("Bank: %.2f\t", T->bank);
-        printf("TAS: %.1f\t", T->TAS);
-        printf("IAS: %.1f\t", T->IAS);
-        printf("VS: %.1f\t", T->VerticalSpeed);
-        printf("\n");
-    }
-    fprintf(fd, "PSX:\t  ");
-    fprintf(fd, "Alt: %.0f\t", T->altitude);
-    fprintf(fd, "Lat: %.3f\t", T->latitude);
-    fprintf(fd, "Long: %.3f\t", T->longitude);
-    fprintf(fd, "Head: %.1f\t", T->heading_true);
-    fprintf(fd, "Pitch: %.2f\t", T->pitch);
-    fprintf(fd, "Bank: %.2f\t", T->bank);
-    fprintf(fd, "TAS: %.1f\t", T->TAS);
-    fprintf(fd, "IAS: %.1f\t", T->IAS);
-    fprintf(fd, "VS: %.1f\t", T->VerticalSpeed);
-    fprintf(fd, "\n");
-}
-void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
-
-    // printing to debug file
-    fprintf(fd, "MSFS:\t  ");
-    fprintf(fd, "Alt: %.0f\t", A->altitude);
-    fprintf(fd, "Lat: %.3f\t", A->latitude);
-    fprintf(fd, "Long: %.3f\t", A->longitude);
-    fprintf(fd, "Head: %.1f\t", A->heading_true);
-    fprintf(fd, "Pitch: %.2f\t", -A->pitch);
-    fprintf(fd, "Bank: %.2f\t", A->bank);
-    fprintf(fd, "TAS: %.1f\t", A->tas);
-    fprintf(fd, "IAS: %.1f\t", A->ias);
-    fprintf(fd, "VS: %.1f\t", A->vertical_speed);
-    fprintf(fd, "GearDown: %.1f\t", A->GearDown);
-    fprintf(fd, "FlapsPosition: %.1f\t", A->FlapsPosition);
-    fprintf(fd, "Speedbrake: %.1f\t", A->Speedbrake);
-    // Lights
-    fprintf(fd, "Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
-            A->LandLeftOutboard,  // L Outboard
-            A->LandLeftInboard,   // L Inboard
-            A->LandRightInboard,  // R Inboard
-            A->LandRightOutboard, // R Outboard
-            A->LeftRwyTurnoff,    // L Runway Turnoff light
-            A->RightRwyTurnoff,   // R Runway Turnoff light
-            A->LightTaxi,         // Taxi light
-            A->LightNav,          // Nav light
-            A->Strobe,            // Strobe light
-            A->BeaconLwr,         // Lower Beacon light
-            A->Beacon,            // Both Beacon light
-            A->LightWing,         // Wing light
-            A->LightLogo);        // Wing light
-    // moving surfaces
-    fprintf(fd, "rudder: %.1f\t", A->rudder);
-    fprintf(fd, "elevator: %.1f\t", A->elevator);
-    fprintf(fd, "ailerons: %.1f\t", A->ailerons);
-    fprintf(fd, "\n");
-    fflush(NULL);
-    // And printing to stdout if console is set
-    if (console) {
-        printf("MSFS:\t  ");
-        printf("Alt: %.0f\t", A->altitude);
-        printf("Lat: %.3f\t", A->latitude);
-        printf("Long: %.3f\t", A->longitude);
-        printf("Head: %.1f\t", A->heading_true);
-        printf("Pitch: %.2f\t", -A->pitch);
-        printf("Bank: %.2f\t", A->bank);
-        printf("TAS: %.1f\t", A->tas);
-        printf("IAS: %.1f\t", A->ias);
-        printf("VS: %.1f\t", A->vertical_speed);
-        printf("GearDown: %.1f\t", A->GearDown);
-        printf("FlapsPosition: %.1f\t", A->FlapsPosition);
-        printf("Speedbrake: %.1f\t", A->Speedbrake);
-        // Lights
-        printf("Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
-               A->LandLeftOutboard,  // L Outboard
-               A->LandLeftInboard,   // L Inboard
-               A->LandRightInboard,  // R Inboard
-               A->LandRightOutboard, // R Outboard
-               A->LeftRwyTurnoff,    // L Runway Turnoff light
-               A->RightRwyTurnoff,   // R Runway Turnoff light
-               A->LightTaxi,         // Taxi light
-               A->LightNav,          // Nav light
-               A->Strobe,            // Strobe light
-               A->BeaconLwr,         // Lower Beacon light
-               A->Beacon,            // Both Beacon light
-               A->LightWing,         // Wing light
-               A->LightLogo);        // Wing light
-        // moving surfaces
-        printf("rudder: %.1f\t", A->rudder);
-        printf("elevator: %.1f\t", A->elevator);
-        printf("ailerons: %.1f\t", A->ailerons);
-        printf("\n");
-    }
-}
+char bufboost[256];
+// char bufmain[MAXBUFF];
+char bufmain[4096];
 
 // Position of Gear
+
 void H170(char *s, Target *T) { T->GearLever = (int)(s[6] - '0'); }
 
 // Flap lever variable Qh389
 void H389(char *s, Target *T) { T->FlapLever = (int)(s[6] - '0'); }
 
 // Parking break
-void H397(char *s, Target *T) { T->parkbreak = (int)(s[6] - '0'); }
+void H397(char *s, Target *T) {
+    T->parkbreak = (int)(s[6] - '0');
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, T->parkbreak,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+}
 
 // Steering wheel
 void H426(char *s, Target *T) {
@@ -143,13 +48,15 @@ void H426(char *s, Target *T) {
     }
 
     T->steering = -pos;
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, T->steering,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
 // Speedbrake lever variable Qh389
 void H388(char *s, Target *T) {
 
-    char *token, *ptr;
-    if ((token = strtok(s + 6, delim)) != NULL) {
+    char *token, *ptr, *savptr;
+    if ((token = strtok_r(s + 6, delim, &savptr)) != NULL) {
         T->SpdBrkLever = strtol(token, &ptr, 10);
     }
 }
@@ -212,7 +119,7 @@ void S78(const char *s) {
 
 void S448(char *s, Target *T) {
 
-    char *token, *ptr;
+    char *token, *ptr, *savptr;
     int stdbar;
 
     /* get the first token
@@ -220,18 +127,19 @@ void S448(char *s, Target *T) {
      * 5th token is STD setting
      */
 
-    token = strtok(s + 6, delim);
-    token = strtok(NULL, delim);
-    token = strtok(NULL, delim);
+    token = strtok_r(s + 6, delim, &savptr);
+    token = strtok_r(NULL, delim, &savptr);
+    token = strtok_r(NULL, delim, &savptr);
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
         T->altimeter = strtol(token, &ptr, 10) / 100.0;
     }
     /* STD setting*/
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
         stdbar = strtod(token, NULL);
         T->STD = (abs(stdbar) == 1) ? 0 : 1;
     }
+    SetBARO();
 }
 
 void S458(char *s, Target *T) {
@@ -261,8 +169,6 @@ void S458(char *s, Target *T) {
         C2 = 122800000;
     }
     T->COM2 = C2;
-    snprintf(debugInfo, sizeof(debugInfo), "PSX COMM:%s", s);
-    printDebug(debugInfo, 0);
     SetCOMM();
 }
 void S480(char *s, Target *T) {
@@ -281,7 +187,6 @@ void S124(char *s, Target *T) {
 
     struct tm *time_PSX;
     time_t timeUTC;
-
     timeUTC = strtoll(s + 6, NULL, 10) / 1000;
 
     if ((time_PSX = gmtime(&timeUTC)) == NULL) {
@@ -293,8 +198,6 @@ void S124(char *s, Target *T) {
     T->day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
     T->hour = time_PSX->tm_hour;
     T->minute = time_PSX->tm_min;
-    snprintf(debugInfo, sizeof(debugInfo), "TimePSX:%s", s);
-    printDebug(debugInfo, 0);
 
     SetUTCTime();
     return;
@@ -362,6 +265,8 @@ void I204(char *s, Target *T) {
 
     T->XPDR = strtol(s + 8, NULL, 16);
     T->IDENT = (int)(s[7] - '0');
+
+    SetCOMM();
 }
 void I257(char *s, Target *T) { T->onGround = (int)(s[6] - '0'); }
 void I219(char *s) { MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10); }
@@ -419,6 +324,17 @@ void Decode(Target *T, char *s, int boost) {
                 T->VerticalSpeed = 10 * (altdiff / tvs) * 60.0;
             Tms = vs;
         }
+
+        /*Put main vairables in Boost structure
+         *So that we can update MSFS on high frequency
+         */
+        ABoost = {.altitude = T->altitude,
+                  .latitude = T->latitude,
+                  .longitude = T->longitude,
+                  .heading_true = T->heading_true,
+                  .pitch = -T->pitch,
+                  .bank = T->bank};
+
     } else {
 
         if (strstr(s, "Qs122=")) {
@@ -548,19 +464,19 @@ int umain(Target *T) {
         *line_end = 0;
 
         // New situ loaded
-        pthread_mutex_lock(&mutex);
         if (strstr(line_start, "load3")) {
             printDebug("New situ loaded: no crash detection for 10 seconds", CONSOLE);
             printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
             sendQPSX("Qi198=-9999910"); // no crash detection fort 20 seconds
-            sleep(5);                   // let's wait a few seconds to get everyone ready
+            // sleep(5);                   // let's wait a few seconds to get everyone ready
             printDebug("Resuming normal operations.", CONSOLE);
             MSFS_on_ground = 0;
         }
-        if (line_start[0] == 'Q' || strstr(line_start, "load3")) {
+        pthread_mutex_lock(&mutex);
+        if (line_start[0] == 'Q') {
             Decode(T, line_start, 0);
             if (!SLAVE) {
-                //    SetMSFSPos();
+                SetMSFSPos();
             }
         }
         pthread_mutex_unlock(&mutex);
