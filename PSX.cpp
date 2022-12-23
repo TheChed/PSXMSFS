@@ -18,6 +18,7 @@
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
+int light[14] = {0};
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
 char bufboost[256];
@@ -66,42 +67,42 @@ void S121(char *s, Target *T) {
     char *token, *ptr;
     assert(strlen(s) >= 9 && strlen(s) <= 200);
 
-    if ((token = strtok(s + 6, delim)) != NULL) {
-        T->pitch = strtol(token, &ptr, 10) / 100000.0;
+    if ((token = strtok_r(s + 6, delim, &ptr)) != NULL) {
+        T->pitch = strtol(token, NULL, 10) / 100000.0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->bank = strtol(token, &ptr, 10) / 100000.0;
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
+        T->bank = strtol(token, NULL, 10) / 100000.0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->heading_true = strtod(token, &ptr);
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->altitude = strtol(token, &ptr, 10) / 1000.0;
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
+        T->altitude = strtol(token, NULL, 10) / 1000.0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
-        T->TAS = strtol(token, &ptr, 10) / 1000.0;
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
+        T->TAS = strtol(token, NULL, 10) / 1000.0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->latitude = strtod(token, &ptr);
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->longitude = strtod(token, &ptr);
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
     }
 }
 void S483(char *s, Target *T) {
 
     char *token, *ptr;
 
-    if ((token = strtok(s + 6, delim)) != NULL) {
+    if ((token = strtok_r(s + 6, delim, &ptr)) != NULL) {
         T->IAS = strtol(token, &ptr, 10) / 10.0;
     }
 }
@@ -139,7 +140,7 @@ void S448(char *s, Target *T) {
         stdbar = strtod(token, NULL);
         T->STD = (abs(stdbar) == 1) ? 0 : 1;
     }
-    SetBARO();
+    //  SetBARO();
 }
 
 void S458(char *s, Target *T) {
@@ -169,7 +170,7 @@ void S458(char *s, Target *T) {
         C2 = 122800000;
     }
     T->COM2 = C2;
-    SetCOMM();
+    // SetCOMM();
 }
 void S480(char *s, Target *T) {
 
@@ -183,7 +184,7 @@ void S480(char *s, Target *T) {
     T->elevator = 16384 * (val[6] - 21) / 21.0;              // maximum deflection in PSX = 42
 }
 
-void S124(char *s, Target *T) {
+void S124(char *s) {
 
     struct tm *time_PSX;
     time_t timeUTC;
@@ -194,20 +195,20 @@ void S124(char *s, Target *T) {
         return;
     }
 
-    T->year = time_PSX->tm_year + 1900; // year starts in 1900
-    T->day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
-    T->hour = time_PSX->tm_hour;
-    T->minute = time_PSX->tm_min;
+    PSXtime.year = time_PSX->tm_year + 1900; // year starts in 1900
+    PSXtime.day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
+    PSXtime.hour = time_PSX->tm_hour;
+    PSXtime.minute = time_PSX->tm_min;
 
     SetUTCTime();
     return;
 }
 
-void S443(char *s, Target *T) {
+void S443(char *s) {
 
-    updateLights = 1;
+    printDebug("New light event", CONSOLE);
     for (int i = 0; i < 14; i++) {
-        T->light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
+        light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
 }
 
@@ -217,46 +218,46 @@ void S122(char *s, Target *T) {
     char *token, *ptr;
     assert(strlen(s) >= 9 && strlen(s) <= 200);
     /* get the first token */
-    token = strtok(s + 6, delim);
+    token = strtok_r(s + 6, delim, &ptr);
     /* walk through other tokens */
     if (strcmp(token, "1") == 1) {
         MSFS_on_ground = 0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->pitch = strtol(token, &ptr, 10) / 1000.0;
     }
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->pitch = strtol(token, &ptr, 10) / 1000.0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->bank = strtol(token, &ptr, 10) / 1000.0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->heading_true = strtod(token, &ptr) / 1000.0;
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->altitude = strtol(token, &ptr, 10);
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->VerticalSpeed = strtol(token, &ptr, 10);
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->TAS = strtol(token, &ptr, 10);
     }
 
-    token = strtok(NULL, delim); // YAW is not needed
-    if ((token = strtok(NULL, delim)) != NULL) {
-        token = strtok(NULL, delim);
+    token = strtok_r(NULL, delim, &ptr); // YAW is not needed
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
+        token = strtok_r(NULL, delim, &ptr);
         T->latitude = strtod(token, &ptr);
     }
 
-    if ((token = strtok(NULL, delim)) != NULL) {
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         T->longitude = strtod(token, &ptr);
     }
 }
@@ -343,7 +344,7 @@ void Decode(Target *T, char *s, int boost) {
 
         // ExtLts : External lights, Mode=XECON
         if (strstr(s, "Qs443")) {
-            S443(strstr(s, "Qs443="), T);
+            S443(strstr(s, "Qs443="));
         }
 
         //// PSX on groud
@@ -372,7 +373,7 @@ void Decode(Target *T, char *s, int boost) {
 
         // Update Time
         if (strstr(s, "Qs124")) {
-            S124(strstr(s, "Qs124"), T);
+            S124(strstr(s, "Qs124"));
         }
 
         // Indicated Airspeed IAS
@@ -421,6 +422,8 @@ int sendQPSX(const char *s) {
 
     if (nbsend == 0) {
         printf("Error sending variable %s to PSX\n", s);
+    } else {
+        printf("Sent to PSX: %s\n", s);
     }
 
     free(dem);
@@ -468,7 +471,6 @@ int umain(Target *T) {
             printDebug("New situ loaded: no crash detection for 10 seconds", CONSOLE);
             printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
             sendQPSX("Qi198=-9999910"); // no crash detection fort 20 seconds
-            // sleep(5);                   // let's wait a few seconds to get everyone ready
             printDebug("Resuming normal operations.", CONSOLE);
             MSFS_on_ground = 0;
         }
@@ -520,21 +522,20 @@ int umainBoost(Target *T) {
     char *line_end;
     while ((line_end = (char *)memchr((void *)line_start, '\n', bufboost_used - (line_start - bufboost)))) {
         *line_end = 0;
-
         if (line_start[0] != 'F' && line_start[0] != 'G') {
             printDebug(line_start, 1);
         }
+        pthread_mutex_lock(&mutex);
         if (line_start[0] == 'F' || line_start[0] == 'G') {
-            pthread_mutex_lock(&mutex);
             Decode(T, line_start, 1);
             if (!SLAVE) {
                 SetMSFSPos();
             }
-            pthread_mutex_unlock(&mutex);
         } else {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);
             printDebug(debugInfo, CONSOLE);
         }
+        pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;
     }
     /* Shift buffer down so the unprocessed data is at the start */

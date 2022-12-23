@@ -19,14 +19,13 @@ error: err win
 comp: PSXMSFS hash move
 
 PSXMSFS: $(OBJ) $(DEPS)
-	$(CC) -static $(OBJ) -g -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthread -limagehlp
+	$(CC) -static $(OBJ) -g -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthread 
 
 sim: $(OBJSIM) 
 	$(CC)  $(OBJSIM) -o sim.exe -LInclude -lSimConnect 
 
 debug: $(OBJDEBUG) 
-	$(CC)  $(OBJDEBUG) -o debug.exe -LInclude -lSimConnect 
-
+	$(CC)  $(OBJDEBUG) -o debug.exe -LInclude -lSimConnect -lpthread
 err: $(OBJERR) 
 	$(CC)  $(OBJERR) -g -o err.exe -limagehlp
 

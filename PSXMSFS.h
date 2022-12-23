@@ -12,12 +12,6 @@
 #define MAXBUFF 165536
 
 /*Global variable used in readin boost socket*/
-extern char bufboost[256];
-extern char bufmain[4096];
-extern size_t bufboost_used ;
-extern size_t bufmain_used ;
-
-
 
 extern pthread_mutex_t mutex;
 
@@ -40,7 +34,6 @@ extern int PSXBoostPort;
 
 extern char debugInfo[256];
 
-#pragma pack(push,1)
 struct DB{
     double altitude;
     double latitude;
@@ -49,9 +42,6 @@ struct DB{
     double pitch;
     double bank;
 };
-
-
-#pragma pack(pop)
 
 extern struct DB ABoost;
 
@@ -77,12 +67,17 @@ struct Struct_MSFS {
  * same order as when mapping the variables in PSXMSFS.cpp
  */
 struct AcftPosition {
-    double tas;
-    double ias;
-    double vertical_speed;
     double GearDown;
     double FlapsPosition;
     double Speedbrake;
+    double rudder;
+    double elevator;
+    double ailerons;
+
+};
+
+struct ALights {
+
     //Lights
     double LandLeftOutboard; // L Outboard
     double LandLeftInboard; // L Inboard
@@ -97,12 +92,9 @@ struct AcftPosition {
     double Beacon; // Both Beacon light
     double LightWing; // Wing light
     double LightLogo; // Wing light
-    //moving surfaces
-    double rudder;
-    double elevator;
-    double ailerons;
-
 };
+
+
 
 
 enum GROUP_ID {
@@ -142,8 +134,9 @@ enum EVENT_ID {
 };
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
-    DATA_PSX_TO_MSFS,
+    DATA_MOVING_SURFACE,
     DATA_BOOST,
+    DATA_LIGHT,
     TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
 };
 
@@ -174,6 +167,18 @@ struct AI_TCAS {
 
 
 typedef struct {
+    int year;
+    int day;
+    int hour;
+    int minute;
+} PSXTIME;
+ 
+extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
+                   //
+                   // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
+                   // logo
+
+typedef struct {
     double pitch;
     double bank;
     double heading_true;
@@ -188,11 +193,6 @@ typedef struct {
     int GearLever  ;   // 1=up, 2=off, 3=down
     int FlapLever ;   // 0 (up) to 6 (30)
     int SpdBrkLever ; // 0 (up) to 800 max deployed
-    int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
-                   // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
-                   // logo
-    //Time Z
-    int year,month,day,hour,minute;
     //Moving surfaces
     double elevator, aileron, rudder;
     double parkbreak;
@@ -209,6 +209,9 @@ typedef struct {
     int STD ;
 
 } Target;
+
+extern PSXTIME PSXtime;
+
 
 // Function definitions
 int check_param(const char *);

@@ -102,33 +102,23 @@ void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
 
     // printing to debug file
     fprintf(fd, "MSFS:\t  ");
-    //fprintf(fd, "Alt: %.0f\t", A->altitude);
-    //fprintf(fd, "Lat: %.3f\t", A->latitude);
-    //fprintf(fd, "Long: %.3f\t", A->longitude);
-    //fprintf(fd, "Head: %.1f\t", A->heading_true);
-    //fprintf(fd, "Pitch: %.2f\t", -A->pitch);
-    //fprintf(fd, "Bank: %.2f\t", A->bank);
-    fprintf(fd, "TAS: %.1f\t", A->tas);
-    fprintf(fd, "IAS: %.1f\t", A->ias);
-    fprintf(fd, "VS: %.1f\t", A->vertical_speed);
+    // fprintf(fd, "Alt: %.0f\t", A->altitude);
+    // fprintf(fd, "Lat: %.3f\t", A->latitude);
+    // fprintf(fd, "Long: %.3f\t", A->longitude);
+    // fprintf(fd, "Head: %.1f\t", A->heading_true);
+    // fprintf(fd, "Pitch: %.2f\t", -A->pitch);
+    // fprintf(fd, "Bank: %.2f\t", A->bank);
+    //fprintf(fd, "TAS: %.1f\t", A->tas);
+    //fprintf(fd, "IAS: %.1f\t", A->ias);
+    //fprintf(fd, "VS: %.1f\t", A->vertical_speed);
     fprintf(fd, "GearDown: %.1f\t", A->GearDown);
     fprintf(fd, "FlapsPosition: %.1f\t", A->FlapsPosition);
     fprintf(fd, "Speedbrake: %.1f\t", A->Speedbrake);
     // Lights
-    fprintf(fd, "Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
-            A->LandLeftOutboard,  // L Outboard
-            A->LandLeftInboard,   // L Inboard
-            A->LandRightInboard,  // R Inboard
-            A->LandRightOutboard, // R Outboard
-            A->LeftRwyTurnoff,    // L Runway Turnoff light
-            A->RightRwyTurnoff,   // R Runway Turnoff light
-            A->LightTaxi,         // Taxi light
-            A->LightNav,          // Nav light
-            A->Strobe,            // Strobe light
-            A->BeaconLwr,         // Lower Beacon light
-            A->Beacon,            // Both Beacon light
-            A->LightWing,         // Wing light
-            A->LightLogo);        // Wing light
+    fprintf(fd, "Lights: ");
+    for (int i = 0; i < 14; ++i)
+        fprintf(fd, "%d", light[i]);
+    fprintf(fd, "\t");
     // moving surfaces
     fprintf(fd, "rudder: %.1f\t", A->rudder);
     fprintf(fd, "elevator: %.1f\t", A->elevator);
@@ -138,33 +128,23 @@ void stateMSFS(struct AcftPosition *A, FILE *fd, int console) {
     // And printing to stdout if console is set
     if (console) {
         printf("MSFS:\t  ");
-        //printf("Alt: %.0f\t", A->altitude);
-        //printf("Lat: %.3f\t", A->latitude);
-        //printf("Long: %.3f\t", A->longitude);
-        //printf("Head: %.1f\t", A->heading_true);
-        //printf("Pitch: %.2f\t", -A->pitch);
-        //printf("Bank: %.2f\t", A->bank);
-        printf("TAS: %.1f\t", A->tas);
-        printf("IAS: %.1f\t", A->ias);
-        printf("VS: %.1f\t", A->vertical_speed);
+        // printf("Alt: %.0f\t", A->altitude);
+        // printf("Lat: %.3f\t", A->latitude);
+        // printf("Long: %.3f\t", A->longitude);
+        // printf("Head: %.1f\t", A->heading_true);
+        // printf("Pitch: %.2f\t", -A->pitch);
+        // printf("Bank: %.2f\t", A->bank);
+        //printf("TAS: %.1f\t", A->tas);
+        //printf("IAS: %.1f\t", A->ias);
+        //printf("VS: %.1f\t", A->vertical_speed);
         printf("GearDown: %.1f\t", A->GearDown);
         printf("FlapsPosition: %.1f\t", A->FlapsPosition);
         printf("Speedbrake: %.1f\t", A->Speedbrake);
         // Lights
-        printf("Lights: %.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f%.0f\t",
-               A->LandLeftOutboard,  // L Outboard
-               A->LandLeftInboard,   // L Inboard
-               A->LandRightInboard,  // R Inboard
-               A->LandRightOutboard, // R Outboard
-               A->LeftRwyTurnoff,    // L Runway Turnoff light
-               A->RightRwyTurnoff,   // R Runway Turnoff light
-               A->LightTaxi,         // Taxi light
-               A->LightNav,          // Nav light
-               A->Strobe,            // Strobe light
-               A->BeaconLwr,         // Lower Beacon light
-               A->Beacon,            // Both Beacon light
-               A->LightWing,         // Wing light
-               A->LightLogo);        // Wing light
+        printf("Lights: ");
+        for (int i = 0; i < 14; ++i)
+            printf("%d", light[i]);
+        printf("\t");
         // moving surfaces
         printf("rudder: %.1f\t", A->rudder);
         printf("elevator: %.1f\t", A->elevator);

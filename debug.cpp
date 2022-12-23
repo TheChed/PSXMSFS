@@ -12,6 +12,7 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <strsafe.h>
+#include <pthread.h>
 
 #include "SimConnect.h"
 
@@ -20,7 +21,7 @@ HANDLE hSimConnect = NULL;
 void update_pos();
 
 double heading = 0.0;
-double lat= 0.8552322;
+double lat = 0.8552322;
 
 struct AcftPosition {
     double altitude;
@@ -108,12 +109,11 @@ void CALLBACK MyDispatchProcRD(SIMCONNECT_RECV *pData, DWORD cbData, void *pCont
     }
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
-        heading = heading + 0.01;
-        update_pos();
-        lat = lat +0.01;
+        // lat = lat +0.01;
         printf("Frame received:%d\r", nb);
         nb++;
-  //      hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
+        //      hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_PSX, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
+        //      &APos);
         hr = SimConnect_SetDataOnSimObject(hSimConnect, BIG_DATA_PSX, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APosBIG),
                                            &APosBIG);
     } break;
@@ -131,12 +131,12 @@ void CALLBACK MyDispatchProcRD(SIMCONNECT_RECV *pData, DWORD cbData, void *pCont
     }
 }
 
-void update_pos(){
+void update_pos() {
     APosBIG.altitude = 360.5; // 358 + 15.6;
     APosBIG.latitude = 0.8552322;
-    //APosBIG.latitude = APosBIG.latitude + 0.01;
+    // APosBIG.latitude = APosBIG.latitude + 0.01;
     APosBIG.longitude = 0.044982;
-    APosBIG.heading_true = APosBIG.heading_true +0.01;
+    APosBIG.heading_true = APosBIG.heading_true + 0.01;
     APosBIG.pitch = 0.0;
     APosBIG.bank = 0.0;
     APosBIG.tas = 0.0;
@@ -265,31 +265,59 @@ void testDataRequest() {
         hr = SimConnect_AddToDataDefinition(hSimConnect, BIG_DATA_PSX, "RUDDER POSITION", "position 16K");
         hr = SimConnect_AddToDataDefinition(hSimConnect, BIG_DATA_PSX, "ELEVATOR POSITION", "position 16K");
         hr = SimConnect_AddToDataDefinition(hSimConnect, BIG_DATA_PSX, "AILERON POSITION", "position 16K");
-    
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
-    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
-        
+
+        hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
+        hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
+        hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
+
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-
-        while (0 == quit) {
-            SimConnect_CallDispatch(hSimConnect, MyDispatchProcRD, NULL);
-            Sleep(1);
-        }
-
-        hr = SimConnect_Close(hSimConnect);
     }
+}
+
+void *ptUmain(void *thread_param) {
+    (void)(thread_param);
+
+    while (!quit) {
+        SimConnect_CallDispatch(hSimConnect, MyDispatchProcRD, NULL);
+        Sleep(1);
+    }
+    return NULL;
+}
+void *ptpos(void *thread_param) {
+    (void)(thread_param);
+
+    while (!quit) {
+        heading = heading + 0.01;
+        update_pos();
+        Sleep(1);
+    }
+    return NULL;
 }
 
 int __cdecl _tmain(int argc, _TCHAR *argv[]) {
 
+    pthread_t t1, t2;
     init_pos();
     testDataRequest();
+    if (pthread_create(&t1, NULL, &ptUmain, NULL) != 0) {
+        printf("Error creating thread Umain");
+    }
+    if (pthread_create(&t2, NULL, &ptpos, NULL) != 0) {
+        printf("Error creating thread Umain");
+    }
 
+    if (pthread_join(t1, NULL) != 0) {
+        printf("Failed to join Main thread");
+    }
+    if (pthread_join(t2, NULL) != 0) {
+        printf("Failed to join Main thread");
+    }
+
+    SimConnect_Close(hSimConnect);
     return 0;
 }
