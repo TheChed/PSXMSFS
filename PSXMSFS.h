@@ -79,7 +79,8 @@ struct AcftPosition {
 struct ALights {
 
     //Lights
-    double LandLeftOutboard; // L Outboard
+
+    double LandLeftOutboard; // L Inboard
     double LandLeftInboard; // L Inboard
     double LandRightInboard; // R Inboard
     double LandRightOutboard; // R Outboard

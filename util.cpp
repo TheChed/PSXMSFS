@@ -17,7 +17,6 @@ monotime getMonotonicTime(void) {
     return ((uint64_t)ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
 }
 
-// void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr) {
 void CalcCoord(struct DB *T, double *latr, double *longr) {
 
     double bearing, dist, lato, longo;

@@ -20,6 +20,7 @@ int quit = 0;
 DWORD dwLastID;
 
 PSXTIME PSXtime;
+#pragma pack(1)
 
 AcftPosition APos;
 ALights Lights;
@@ -592,7 +593,7 @@ void *ptDataToMSFS(void *thread_param) {
     (void)(&thread_param);
     long Timer;
     int update = 0;
-    int PERIODMS = 15; // Update frequency in ms
+    int PERIODMS = 2; // Update frequency in ms
 
     double lat, longi;
 
@@ -605,13 +606,15 @@ void *ptDataToMSFS(void *thread_param) {
         Timer = (long)elapsedMs(TimeStart);
         if ((Timer % PERIODMS) && update) // every PERIODMS ms
         {
-            //hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_BOOST, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(ABoost),
-           //                                    &ABoost);
-           // hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACE, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-           //                                    sizeof(APos), &APos);
+        pthread_mutex_lock(&mutex);
+            hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_BOOST, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(ABoost),
+                                               &ABoost);
+            hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACE, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+                                               sizeof(APos), &APos);
             hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_LIGHT, SIMCONNECT_OBJECT_ID_USER, 0, 0,
                                                sizeof(ALights), &Lights);
             update = 0;
+        pthread_mutex_unlock(&mutex);
         }
         if (!(Timer % PERIODMS)) {
             // we are ready to update
@@ -750,7 +753,6 @@ void SetMSFSPos(void) {
         Lights.LeftRwyTurnoff = 0.0;
         Lights.RightRwyTurnoff = 0.0;
     }
-    
 
     /*
      * Set the moving surfaces: aileron, rudder, elevator
@@ -954,7 +956,7 @@ int main(int argc, char **argv) {
     /* Read from .ini file the various values
      * used in the program
      */
-
+printf("Sizeof light:%zu\n",sizeof(Lights));
     if (!init_param()) {
         printf("Could not initialize default parameters... Quitting\n");
         exit(EXIT_FAILURE);

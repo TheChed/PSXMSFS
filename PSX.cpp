@@ -206,7 +206,8 @@ void S124(char *s) {
 
 void S443(char *s) {
 
-    printDebug("New light event", CONSOLE);
+    printDebug("New light event:", CONSOLE);
+    printf("S: %s\n",s);
     for (int i = 0; i < 14; i++) {
         light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
