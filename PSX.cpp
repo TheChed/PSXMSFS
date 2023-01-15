@@ -328,12 +328,12 @@ void Decode(Target *T, char *s, int boost) {
         /*Put main vairables in Boost structure
          *So that we can update MSFS on high frequency
          */
-        CalcCoord(APos.heading_true,latb, longb, &latc,&longc);
+        CalcCoord(APos.heading_true, latb, longb, &latc, &longc);
         APos.altitude = T->altitude;
         APos.heading_true = T->heading_true;
         APos.pitch = -T->pitch;
-        APos.longitude=longc;
-        APos.latitude=latc;
+        APos.longitude = longc;
+        APos.latitude = latc;
         APos.bank = T->bank;
     } else {
 
@@ -472,7 +472,7 @@ int umain(Target *T) {
         if (line_start[0] == 'Q') {
             Decode(T, line_start, 0);
             if (!SLAVE) {
-              //  SetMSFSPos();
+                //  SetMSFSPos();
             }
         }
         pthread_mutex_unlock(&mutex);

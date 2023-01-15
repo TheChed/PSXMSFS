@@ -457,9 +457,9 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
-    // hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
-    // SIMCONNECT_OBJECT_ID_USER,
-    //                                        SIMCONNECT_PERIOD_SECOND);
+     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
+     SIMCONNECT_OBJECT_ID_USER,
+                                            SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
 
@@ -648,7 +648,7 @@ double SetAltitude(int onGround) {
      * Boost servers gives altitude of flight deck
      */
     ctrAltitude = APos.altitude - (28.412073 + 92.5 * sin(APos.pitch));
-
+    printf("MSFS_POS.ctraltitude: %.6f\t Apos: %.6f\t ctraltitude: %.6f\n", MSFS_POS.ground_altitude,APos.altitude, ctrAltitude);
     /*
      * Calculate the altitude if PSX is on the ground
      * or in flight
@@ -726,16 +726,16 @@ void init_pos() {
 
 void SetMSFSPos(void) {
 
-    //CalcCoord(&APos, &lat, &longi);
+    // CalcCoord(&APos, &lat, &longi);
     APos.altitude = SetAltitude(PSX_on_ground);
-    //APos.latitude = lat;
-    //APos.longitude = longi;
-    //APos.heading_true = Tboost.heading_true;
-    //APos.pitch = -Tboost.pitch;
-    //APos.bank = Tboost.bank;
-    //APos.tas = Tmain.TAS;
-    //APos.ias = Tmain.IAS;
-    // Update lights
+    // APos.latitude = lat;
+    // APos.longitude = longi;
+    // APos.heading_true = Tboost.heading_true;
+    // APos.pitch = -Tboost.pitch;
+    // APos.bank = Tboost.bank;
+    // APos.tas = Tmain.TAS;
+    // APos.ias = Tmain.IAS;
+    //  Update lights
     APos.LandLeftOutboard = light[0];
     APos.LandLeftInboard = light[2];
     APos.LandRightInboard = light[3];
