@@ -206,8 +206,6 @@ void S124(char *s) {
 
 void S443(char *s) {
 
-    printDebug("New light event:", CONSOLE);
-    printf("S: %s\n",s);
     for (int i = 0; i < 14; i++) {
         light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
@@ -226,22 +224,22 @@ void S122(char *s, Target *T) {
     }
 
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->pitch = strtol(token, &ptr, 10) / 1000.0;
+        //     T->pitch = strtol(token, &ptr, 10) / 1000.0;
     }
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->pitch = strtol(token, &ptr, 10) / 1000.0;
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->bank = strtol(token, &ptr, 10) / 1000.0;
+        //      T->pitch = strtol(token, &ptr, 10) / 1000.0;
     }
 
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->heading_true = strtod(token, &ptr) / 1000.0;
+        //      T->bank = strtol(token, &ptr, 10) / 1000.0;
     }
 
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->altitude = strtol(token, &ptr, 10);
+        //     T->heading_true = strtod(token, &ptr) / 1000.0;
+    }
+
+    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
+        //      T->altitude = strtol(token, &ptr, 10);
     }
 
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
@@ -255,11 +253,11 @@ void S122(char *s, Target *T) {
     token = strtok_r(NULL, delim, &ptr); // YAW is not needed
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
         token = strtok_r(NULL, delim, &ptr);
-        T->latitude = strtod(token, &ptr);
+        //     T->latitude = strtod(token, &ptr);
     }
 
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->longitude = strtod(token, &ptr);
+        //      T->longitude = strtod(token, &ptr);
     }
 }
 
@@ -270,7 +268,6 @@ void I204(char *s, Target *T) {
 
     SetCOMM();
 }
-void I257(char *s, Target *T) { T->onGround = (int)(s[6] - '0'); }
 void I219(char *s) { MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10); }
 
 void Decode(Target *T, char *s, int boost) {
@@ -281,11 +278,12 @@ void Decode(Target *T, char *s, int boost) {
     float vs, tvs, altdiff;
     char *token, *ptr, *savptr;
     float flightDeckAlt = 0.0;
+    double latc, longc, latb, longb;
 
     if (boost) {
         /* get the first token */
         if ((token = strtok_r(s, delim, &savptr)) != NULL) {
-            T->onGround = (strcmp(token, "G") == 0 ? 2 : 1);
+            PSX_on_ground = (strcmp(token, "G") == 0 ? 2 : 1);
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
@@ -309,11 +307,11 @@ void Decode(Target *T, char *s, int boost) {
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            T->latitude = strtod(token, &ptr) * DEG2RAD; // B)oost gives lat & long in degrees
+            latb = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            T->longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
+            longb = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
         }
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             vs = strtol(token, NULL, 10);
@@ -323,20 +321,20 @@ void Decode(Target *T, char *s, int boost) {
                 tvs = vs - Tms;
             }
             if (tvs)
-                T->VerticalSpeed = 10 * (altdiff / tvs) * 60.0;
+                APos.vertical_speed = 10 * (altdiff / tvs) * 60.0;
             Tms = vs;
         }
 
         /*Put main vairables in Boost structure
          *So that we can update MSFS on high frequency
          */
-        ABoost = {.altitude = T->altitude,
-                  .latitude = T->latitude,
-                  .longitude = T->longitude,
-                  .heading_true = T->heading_true,
-                  .pitch = -T->pitch,
-                  .bank = T->bank};
-
+        CalcCoord(APos.heading_true,latb, longb, &latc,&longc);
+        APos.altitude = T->altitude;
+        APos.heading_true = T->heading_true;
+        APos.pitch = -T->pitch;
+        APos.longitude=longc;
+        APos.latitude=latc;
+        APos.bank = T->bank;
     } else {
 
         if (strstr(s, "Qs122=")) {
@@ -346,11 +344,6 @@ void Decode(Target *T, char *s, int boost) {
         // ExtLts : External lights, Mode=XECON
         if (strstr(s, "Qs443")) {
             S443(strstr(s, "Qs443="));
-        }
-
-        //// PSX on groud
-        if (strstr(s, "Qi257")) {
-            I257(strstr(s, "Qi257"), T);
         }
 
         //// Update Gear position
@@ -479,7 +472,7 @@ int umain(Target *T) {
         if (line_start[0] == 'Q') {
             Decode(T, line_start, 0);
             if (!SLAVE) {
-                SetMSFSPos();
+              //  SetMSFSPos();
             }
         }
         pthread_mutex_unlock(&mutex);

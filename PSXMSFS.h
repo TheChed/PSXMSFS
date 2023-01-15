@@ -22,6 +22,7 @@ extern HRESULT hr;
 extern int updateLights;
 extern int validtime ; // has one light been toggled?
 extern int MSFS_on_ground;
+extern int PSX_on_ground;
 
 extern int DEBUG;
 extern int SLAVE;
@@ -35,15 +36,7 @@ extern int PSXBoostPort;
 extern char debugInfo[256];
 
 struct DB{
-    double altitude;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
 };
-
-extern struct DB ABoost;
 
 struct Struct_MSFS {
     double ground_altitude; // ground altitude above MSL
@@ -66,18 +59,26 @@ struct Struct_MSFS {
  * It is VERY important that the order this structure elements are defined is the
  * same order as when mapping the variables in PSXMSFS.cpp
  */
-struct AcftPosition {
+struct AcftMSFS {
+    // Updated by Boost server
+    double altitude;
+    double latitude;
+    double longitude;
+    double heading_true;
+    double pitch;
+    double bank;
+    
+    double tas;
+    double ias;
+    double vertical_speed;
+    
     double GearDown;
     double FlapsPosition;
     double Speedbrake;
     double rudder;
     double elevator;
     double ailerons;
-
-};
-
-struct ALights {
-
+    
     //Lights
 
     double LandLeftOutboard; // L Inboard
@@ -93,9 +94,8 @@ struct ALights {
     double Beacon; // Both Beacon light
     double LightWing; // Wing light
     double LightLogo; // Wing light
+
 };
-
-
 
 
 enum GROUP_ID {
@@ -135,9 +135,7 @@ enum EVENT_ID {
 };
 enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
-    DATA_MOVING_SURFACE,
-    DATA_BOOST,
-    DATA_LIGHT,
+    DATA_MSFS,
     TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
 };
 
@@ -178,6 +176,8 @@ extern int light[14]; // In that order: lights Outboard landing L, outboard land
                    //
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
                    // logo
+
+extern AcftMSFS APos;
 
 typedef struct {
     double pitch;

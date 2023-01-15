@@ -20,18 +20,15 @@ int quit = 0;
 DWORD dwLastID;
 
 PSXTIME PSXtime;
-#pragma pack(1)
 
-AcftPosition APos;
-ALights Lights;
-
-struct DB ABoost;
+AcftMSFS APos;
 
 // indicates whether there is a data of ground elevation received from MSFS in
 // the callback procedure
 double MSFS_plane_alt, CG_height;
 int ground_altitude_avail = 0;
 int MSFS_on_ground = 0;
+int PSX_on_ground = 1;
 int MSFS_POS_avail = 0;
 double latMSFS, longMSFS;
 int key_press = 0;
@@ -355,15 +352,15 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         printDebug("MSFS was exited. I guess I should do the same...", 1);
     } break;
 
-        // case SIMCONNECT_RECV_ID_EVENT_FRAME: {
-        //     hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACE, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-        //     sizeof(APos),
-        //                                        &APos);
-        //    printf("Elapsed Frame: %ld\r", (long)elapsedMs(TimeStart) / 1000);
+    case SIMCONNECT_RECV_ID_EVENT_FRAME: {
+        pthread_mutex_lock(&mutex);
+        hr =
+            SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
+        pthread_mutex_unlock(&mutex);
 
-        // }
+    }
 
-        //  break;
+    break;
     default:
         sprintf(debugInfo, "In Callbackfunction default case: nothing was done. Event: %ld\n", pData->dwID);
         printDebug(debugInfo, 1);
@@ -400,16 +397,30 @@ int init_MS_data(void) {
 
     /* Here we map all the variables that are used to update the 747 in MSFS.
      * It is VERY important that the order of those variables matches the order
-     * in with the structure AcftPosition is defined in PSXMSFS.h
+     * in with the structure AcftMSFS is defined in PSXMSFS.h
      */
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_BOOST, "PLANE ALTITUDE", "feet");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_BOOST, "PLANE LATITUDE", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_BOOST, "PLANE LONGITUDE", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_BOOST, "PLANE HEADING DEGREES TRUE", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_BOOST, "PLANE PITCH DEGREES", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_BOOST, "PLANE BANK DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE ALTITUDE", "feet");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE LATITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE LONGITUDE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE HEADING DEGREES TRUE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE PITCH DEGREES", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE BANK DEGREES", "radians");
 
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AIRSPEED TRUE", "knot");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AIRSPEED INDICATED", "knot");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "VERTICAL SPEED", "feet per minute");
+
+    /*
+     * Moving Surfaces: Ailerons, rudder , elevator
+     *
+     */
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "GEAR HANDLE POSITION", "percent over 100");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "FLAPS HANDLE INDEX", "number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "SPOILERS HANDLE POSITION", "position");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "RUDDER POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "ELEVATOR POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AILERON POSITION", "position 16K");
 
     /*
      * Data definition for lights. Even though in the SDK documentation they are
@@ -418,34 +429,19 @@ int init_MS_data(void) {
      * switches cannot be synchronised.
      */
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:3", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:4", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:3", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT NAV", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT STROBE", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT BEACON:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT BEACON:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT WING", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LOGO", "Number");
-
-    /*
-     * Moving Surfaces: Ailerons, rudder , elevator
-     *
-     */
-
-
-    /*Surfaces attributes*/
-
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACE, "GEAR HANDLE POSITION", "percent over 100");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACE, "FLAPS HANDLE INDEX", "number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACE, "SPOILERS HANDLE POSITION", "position");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACE, "RUDDER POSITION", "position 16K");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACE, "ELEVATOR POSITION", "position 16K");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACE, "AILERON POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:3", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:4", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT TAXI:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT TAXI:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT TAXI:3", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT NAV", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT STROBE", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT BEACON:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT BEACON:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT WING", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LOGO", "Number");
 
     /* This is to get the ground altitude when positionning the aircraft at
      * initialization or once on ground */
@@ -471,7 +467,7 @@ int init_MS_data(void) {
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
     hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
-    // hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_FRAME, "Frame");
+    hr = SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_FRAME, "Frame");
 
     /* Mapping Events to the client*/
 
@@ -571,7 +567,6 @@ void *ptDatafromMSFS(void *thread_param) {
              * function after an error
              */
 
-            hr = SimConnect_ClearDataDefinition(hSimConnect, DATA_MOVING_SURFACE);
             hr = SimConnect_ClearDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA);
             hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
             fprintf(fdebug, "\tOpening new connection.....\n");
@@ -595,26 +590,24 @@ void *ptDataToMSFS(void *thread_param) {
     int update = 0;
     int PERIODMS = 2; // Update frequency in ms
 
-    double lat, longi;
-
     // Calculate coordinates from centre aircraft;
     // CalcCoord(Tboost.heading_true + M_PI, 92.5, Tboost.latitude, Tboost.longitude, &lat, &longi);
     while (!quit) {
-        CalcCoord(&ABoost, &lat, &longi);
-        ABoost.altitude = SetAltitude(Tboost.onGround == 2);
         // printf("Elapsed Time %ld\r", (long)elapsedMs(TimeStart) / 1000);
         Timer = (long)elapsedMs(TimeStart);
         if ((Timer % PERIODMS) && update) // every PERIODMS ms
         {
-        pthread_mutex_lock(&mutex);
-            hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_BOOST, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(ABoost),
-                                               &ABoost);
-            hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACE, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-                                               sizeof(APos), &APos);
-            hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_LIGHT, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-                                               sizeof(ALights), &Lights);
+            pthread_mutex_lock(&mutex);
+            //       hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_BOOST, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+            //       sizeof(ABoost),
+            //                                          &ABoost);
+            /*    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACE, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+                                                   sizeof(APos), &APos);
+                hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_LIGHT, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+                                                   sizeof(ALights), &Lights);
+                                                   */
             update = 0;
-        pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutex);
         }
         if (!(Timer % PERIODMS)) {
             // we are ready to update
@@ -654,7 +647,7 @@ double SetAltitude(int onGround) {
     /*
      * Boost servers gives altitude of flight deck
      */
-    ctrAltitude = Tboost.altitude - (28.412073 + 92.5 * sin(Tboost.pitch));
+    ctrAltitude = APos.altitude - (28.412073 + 92.5 * sin(APos.pitch));
 
     /*
      * Calculate the altitude if PSX is on the ground
@@ -709,22 +702,21 @@ void init_pos() {
     APos.GearDown = 1.0;
 
     // All lights off
-    Lights.LandLeftOutboard = 0.0;
-    Lights.LandLeftInboard = 0.0;
-    Lights.LandRightInboard = 0.0;
-    Lights.LandRightOutboard = 0.0;
-    Lights.LeftRwyTurnoff = 0.0;
-    Lights.RightRwyTurnoff = 0.0;
-    Lights.LightTaxi = 0.0;
-    Lights.Strobe = 0.0;
-    Lights.LightNav = 0.0;
-    Lights.Beacon = 0.0;
-    Lights.BeaconLwr = 0.0;
-    Lights.LightWing = 0.0;
-    Lights.LightLogo = 0.0;
+    APos.LandLeftOutboard = 0.0;
+    APos.LandLeftInboard = 0.0;
+    APos.LandRightInboard = 0.0;
+    APos.LandRightOutboard = 0.0;
+    APos.LeftRwyTurnoff = 0.0;
+    APos.RightRwyTurnoff = 0.0;
+    APos.LightTaxi = 0.0;
+    APos.Strobe = 0.0;
+    APos.LightNav = 0.0;
+    APos.Beacon = 0.0;
+    APos.BeaconLwr = 0.0;
+    APos.LightWing = 0.0;
+    APos.LightLogo = 0.0;
 
-    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACE, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos),
-                                       &APos);
+    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
 
     PSXtime.year = 2022;
     PSXtime.day = 1;
@@ -734,24 +726,33 @@ void init_pos() {
 
 void SetMSFSPos(void) {
 
+    //CalcCoord(&APos, &lat, &longi);
+    APos.altitude = SetAltitude(PSX_on_ground);
+    //APos.latitude = lat;
+    //APos.longitude = longi;
+    //APos.heading_true = Tboost.heading_true;
+    //APos.pitch = -Tboost.pitch;
+    //APos.bank = Tboost.bank;
+    //APos.tas = Tmain.TAS;
+    //APos.ias = Tmain.IAS;
     // Update lights
-    Lights.LandLeftOutboard = light[0];
-    Lights.LandLeftInboard = light[2];
-    Lights.LandRightInboard = light[3];
-    Lights.LandRightOutboard = light[1];
-    Lights.LeftRwyTurnoff = light[4];
-    Lights.RightRwyTurnoff = light[5];
-    Lights.LightTaxi = light[6];
-    Lights.Strobe = light[11];
-    Lights.LightNav = light[9] || light[10];
-    Lights.Beacon = light[7];
-    Lights.BeaconLwr = light[8];
-    Lights.LightWing = light[12];
-    Lights.LightLogo = light[13];
+    APos.LandLeftOutboard = light[0];
+    APos.LandLeftInboard = light[2];
+    APos.LandRightInboard = light[3];
+    APos.LandRightOutboard = light[1];
+    APos.LeftRwyTurnoff = light[4];
+    APos.RightRwyTurnoff = light[5];
+    APos.LightTaxi = light[6];
+    APos.Strobe = light[11];
+    APos.LightNav = light[9] || light[10];
+    APos.Beacon = light[7];
+    APos.BeaconLwr = light[8];
+    APos.LightWing = light[12];
+    APos.LightLogo = light[13];
     // Taxi lights disabled airborne
     if (Tboost.onGround != 2) {
-        Lights.LeftRwyTurnoff = 0.0;
-        Lights.RightRwyTurnoff = 0.0;
+        APos.LeftRwyTurnoff = 0.0;
+        APos.RightRwyTurnoff = 0.0;
     }
 
     /*
@@ -956,7 +957,6 @@ int main(int argc, char **argv) {
     /* Read from .ini file the various values
      * used in the program
      */
-printf("Sizeof light:%zu\n",sizeof(Lights));
     if (!init_param()) {
         printf("Could not initialize default parameters... Quitting\n");
         exit(EXIT_FAILURE);

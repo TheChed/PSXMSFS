@@ -43,11 +43,11 @@ static inline uint64_t elapsedMs(monotime start_time) {
 
 extern double dist(double lat1, double lat2, double long1, double long2);
 //extern void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr);
-extern void CalcCoord(struct DB  *T, double *latr, double *longr);
+extern void CalcCoord(double bearing, double lato, double longo, double *latr, double *longr);
 
 
 
-void state(Target *T, FILE *fdebug, int console); // prints PSX information 
+void state(AcftMSFS *T, FILE *fdebug, int console); // prints PSX information 
 void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints MSFS information 
 
 char *convert(double, int);
