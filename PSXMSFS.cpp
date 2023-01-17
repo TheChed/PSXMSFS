@@ -65,34 +65,34 @@ int PSXBoostPort = 10749;
 
 void update_TCAS(AI_TCAS *ai, double d);
 
-void SetUTCTime(void) {
+void SetUTCTime(struct PSXTIME *P) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, PSXtime.hour,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS,P->hour,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, PSXtime.minute,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES,P->minute,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, PSXtime.day,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY,P->day,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, PSXtime.year,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR,P->year,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
-void SetCOMM(void) {
+void SetCOMM(struct PSXINST *P) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, Tmain.XPDR,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR,P->XPDR,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, Tmain.IDENT,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT,P->IDENT,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, Tmain.COM1,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM,P->COM1,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, Tmain.COM2,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY,P->COM2,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
-void SetBARO(void) {
+void SetBARO(struct PSXINST *P) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, Tmain.altimeter * 16.0,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,P->altimeter * 16.0,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    if (Tmain.STD) {
+    if (P->STD) {
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
@@ -250,14 +250,12 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
     } break;
 
     case SIMCONNECT_RECV_ID_SIMOBJECT_DATA: {
-        printDebug("ID_SIMOBJECT_DATA", CONSOLE);
         SIMCONNECT_RECV_SIMOBJECT_DATA *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA *)pData;
 
         switch (pObjData->dwRequestID) {
 
         case MSFS_CLIENT_DATA: {
 
-            printDebug("MSFS_CLIENT_DATA", CONSOLE);
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
             MSFS_POS_avail = 1;
             MSFS_POS.ground_altitude = pS->ground_altitude;
@@ -409,7 +407,6 @@ int init_MS_data(void) {
 
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AIRSPEED TRUE", "knot");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AIRSPEED INDICATED", "knot");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "VERTICAL SPEED", "feet per minute");
 
     /*
      * Moving Surfaces: Ailerons, rudder , elevator
@@ -453,7 +450,6 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "radians");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED", "feet per minute");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
@@ -584,48 +580,14 @@ void *ptDatafromMSFS(void *thread_param) {
     return NULL;
 }
 
-void *ptDataToMSFS(void *thread_param) {
-    (void)(&thread_param);
-    long Timer;
-    int update = 0;
-    int PERIODMS = 2; // Update frequency in ms
-
-    // Calculate coordinates from centre aircraft;
-    // CalcCoord(Tboost.heading_true + M_PI, 92.5, Tboost.latitude, Tboost.longitude, &lat, &longi);
-    while (!quit) {
-        // printf("Elapsed Time %ld\r", (long)elapsedMs(TimeStart) / 1000);
-        Timer = (long)elapsedMs(TimeStart);
-        if ((Timer % PERIODMS) && update) // every PERIODMS ms
-        {
-            pthread_mutex_lock(&mutex);
-            //       hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_BOOST, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-            //       sizeof(ABoost),
-            //                                          &ABoost);
-            /*    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACE, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-                                                   sizeof(APos), &APos);
-                hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_LIGHT, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-                                                   sizeof(ALights), &Lights);
-                                                   */
-            update = 0;
-            pthread_mutex_unlock(&mutex);
-        }
-        if (!(Timer % PERIODMS)) {
-            // we are ready to update
-            update = 1;
-        }
-    }
-    return NULL;
-}
-void *ptUmainboost(void *thread_param) {
-    (void)(thread_param);
+void *ptUmainboost(void *) {
     while (!quit) {
         umainBoost(&Tboost);
     }
     return NULL;
 }
 
-void *ptUmain(void *thread_param) {
-    (void)(thread_param);
+void *ptUmain(void*) {
 
     while (!quit) {
         umain(&Tmain);
@@ -648,7 +610,6 @@ double SetAltitude(int onGround) {
      * Boost servers gives altitude of flight deck
      */
     ctrAltitude = APos.altitude - (28.412073 + 92.5 * sin(APos.pitch));
-    printf("MSFS_POS.ctraltitude: %.6f\t Apos: %.6f\t ctraltitude: %.6f\n", MSFS_POS.ground_altitude,APos.altitude, ctrAltitude);
     /*
      * Calculate the altitude if PSX is on the ground
      * or in flight
@@ -664,14 +625,14 @@ double SetAltitude(int onGround) {
             }
             Qi198SentAirborne = 0;
             sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
-            // printDebug(sQi198, 1);
+             printDebug(sQi198, 1);
             sendQPSX(sQi198);
         } else {
 
             if (!Qi198SentAirborne) {
 
                 printDebug("Above 300 ft AGL => using PSX elevation.", CONSOLE);
-                // sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
+                 sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
                 Qi198SentAirborne = 1;
             }
             Qi198SentLand = 0;
@@ -681,6 +642,7 @@ double SetAltitude(int onGround) {
         Qi198SentLand = 0;
         Qi198SentAirborne = 0;
     }
+    //printf("onground :%d\t ground: %.4f\t MSFS: %.4f\t ctrAlt: %.4f\n",onGround,MSFS_POS.ground_altitude, MSFSHEIGHT, ctrAltitude);
     if (ground_altitude_avail && onGround) {
         return (MSFS_POS.ground_altitude + MSFSHEIGHT);
     } else {
@@ -688,7 +650,7 @@ double SetAltitude(int onGround) {
     }
 }
 
-void init_pos() {
+void init_pos(PSXTIME *P) {
 
     /*
      * Setting initial position at LFPG"
@@ -716,12 +678,10 @@ void init_pos() {
     APos.LightWing = 0.0;
     APos.LightLogo = 0.0;
 
-    hr = SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
-
-    PSXtime.year = 2022;
-    PSXtime.day = 1;
-    PSXtime.hour = 12;
-    PSXtime.minute = 0;
+    P->year = 2022;
+    P->day = 1;
+    P->hour = 12;
+    P->minute = 0;
 }
 
 void SetMSFSPos(void) {
@@ -949,7 +909,8 @@ void parse_arguments(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
-    pthread_t t1, t2, t3, t4;
+    pthread_t t1, t2, t3;
+    PSXTIME P;
 
     /* Initialise the timer */
     elapsedStart(&TimeStart);
@@ -1001,7 +962,7 @@ int main(int argc, char **argv) {
      */
 
     printDebug("Initializing position", CONSOLE);
-    init_pos();
+    init_pos(&P);
 
     /*
      * Create a thread mutex so that two threads cannot change simulataneously
@@ -1028,10 +989,6 @@ int main(int argc, char **argv) {
     if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
         err_n_die("Error creating thread DatafromMSFS");
     }
-    if (pthread_create(&t4, NULL, &ptDataToMSFS, NULL) != 0) {
-        err_n_die("Error creating thread DataToMSFS");
-    }
-
     if (pthread_join(t1, NULL) != 0) {
         printDebug("Failed to join Main thread", 1);
     }
@@ -1040,9 +997,6 @@ int main(int argc, char **argv) {
     }
     if (pthread_join(t3, NULL) != 0) {
         printDebug("Failed to join MSFS thread", 1);
-    }
-    if (pthread_join(t4, NULL) != 0) {
-        printDebug("Failed to join To MSFS thread", 1);
     }
     pthread_mutex_destroy(&mutex);
 

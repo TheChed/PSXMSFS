@@ -70,7 +70,6 @@ struct AcftMSFS {
     
     double tas;
     double ias;
-    double vertical_speed;
     
     double GearDown;
     double FlapsPosition;
@@ -164,14 +163,33 @@ struct AI_TCAS {
     double heading;
 };
 
-
-typedef struct {
+/*
+* Structure to store the date+time from PSX 
+*/
+struct PSXTIME{
     int year;
     int day;
     int hour;
     int minute;
-} PSXTIME;
- 
+};
+
+/*
+ * Structure containing all PSX instruments we
+ * want to update in MSFS
+ */
+
+struct PSXINST{
+    //COMMS & XPDR
+    int XPDR;
+    int IDENT;
+    int COM1;
+    int COM2;
+
+    //Altimeter
+    double altimeter;
+    int STD ;
+};
+
 extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
                    //
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
@@ -188,7 +206,6 @@ typedef struct {
 
     double TAS;
     double IAS;
-    double VerticalSpeed;
     int onGround;          // 1 if PSX is on groud, 0 otherwise
     double GearDown ; // Gear down =1, gear up =0;
     int GearLever  ;   // 1=up, 2=off, 3=down
@@ -199,19 +216,8 @@ typedef struct {
     double parkbreak;
     double steering;
 
-    //COMMS & XPDR
-    int XPDR=0;
-    int IDENT;
-    int COM1;
-    int COM2;
-
-    //Altimeter
-    double altimeter;
-    int STD ;
 
 } Target;
-
-extern PSXTIME PSXtime;
 
 
 // Function definitions
@@ -221,10 +227,9 @@ int close_PSX_socket(int socket);
 int open_connections();
 int umain(Target *T);
 int umainBoost(Target *T);
-int umainBoost2(Target *T);
-void SetUTCTime(void);
-void SetCOMM(void);
-void SetBARO(void);
+void SetUTCTime(PSXTIME *P);
+void SetCOMM(PSXINST *P);
+void SetBARO(PSXINST *P);
 double SetAltitude(int onGround); 
 int sendQPSX(const char *s);
 int init_connect_MSFS(HANDLE *p);

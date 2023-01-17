@@ -79,7 +79,6 @@ void state(AcftMSFS *T, FILE *fd, int console) {
         printf("Bank: %.2f\t", T->bank);
         printf("TAS: %.1f\t", T->tas);
         printf("IAS: %.1f\t", T->ias);
-        printf("VS: %.1f\t", T->vertical_speed);
         printf("\n");
     }
     fprintf(fd, "PSX:\t  ");
@@ -91,7 +90,6 @@ void state(AcftMSFS *T, FILE *fd, int console) {
     fprintf(fd, "Bank: %.2f\t", T->bank);
     fprintf(fd, "TAS: %.1f\t", T->tas);
     fprintf(fd, "IAS: %.1f\t", T->ias);
-    fprintf(fd, "VS: %.1f\t", T->vertical_speed);
     fprintf(fd, "\n");
     fflush(fd);
 }

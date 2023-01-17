@@ -62,42 +62,6 @@ void H388(char *s, Target *T) {
     }
 }
 
-void S121(char *s, Target *T) {
-
-    char *token, *ptr;
-    assert(strlen(s) >= 9 && strlen(s) <= 200);
-
-    if ((token = strtok_r(s + 6, delim, &ptr)) != NULL) {
-        T->pitch = strtol(token, NULL, 10) / 100000.0;
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->bank = strtol(token, NULL, 10) / 100000.0;
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->heading_true = strtod(token, &ptr);
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->altitude = strtol(token, NULL, 10) / 1000.0;
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->TAS = strtol(token, NULL, 10) / 1000.0;
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->latitude = strtod(token, &ptr);
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->longitude = strtod(token, &ptr);
-    }
-
-    if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-    }
-}
 void S483(char *s, Target *T) {
 
     char *token, *ptr;
@@ -118,10 +82,11 @@ void S78(const char *s) {
     }
 }
 
-void S448(char *s, Target *T) {
+void S448(char *s) {
 
     char *token, *ptr, *savptr;
     int stdbar;
+    struct PSXINST P;
 
     /* get the first token
      * Altimeter setting is the 4th token
@@ -133,18 +98,19 @@ void S448(char *s, Target *T) {
     token = strtok_r(NULL, delim, &savptr);
 
     if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-        T->altimeter = strtol(token, &ptr, 10) / 100.0;
+        P.altimeter = strtol(token, &ptr, 10) / 100.0;
     }
     /* STD setting*/
     if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
         stdbar = strtod(token, NULL);
-        T->STD = (abs(stdbar) == 1) ? 0 : 1;
+        P.STD = (abs(stdbar) == 1) ? 0 : 1;
     }
-    //  SetBARO();
+      SetBARO(&P);
 }
 
-void S458(char *s, Target *T) {
+void S458(char *s) {
     int C1, C2;
+    struct PSXINST P;
     char COM1[9] = {0}, COM2[9] = {0};
     /*
      * discard the last digit from the Qs string as it is not taken into MSFS.
@@ -159,7 +125,7 @@ void S458(char *s, Target *T) {
     if (C1 < 118000000 || C1 > 136990000) {
         C1 = 122800000;
     }
-    T->COM1 = C1;
+    P.COM1 = C1;
 
     strncpy(COM2, s + 13, 3);
     strncat(COM2, s + 17, 3);
@@ -169,8 +135,8 @@ void S458(char *s, Target *T) {
     if (C2 < 118000000 || C2 > 136990000) {
         C2 = 122800000;
     }
-    T->COM2 = C2;
-    // SetCOMM();
+    P.COM2 = C2;
+     SetCOMM(&P);
 }
 void S480(char *s, Target *T) {
 
@@ -186,6 +152,7 @@ void S480(char *s, Target *T) {
 
 void S124(char *s) {
 
+    PSXTIME Ptime;
     struct tm *time_PSX;
     time_t timeUTC;
     timeUTC = strtoll(s + 6, NULL, 10) / 1000;
@@ -195,13 +162,12 @@ void S124(char *s) {
         return;
     }
 
-    PSXtime.year = time_PSX->tm_year + 1900; // year starts in 1900
-    PSXtime.day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
-    PSXtime.hour = time_PSX->tm_hour;
-    PSXtime.minute = time_PSX->tm_min;
+    Ptime.year = time_PSX->tm_year + 1900; // year starts in 1900
+    Ptime.day = time_PSX->tm_yday + 1;     // nb days since January 1st, starts at 0
+    Ptime.hour = time_PSX->tm_hour;
+    Ptime.minute = time_PSX->tm_min;
 
-    SetUTCTime();
-    return;
+    SetUTCTime(&Ptime);
 }
 
 void S443(char *s) {
@@ -243,7 +209,6 @@ void S122(char *s, Target *T) {
     }
 
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
-        T->VerticalSpeed = strtol(token, &ptr, 10);
     }
 
     if ((token = strtok_r(NULL, delim, &ptr)) != NULL) {
@@ -261,21 +226,21 @@ void S122(char *s, Target *T) {
     }
 }
 
-void I204(char *s, Target *T) {
+void I204(char *s) {
 
-    T->XPDR = strtol(s + 8, NULL, 16);
-    T->IDENT = (int)(s[7] - '0');
+    struct PSXINST P;
 
-    SetCOMM();
+    P.XPDR = strtol(s + 8, NULL, 16);
+    P.IDENT = (int)(s[7] - '0');
+
+    SetCOMM(&P);
 }
+
 void I219(char *s) { MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10); }
 
 void Decode(Target *T, char *s, int boost) {
 
     const char delim[2] = ";";
-    static float Tms = 0;
-    static float alt = 0;
-    float vs, tvs, altdiff;
     char *token, *ptr, *savptr;
     float flightDeckAlt = 0.0;
     double latc, longc, latb, longb;
@@ -283,15 +248,12 @@ void Decode(Target *T, char *s, int boost) {
     if (boost) {
         /* get the first token */
         if ((token = strtok_r(s, delim, &savptr)) != NULL) {
-            PSX_on_ground = (strcmp(token, "G") == 0 ? 2 : 1);
+            PSX_on_ground = (strcmp(token, "G") == 0 ? 1 : 0);
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
 
             flightDeckAlt = strtol(token, &ptr, 10);
-            T->altitude = flightDeckAlt / 100.0;
-            altdiff = flightDeckAlt - alt;
-            alt = flightDeckAlt;
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
@@ -313,23 +275,12 @@ void Decode(Target *T, char *s, int boost) {
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
             longb = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
         }
-        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            vs = strtol(token, NULL, 10);
-            if (vs <= Tms) {
-                tvs = vs - Tms + 1000;
-            } else {
-                tvs = vs - Tms;
-            }
-            if (tvs)
-                APos.vertical_speed = 10 * (altdiff / tvs) * 60.0;
-            Tms = vs;
-        }
 
-        /*Put main vairables in Boost structure
+        /*Put main variables in Boost structure
          *So that we can update MSFS on high frequency
          */
         CalcCoord(APos.heading_true, latb, longb, &latc, &longc);
-        APos.altitude = T->altitude;
+        APos.altitude=flightDeckAlt / 100.0;
         APos.heading_true = T->heading_true;
         APos.pitch = -T->pitch;
         APos.longitude = longc;
@@ -382,7 +333,7 @@ void Decode(Target *T, char *s, int boost) {
 
         // COMMS
         if (strstr(s, "Qs458")) {
-            S458(strstr(s, "Qs458"), T);
+            S458(strstr(s, "Qs458"));
         }
 
         // Steering wheel
@@ -392,11 +343,11 @@ void Decode(Target *T, char *s, int boost) {
 
         // Steering wheel
         if (strstr(s, "Qi204")) {
-            I204(strstr(s, "Qi204"), T);
+            I204(strstr(s, "Qi204"));
         }
         // Altimeter
         if (strstr(s, "Qs448")) {
-            S448(strstr(s, "Qs448"), T);
+            S448(strstr(s, "Qs448"));
         }
         // MSFS slave-Master
         if (strstr(s, "Qs78")) {
@@ -416,8 +367,6 @@ int sendQPSX(const char *s) {
 
     if (nbsend == 0) {
         printf("Error sending variable %s to PSX\n", s);
-    } else {
-        printf("Sent to PSX: %s\n", s);
     }
 
     free(dem);

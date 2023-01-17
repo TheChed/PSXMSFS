@@ -42,7 +42,6 @@ static inline uint64_t elapsedMs(monotime start_time) {
  */ 
 
 extern double dist(double lat1, double lat2, double long1, double long2);
-//extern void CalcCoord(double bearing, double dist, double lato, double longo, double *latr, double *longr);
 extern void CalcCoord(double bearing, double lato, double longo, double *latr, double *longr);
 
 
