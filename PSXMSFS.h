@@ -188,6 +188,11 @@ struct PSXINST{
     double altimeter;
     int STD ;
 
+    //Speed
+    double IAS;
+    double GS;
+    double TAS;
+
     //local QNH on the weather zone
     int weather_zone;
     double QNH[7];

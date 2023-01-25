@@ -649,12 +649,10 @@ double SetAltitude(int onGround) {
         FinalAltitude = ground_altitude + MSFSHEIGHT;
     } else {
         if (ctrAltitude > PSXDATA.TA){
-           printf(">TA\t zone: %d\tcorrection: %f\n",PSXDATA.weather_zone,pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone])); 
            
             FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
         }
         else {
-           printf("<TA\n"); 
 
             FinalAltitude = ctrAltitude;
         }
@@ -731,6 +729,8 @@ void SetMSFSPos(void) {
     APos.rudder = Tmain.rudder;
     APos.ailerons = Tmain.aileron;
     APos.elevator = Tmain.elevator;
+
+    APos.ias=PSXDATA.IAS;
 }
 
 void usage() {

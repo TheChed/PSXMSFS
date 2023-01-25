@@ -66,12 +66,12 @@ void H388(char *s, Target *T) {
     }
 }
 
-void S483(char *s, Target *T) {
+void S483(char *s) {
 
     char *token, *ptr;
 
-    if ((token = strtok_r(s + 6, delim, &ptr)) != NULL) {
-        T->IAS = strtol(token, &ptr, 10) / 10.0;
+    if ((token = strtok_r(s + 6,DELIM, &ptr)) != NULL) {
+        PSXDATA.IAS = strtol(token, NULL, 10) / 10.0;
     }
 }
 
@@ -272,13 +272,12 @@ void Qsweather(char *s) {
 
     if ((token = strtok_r(s + 6, DELIM, &savptr)) != NULL) {
 
+        // last token is the QNH, need to save a copy before it is set to NULL
         while (token) {
             strcpy(sav, token);
             token = strtok_r(NULL, DELIM, &savptr);
         }
 
-        // last token is the QNH
-        printf("QNH=%s\n", sav);
     }
 
     if (zone >= 0 && zone < 8) {
@@ -371,7 +370,7 @@ void Decode(Target *T, char *s, int boost) {
 
         // Indicated Airspeed IAS
         if (strstr(s, "Qs483")) {
-            S483(strstr(s, "Qs483"), T);
+            S483(strstr(s, "Qs483"));
         }
 
         // Rudder+aileron+elevator
