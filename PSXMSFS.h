@@ -7,9 +7,10 @@
 
 #define MAXLEN 8192
 #define PRINT 1
-#define MSFSHEIGHT 15.48   //offset when on ground compared to PSX
+#define MSFSHEIGHT 15.13   //offset when on ground compared to PSX
 #define CONSOLE 1   //print debug info on the console
 #define MAXBUFF 165536
+#define DELIM ";"
 
 /*Global variable used in readin boost socket*/
 
@@ -19,8 +20,6 @@ extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 extern HRESULT hr;
 
-extern int updateLights;
-extern int validtime ; // has one light been toggled?
 extern int MSFS_on_ground;
 extern int PSX_on_ground;
 
@@ -188,6 +187,14 @@ struct PSXINST{
     //Altimeter
     double altimeter;
     int STD ;
+
+    //local QNH on the weather zone
+    int weather_zone;
+    double QNH[7];
+
+    // TA & TL
+    int TA;
+    int TL;
 };
 
 extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
@@ -196,6 +203,7 @@ extern int light[14]; // In that order: lights Outboard landing L, outboard land
                    // logo
 
 extern AcftMSFS APos;
+extern struct PSXINST PSXDATA;
 
 typedef struct {
     double pitch;
@@ -228,8 +236,9 @@ int open_connections();
 int umain(Target *T);
 int umainBoost(Target *T);
 void SetUTCTime(PSXTIME *P);
-void SetCOMM(PSXINST *P);
-void SetBARO(PSXINST *P);
+void SetCOMM(void);
+void SetBARO(void);
+void SetXPDR(void);
 double SetAltitude(int onGround); 
 int sendQPSX(const char *s);
 int init_connect_MSFS(HANDLE *p);

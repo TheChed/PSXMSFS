@@ -27,10 +27,14 @@ char bufmain[4096];
 
 // Position of Gear
 
-void H170(char *s, Target *T) { T->GearLever = (int)(s[6] - '0'); }
+void H170(char *s) {
+    int gearpos;
+    gearpos = (int)(s[6] - '0');
+    APos.GearDown = ((gearpos == 3) ? 1.0 : 0.0);
+}
 
 // Flap lever variable Qh389
-void H389(char *s, Target *T) { T->FlapLever = (int)(s[6] - '0'); }
+void H389(char *s) { APos.FlapsPosition = (int)(s[6] - '0'); }
 
 // Parking break
 void H397(char *s, Target *T) {
@@ -71,6 +75,18 @@ void S483(char *s, Target *T) {
     }
 }
 
+void S392(char *s) {
+    char *token, *savptr;
+
+    // TA and TL are the 2nd and 3rd token
+    token = strtok_r(s, DELIM, &savptr);
+    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+        PSXDATA.TA = (int)strtoul(token, NULL, 10);
+    }
+    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+        PSXDATA.TL = (int)strtoul(token, NULL, 10);
+    }
+}
 void S78(const char *s) {
 
     if (strstr(s, "MSFS")) {
@@ -86,7 +102,6 @@ void S448(char *s) {
 
     char *token, *ptr, *savptr;
     int stdbar;
-    struct PSXINST P;
 
     /* get the first token
      * Altimeter setting is the 4th token
@@ -98,19 +113,18 @@ void S448(char *s) {
     token = strtok_r(NULL, delim, &savptr);
 
     if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-        P.altimeter = strtol(token, &ptr, 10) / 100.0;
+        PSXDATA.altimeter = strtol(token, &ptr, 10) / 100.0;
     }
     /* STD setting*/
     if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
         stdbar = strtod(token, NULL);
-        P.STD = (abs(stdbar) == 1) ? 0 : 1;
+        PSXDATA.STD = (abs(stdbar) == 1) ? 0 : 1;
     }
-      SetBARO(&P);
+    SetBARO();
 }
 
 void S458(char *s) {
     int C1, C2;
-    struct PSXINST P;
     char COM1[9] = {0}, COM2[9] = {0};
     /*
      * discard the last digit from the Qs string as it is not taken into MSFS.
@@ -125,7 +139,7 @@ void S458(char *s) {
     if (C1 < 118000000 || C1 > 136990000) {
         C1 = 122800000;
     }
-    P.COM1 = C1;
+    PSXDATA.COM1 = C1;
 
     strncpy(COM2, s + 13, 3);
     strncat(COM2, s + 17, 3);
@@ -135,8 +149,8 @@ void S458(char *s) {
     if (C2 < 118000000 || C2 > 136990000) {
         C2 = 122800000;
     }
-    P.COM2 = C2;
-     SetCOMM(&P);
+    PSXDATA.COM2 = C2;
+    SetCOMM();
 }
 void S480(char *s, Target *T) {
 
@@ -226,17 +240,51 @@ void S122(char *s, Target *T) {
     }
 }
 
-void I204(char *s) {
+void I240(char *s) {
 
-    struct PSXINST P;
+    int zone;
 
-    P.XPDR = strtol(s + 8, NULL, 16);
-    P.IDENT = (int)(s[7] - '0');
+    zone = strtoul(s + 8, NULL, 10);
+    if (zone < 0 || zone > 7) {
+        zone = 0;
+    }
+    PSXDATA.weather_zone = zone;
+}
+void I204(const char *s) {
 
-    SetCOMM(&P);
+    PSXDATA.XPDR = strtol(s + 8, NULL, 16);
+    PSXDATA.IDENT = (int)(s[7] - '0');
+
+    SetXPDR();
 }
 
 void I219(char *s) { MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10); }
+
+void Qsweather(char *s) {
+
+    char *token, *savptr;
+    int zone;
+    char sav[128];
+
+    /* Get the active zone */
+
+    zone = (int)strtoul(s + 2, NULL, 10) - 328;
+
+    if ((token = strtok_r(s + 6, DELIM, &savptr)) != NULL) {
+
+        while (token) {
+            strcpy(sav, token);
+            token = strtok_r(NULL, DELIM, &savptr);
+        }
+
+        // last token is the QNH
+        printf("QNH=%s\n", sav);
+    }
+
+    if (zone >= 0 && zone < 8) {
+        PSXDATA.QNH[zone] = strtoul(sav, NULL, 10);
+    }
+}
 
 void Decode(Target *T, char *s, int boost) {
 
@@ -280,7 +328,7 @@ void Decode(Target *T, char *s, int boost) {
          *So that we can update MSFS on high frequency
          */
         CalcCoord(APos.heading_true, latb, longb, &latc, &longc);
-        APos.altitude=flightDeckAlt / 100.0;
+        APos.altitude = flightDeckAlt / 100.0;
         APos.heading_true = T->heading_true;
         APos.pitch = -T->pitch;
         APos.longitude = longc;
@@ -299,7 +347,7 @@ void Decode(Target *T, char *s, int boost) {
 
         //// Update Gear position
         if (strstr(s, "Qh170")) {
-            H170(strstr(s, "Qh170"), T);
+            H170(strstr(s, "Qh170"));
         }
 
         //// Update PArking break
@@ -309,7 +357,7 @@ void Decode(Target *T, char *s, int boost) {
 
         //// Update Flap position
         if (strstr(s, "Qh389")) {
-            H389(strstr(s, "Qh389"), T);
+            H389(strstr(s, "Qh389"));
         }
         //// Speedbrake
         if (strstr(s, "Qh388")) {
@@ -341,7 +389,7 @@ void Decode(Target *T, char *s, int boost) {
             H426(strstr(s, "Qh426"), T);
         }
 
-        // Steering wheel
+        // XPDR
         if (strstr(s, "Qi204")) {
             I204(strstr(s, "Qi204"));
         }
@@ -352,6 +400,23 @@ void Decode(Target *T, char *s, int boost) {
         // MSFS slave-Master
         if (strstr(s, "Qs78")) {
             S78(strstr(s, "Qs78"));
+        }
+
+        // Grab the active weather zone
+        if (strstr(s, "Qi240")) {
+            I240(strstr(s, "Qi240"));
+        }
+
+        // get the TA & TL as per VNAV CLB page
+        //
+        if (strstr(s, "Qs392")) {
+            S392(strstr(s, "Qs392"));
+        }
+
+        // get the weather zones
+        if (strstr(s, "Qs328") || strstr(s, "Qs329") || strstr(s, "Qs330") || strstr(s, "Qs331") ||
+            strstr(s, "Qs332") || strstr(s, "Qs333") || strstr(s, "Qs334") || strstr(s, "Qs335")) {
+            Qsweather(s);
         }
     }
 }
@@ -468,7 +533,9 @@ int umainBoost(Target *T) {
         if (line_start[0] != 'F' && line_start[0] != 'G') {
             printDebug(line_start, 1);
         }
+
         pthread_mutex_lock(&mutex);
+
         if (line_start[0] == 'F' || line_start[0] == 'G') {
             Decode(T, line_start, 1);
             if (!SLAVE) {

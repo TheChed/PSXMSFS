@@ -44,6 +44,13 @@ static inline uint64_t elapsedMs(monotime start_time) {
 extern double dist(double lat1, double lat2, double long1, double long2);
 extern void CalcCoord(double bearing, double lato, double longo, double *latr, double *longr);
 
+/* To calculate the altitude difference between local pressure and PSX
+ * in order to inject this correction to IVAO/VATSIM who model 
+ * theirt QNH differently
+ * https://en.wikipedia.org/wiki/Pressure_altitude
+ */ 
+double pressure_altitude(double mmhg);
+
 
 
 void state(AcftMSFS *T, FILE *fdebug, int console); // prints PSX information 

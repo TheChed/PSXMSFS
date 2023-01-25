@@ -22,6 +22,7 @@ DWORD dwLastID;
 PSXTIME PSXtime;
 
 AcftMSFS APos;
+struct PSXINST PSXDATA;
 
 // indicates whether there is a data of ground elevation received from MSFS in
 // the callback procedure
@@ -67,32 +68,36 @@ void update_TCAS(AI_TCAS *ai, double d);
 
 void SetUTCTime(struct PSXTIME *P) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS,P->hour,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, P->hour,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES,P->minute,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES, P->minute,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY,P->day,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, P->day,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR,P->year,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, P->year,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+}
+
+void SetXPDR(void) {
+
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, PSXDATA.XPDR,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, PSXDATA.IDENT,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
-void SetCOMM(struct PSXINST *P) {
+void SetCOMM(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR,P->XPDR,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, PSXDATA.COM1,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT,P->IDENT,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM,P->COM1,
-                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY,P->COM2,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, PSXDATA.COM2,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
-void SetBARO(struct PSXINST *P) {
+void SetBARO(void) {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,P->altimeter * 16.0,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO, PSXDATA.altimeter * 16.0,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    if (P->STD) {
+    if (PSXDATA.STD) {
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
@@ -453,9 +458,8 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
-     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
-     SIMCONNECT_OBJECT_ID_USER,
-                                            SIMCONNECT_PERIOD_SECOND);
+    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
+                                           SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
 
@@ -587,7 +591,7 @@ void *ptUmainboost(void *) {
     return NULL;
 }
 
-void *ptUmain(void*) {
+void *ptUmain(void *) {
 
     while (!quit) {
         umain(&Tmain);
@@ -597,7 +601,9 @@ void *ptUmain(void*) {
 
 double SetAltitude(int onGround) {
 
-    double ctrAltitude;
+    double FinalAltitude;
+    double ctrAltitude; // altitude of Aircraft centre
+                        //
     char sQi198[128];
 
     /*
@@ -609,7 +615,7 @@ double SetAltitude(int onGround) {
     /*
      * Boost servers gives altitude of flight deck
      */
-    ctrAltitude = APos.altitude - (28.412073 + 92.5 * sin(APos.pitch));
+    ctrAltitude = APos.altitude - (28.412073 + 92.5 * sin(-APos.pitch));
     /*
      * Calculate the altitude if PSX is on the ground
      * or in flight
@@ -619,20 +625,17 @@ double SetAltitude(int onGround) {
         if (onGround || (ctrAltitude - ground_altitude < 300)) {
             if (!Qi198SentLand) {
                 printDebug("Below 300 ft AGL => using MSFS elevation", CONSOLE);
-                // sendQPSX("Qi198=-9999910"); // Allow (9999xx) seconds with no
-                //  crash, no inertia
                 Qi198SentLand = 1;
             }
             Qi198SentAirborne = 0;
             sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
-             printDebug(sQi198, 1);
             sendQPSX(sQi198);
         } else {
 
             if (!Qi198SentAirborne) {
 
                 printDebug("Above 300 ft AGL => using PSX elevation.", CONSOLE);
-                 sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
+                sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
                 Qi198SentAirborne = 1;
             }
             Qi198SentLand = 0;
@@ -642,12 +645,20 @@ double SetAltitude(int onGround) {
         Qi198SentLand = 0;
         Qi198SentAirborne = 0;
     }
-    //printf("onground :%d\t ground: %.4f\t MSFS: %.4f\t ctrAlt: %.4f\n",onGround,MSFS_POS.ground_altitude, MSFSHEIGHT, ctrAltitude);
-    if (ground_altitude_avail && onGround) {
-        return (MSFS_POS.ground_altitude + MSFSHEIGHT);
+    // printf("onground :%d\t Apos: %.4f\tground: %.4f\t MSFS: %.4f\t ctrAlt:
+    // %.4f\n",onGround,APos.altitude,MSFS_POS.ground_altitude, MSFSHEIGHT, ctrAltitude);
+    //   assert(onGround);
+    if (onGround) {
+        FinalAltitude = ground_altitude + MSFSHEIGHT;
     } else {
-        return ctrAltitude + MSFSHEIGHT;
+        if (ctrAltitude > PSXDATA.TA)
+            
+            FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
+        else
+            FinalAltitude = ctrAltitude;
     }
+
+    return FinalAltitude;
 }
 
 void init_pos(PSXTIME *P) {
@@ -686,15 +697,8 @@ void init_pos(PSXTIME *P) {
 
 void SetMSFSPos(void) {
 
-    // CalcCoord(&APos, &lat, &longi);
     APos.altitude = SetAltitude(PSX_on_ground);
-    // APos.latitude = lat;
-    // APos.longitude = longi;
-    // APos.heading_true = Tboost.heading_true;
-    // APos.pitch = -Tboost.pitch;
-    // APos.bank = Tboost.bank;
-    // APos.tas = Tmain.TAS;
-    // APos.ias = Tmain.IAS;
+
     //  Update lights
     APos.LandLeftOutboard = light[0];
     APos.LandLeftInboard = light[2];
@@ -710,7 +714,7 @@ void SetMSFSPos(void) {
     APos.LightWing = light[12];
     APos.LightLogo = light[13];
     // Taxi lights disabled airborne
-    if (Tboost.onGround != 2) {
+    if (PSX_on_ground) {
         APos.LeftRwyTurnoff = 0.0;
         APos.RightRwyTurnoff = 0.0;
     }
@@ -721,7 +725,6 @@ void SetMSFSPos(void) {
 
     APos.FlapsPosition = Tmain.FlapLever;
     APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
-    APos.GearDown = ((Tmain.GearLever == 3) ? 1.0 : 0.0);
 
     APos.rudder = Tmain.rudder;
     APos.ailerons = Tmain.aileron;
