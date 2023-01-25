@@ -645,17 +645,19 @@ double SetAltitude(int onGround) {
         Qi198SentLand = 0;
         Qi198SentAirborne = 0;
     }
-    // printf("onground :%d\t Apos: %.4f\tground: %.4f\t MSFS: %.4f\t ctrAlt:
-    // %.4f\n",onGround,APos.altitude,MSFS_POS.ground_altitude, MSFSHEIGHT, ctrAltitude);
-    //   assert(onGround);
     if (onGround) {
         FinalAltitude = ground_altitude + MSFSHEIGHT;
     } else {
-        if (ctrAltitude > PSXDATA.TA)
-            
+        if (ctrAltitude > PSXDATA.TA){
+           printf(">TA\t zone: %d\tcorrection: %f\n",PSXDATA.weather_zone,pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone])); 
+           
             FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
-        else
+        }
+        else {
+           printf("<TA\n"); 
+
             FinalAltitude = ctrAltitude;
+        }
     }
 
     return FinalAltitude;

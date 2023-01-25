@@ -244,7 +244,7 @@ void I240(char *s) {
 
     int zone;
 
-    zone = strtoul(s + 8, NULL, 10);
+    zone = strtoul(s + 6, NULL, 10);
     if (zone < 0 || zone > 7) {
         zone = 0;
     }
