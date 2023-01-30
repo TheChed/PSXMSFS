@@ -23,6 +23,7 @@ PSXTIME PSXtime;
 
 AcftMSFS APos;
 struct PSXINST PSXDATA;
+struct MSFSFREEZE MSFS_FREEZE_STATE;
 
 // indicates whether there is a data of ground elevation received from MSFS in
 // the callback procedure
@@ -180,12 +181,27 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
         printDebug(debugInfo, CONSOLE);
 
+        /*
+         * In this event, received when MSFS is opened
+         * we freeze the altitude, attitude and coordinates
+         * so that there is no stuttering and conflict with MSFS's
+         * engines.
+         */
+
+        printDebug("Freezing Altitude, Attitude and Coordinates in MSFS.", CONSOLE);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 0,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 0,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 0,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT_TOGGLE, 0,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG_TOGGLE, 0,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -218,10 +234,9 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
              * TCAS injection every 4 seconds but only if TCAS switch is on
              */
             if (TCAS_INJECT) {
-                if (SUCCEEDED(SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, TCAS_TRAFFIC_DATA,
-                                                                    40 * NM, SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT))) {
-                    IA_update();
-                }
+                SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS, TCAS_TRAFFIC_DATA, 40 * NM,
+                                                      SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
+                IA_update();
             }
 
         } break;
@@ -244,13 +259,12 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_QUIT: {
-            printDebug("EVENT_QUIT", CONSOLE);
             quit = 1;
 
         } break;
 
         default:
-            printf("Default Event\n");
+            printDebug("Event not captured", CONSOLE);
         }
     } break;
 
@@ -259,7 +273,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
         switch (pObjData->dwRequestID) {
 
-        case MSFS_CLIENT_DATA: {
+        case DATA_REQUEST: {
 
             Struct_MSFS *pS = (Struct_MSFS *)&pObjData->dwData;
             MSFS_POS_avail = 1;
@@ -281,13 +295,32 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             CG_height = pS->alt_above_ground_minus_CG;
             ground_altitude = pS->ground_altitude;
             ground_altitude_avail = 1;
-        } break;
+            break;
         }
+
+        case DATA_REQUEST_FREEZE: {
+
+            struct MSFSFREEZE *pS = (struct MSFSFREEZE *)&pObjData->dwData;
+            MSFS_FREEZE_STATE.altfreeze = pS->altfreeze;
+            MSFS_FREEZE_STATE.attfreeze = pS->attfreeze;
+            MSFS_FREEZE_STATE.latlongfreeze = pS->latlongfreeze;
+            break;
+        }
+
+        default:
+            sprintf(debugInfo, "Did not process request ID: %lu\n", pObjData->dwRequestID);
+            printDebug(debugInfo, CONSOLE);
+        }
+
     } break;
+
     case SIMCONNECT_RECV_ID_SIMOBJECT_DATA_BYTYPE: {
         SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *pObjData = (SIMCONNECT_RECV_SIMOBJECT_DATA_BYTYPE *)pData;
+
         switch (pObjData->dwRequestID) {
+
         case DATA_REQUEST_TCAS: {
+
             AI_TCAS *ai = (AI_TCAS *)&pObjData->dwData;
             double d, lat, lon, alt;
             char tmpchn[128] = {0};
@@ -296,25 +329,22 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             lat = MSFS_POS.latitude;
             lon = MSFS_POS.longitude;
             alt = MSFS_POS.altitude;
-
             if (pObjData->dwentrynumber > 1) {
                 d = dist(ai->latitude, lat, ai->longitude, lon) / NM;
                 //   if (d < 40) {                             // show only aircraft less than 40NM away from us
                 if (abs(ai->altitude - alt) < 7000) { // show only aircraft 2700 above or below us
-                    if (Tboost.onGround == 2) {
+                    if (PSX_on_ground) {
                         if (abs(ai->altitude - alt) < 500) { // on the ground only update if 500 above
                                                              // us
                             update_TCAS(ai, d);
-                            // printf("Acft[%ld/%ld]:\tai.lat:%lf\t ai.long:%lf\tlat:%lf\tlon:%lf\tAlt:%lf\t",
-                            //        pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, lat, lon,
-                            //        alt);
-                            // printf("Distance: %lf\n", d);
+                            sprintf(debugInfo,"Ground:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: %lf\tDist: %.2lf nm",
+                                   pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude,d);
+                            printDebug(debugInfo,CONSOLE); //"Distance: %lf\n", d);
 
                         } else {
-                            //  printf("Acft[%ld/%ld]:\tai.lat:%lf\t ai.long:%lf\tlat:%lf\tlon:%lf\tAlt:%lf\t",
-                            //         pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, lat,
-                            //         lon, alt);
-                            //  printf("Distance: %lf\n", d);
+                            sprintf(debugInfo,"Air:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: %lf\tDist: %.2lf nm",
+                                   pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude,d); 
+                            printDebug(debugInfo,CONSOLE); //"Distance: %lf\n", d);
                             update_TCAS(ai, d);
                         }
                     }
@@ -400,9 +430,8 @@ int init_MS_data(void) {
 
     /* Here we map all the variables that are used to update the 747 in MSFS.
      * It is VERY important that the order of those variables matches the order
-     * in with the structure AcftMSFS is defined in PSXMSFS.h
+     * in with the structures defined in PSXMSFS.h
      */
-
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE ALTITUDE", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE LATITUDE", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE LONGITUDE", "radians");
@@ -455,10 +484,23 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE", "radians");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED", "feet per minute");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
+                                           SIMCONNECT_PERIOD_SECOND);
+
+    /*
+     * This is to get have a state of MSFS being freezed or nothing
+     * On severla instances the freeze flag was not properly set and
+     * we need to make sure it is  before injecting altitude, attitude
+     * and coordinates to MSFS.
+     */
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_FREEZE, "IS ALTITUDE FREEZE ON", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_FREEZE, "IS ATTITUDE FREEZE ON", "Boolean");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_FREEZE, "IS LATITUDE LONGITUDE FREEZE ON", "Boolean");
+    hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_FREEZE, MSFS_FREEZE, SIMCONNECT_OBJECT_ID_USER,
                                            SIMCONNECT_PERIOD_SECOND);
 
     // Request a simulation start event
@@ -487,8 +529,12 @@ int init_MS_data(void) {
     /* Eventys used to freeze altitude, longitude, latitude and attitude*/
 
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT_TOGGLE, "FREEZE_ALTITUDE_TOGGLE");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT_TOGGLE, "FREEZE_ATTITUDE_TOGGLE");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG, "FREEZE_LATITUDE_LONGITUDE_SET");
+    hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG_TOGGLE,
+                                             "FREEZE_LATITUDE_LONGITUDE_TOGGLE");
 
     /*
      * EVENT used to set the parking break
@@ -579,14 +625,15 @@ void *ptDatafromMSFS(void *thread_param) {
             }
         }
 
-        Sleep(15); // We sleep for 15 ms (Sleep is a Win32 API with parameter in ms) to avoid heavy polling
+        Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms) to avoid heavy polling
     }
     return NULL;
 }
 
 void *ptUmainboost(void *) {
     while (!quit) {
-        umainBoost(&Tboost);
+        if (!umainBoost(&Tboost))
+            pthread_exit(NULL);
     }
     return NULL;
 }
@@ -645,19 +692,19 @@ double SetAltitude(int onGround) {
         Qi198SentLand = 0;
         Qi198SentAirborne = 0;
     }
+
     if (onGround) {
         FinalAltitude = ground_altitude + MSFSHEIGHT;
     } else {
-        if (ctrAltitude > PSXDATA.TA){
-           
+        if (ctrAltitude > PSXDATA.TA)
+
             FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
-        }
+
         else {
 
             FinalAltitude = ctrAltitude;
         }
     }
-
     return FinalAltitude;
 }
 
@@ -730,7 +777,7 @@ void SetMSFSPos(void) {
     APos.ailerons = Tmain.aileron;
     APos.elevator = Tmain.elevator;
 
-    APos.ias=PSXDATA.IAS;
+    APos.ias = PSXDATA.IAS;
 }
 
 void usage() {

@@ -34,8 +34,6 @@ extern int PSXBoostPort;
 
 extern char debugInfo[256];
 
-struct DB{
-};
 
 struct Struct_MSFS {
     double ground_altitude; // ground altitude above MSL
@@ -114,8 +112,11 @@ enum EVENT_ID {
     EVENT_FRAME,
     EVENT_P_PRESS,
     EVENT_FREEZE_ALT,
+    EVENT_FREEZE_ALT_TOGGLE,
     EVENT_FREEZE_ATT,
+    EVENT_FREEZE_ATT_TOGGLE,
     EVENT_FREEZE_LAT_LONG,
+    EVENT_FREEZE_LAT_LONG_TOGGLE,
     EVENT_INIT,
     EVENT_QUIT,
     EVENT_ZULU_DAY,
@@ -131,14 +132,17 @@ enum EVENT_ID {
     EVENT_BARO,
     EVENT_BARO_STD,
 };
+
 enum DATA_DEFINE_ID {
-    MSFS_CLIENT_DATA,
     DATA_MSFS,
-    TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
+    MSFS_CLIENT_DATA,
+    MSFS_FREEZE,
+    TCAS_TRAFFIC_DATA  //This is the DATA to be returned for the aircraft in the vicinity
 };
 
 enum DATA_REQUEST_ID {
     DATA_REQUEST,
+    DATA_REQUEST_FREEZE,
     DATA_REQUEST_TCAS,
 };
 typedef struct {
@@ -170,6 +174,16 @@ struct PSXTIME{
     int day;
     int hour;
     int minute;
+};
+
+/* 
+ * Structure storing the Freeze state of MSFS
+ */ 
+
+struct MSFSFREEZE{
+    double altfreeze;
+    double attfreeze;
+    double latlongfreeze;
 };
 
 /*

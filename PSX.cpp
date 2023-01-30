@@ -70,7 +70,7 @@ void S483(char *s) {
 
     char *token, *ptr;
 
-    if ((token = strtok_r(s + 6,DELIM, &ptr)) != NULL) {
+    if ((token = strtok_r(s + 6, DELIM, &ptr)) != NULL) {
         PSXDATA.IAS = strtol(token, NULL, 10) / 10.0;
     }
 }
@@ -277,7 +277,6 @@ void Qsweather(char *s) {
             strcpy(sav, token);
             token = strtok_r(NULL, DELIM, &savptr);
         }
-
     }
 
     if (zone >= 0 && zone < 8) {
