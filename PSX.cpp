@@ -77,14 +77,42 @@ void S483(char *s) {
 
 void S392(char *s) {
     char *token, *savptr;
+    int TA, TL;
+    int flightPhase;
 
     // TA and TL are the 2nd and 3rd token
     token = strtok_r(s, DELIM, &savptr);
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
-        PSXDATA.TA = (int)strtoul(token, NULL, 10);
+
+    /*
+     * We now try to get the flight phase
+     */
+
+    flightPhase = token[9] - '0';
+
+    switch (flightPhase) {
+    case 0:
+        PSXTATL.phase = 0;
+        break;
+    case 1:
+        PSXTATL.phase = 1;
+        break;
+    case 2:
+        PSXTATL.phase = 2;
+        break;
+    default:
+        PSXTATL.phase = 1;
     }
     if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
-        PSXDATA.TL = (int)strtoul(token, NULL, 10);
+
+        TA = (int)strtoul(token, NULL, 10);
+        if (TA)
+            PSXTATL.TA = TA;
+    }
+    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+
+        TL = (int)strtoul(token, NULL, 10);
+        if (TL)
+            PSXTATL.TL = TL;
     }
 }
 void S78(const char *s) {
@@ -195,7 +223,6 @@ void S122(char *s, Target *T) {
 
     const char delim[2] = ";";
     char *token, *ptr;
-    assert(strlen(s) >= 9 && strlen(s) <= 200);
     /* get the first token */
     token = strtok_r(s + 6, delim, &ptr);
     /* walk through other tokens */
@@ -249,6 +276,8 @@ void I240(char *s) {
         zone = 0;
     }
     PSXDATA.weather_zone = zone;
+    sprintf(debugInfo, "Active weather zone: %d\t", PSXDATA.weather_zone);
+    printDebug(debugInfo, CONSOLE);
 }
 void I204(const char *s) {
 
@@ -282,6 +311,8 @@ void Qsweather(char *s) {
     if (zone >= 0 && zone < 8) {
         PSXDATA.QNH[zone] = strtoul(sav, NULL, 10);
     }
+    sprintf(debugInfo, "Weather zone: %d\t QNH:%.2f", zone, PSXDATA.QNH[zone]);
+    printDebug(debugInfo, CONSOLE);
 }
 
 void Decode(Target *T, char *s, int boost) {

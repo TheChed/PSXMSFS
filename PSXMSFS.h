@@ -211,11 +211,21 @@ struct PSXINST{
     int weather_zone;
     double QNH[7];
 
+};
+
+struct TATL {
     // TA & TL
     int TA;
     int TL;
-};
 
+    // Flight phase as per Qs392
+    // 0 : climb
+    // 1: cruise
+    // 2: descent
+    
+    int phase;
+
+};
 extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
                    //
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
@@ -223,6 +233,7 @@ extern int light[14]; // In that order: lights Outboard landing L, outboard land
 
 extern AcftMSFS APos;
 extern struct PSXINST PSXDATA;
+extern struct TATL PSXTATL;
 
 typedef struct {
     double pitch;

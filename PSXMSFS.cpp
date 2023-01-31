@@ -24,6 +24,7 @@ PSXTIME PSXtime;
 AcftMSFS APos;
 struct PSXINST PSXDATA;
 struct MSFSFREEZE MSFS_FREEZE_STATE;
+struct TATL PSXTATL;
 
 // indicates whether there is a data of ground elevation received from MSFS in
 // the callback procedure
@@ -337,14 +338,14 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
                         if (abs(ai->altitude - alt) < 500) { // on the ground only update if 500 above
                                                              // us
                             update_TCAS(ai, d);
-                            sprintf(debugInfo,"Ground:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: %lf\tDist: %.2lf nm",
-                                   pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude,d);
-                            printDebug(debugInfo,CONSOLE); //"Distance: %lf\n", d);
+                            sprintf(debugInfo, "Ground:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: %lf\tDist: %.2lf nm",
+                                    pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, d);
+                            printDebug(debugInfo, CONSOLE); //"Distance: %lf\n", d);
 
                         } else {
-                            sprintf(debugInfo,"Air:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: %lf\tDist: %.2lf nm",
-                                   pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude,d); 
-                            printDebug(debugInfo,CONSOLE); //"Distance: %lf\n", d);
+                            sprintf(debugInfo, "Air:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: %lf\tDist: %.2lf nm",
+                                    pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, d);
+                            printDebug(debugInfo, CONSOLE); //"Distance: %lf\n", d);
                             update_TCAS(ai, d);
                         }
                     }
@@ -489,7 +490,7 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
     hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA, SIMCONNECT_OBJECT_ID_USER,
-                                           SIMCONNECT_PERIOD_SECOND);
+                                           SIMCONNECT_PERIOD_VISUAL_FRAME);
 
     /*
      * This is to get have a state of MSFS being freezed or nothing
@@ -693,18 +694,37 @@ double SetAltitude(int onGround) {
         Qi198SentAirborne = 0;
     }
 
-    if (onGround) {
+    if (onGround || CG_height<3) {
+
         FinalAltitude = ground_altitude + MSFSHEIGHT;
     } else {
-        if (ctrAltitude > PSXDATA.TA)
+        if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) || (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) ||
+            PSXTATL.phase == 1) {
 
             FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
+        } else {
 
-        else {
+            if (CG_height < 0) {
 
-            FinalAltitude = ctrAltitude;
+                FinalAltitude = ground_altitude + MSFSHEIGHT;
+
+            } else {
+
+                FinalAltitude = ctrAltitude;
+            }
         }
     }
+    static int printed;
+    printed = 0;
+    if (((int)elapsedMs(TimeStart) % 100) < 10 && !printed) {
+        printed = 1;
+        sprintf(debugInfo, "On ground:%d\tTA:%d\tTL:%d\tctrAlt:%.2f\tpressure alt:%.2f\tFinalAlt:%.2f\tCG:%.2f\tgroudalt:%.2f", onGround,
+                PSXTATL.TA, PSXTATL.TL, ctrAltitude, pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]),
+                FinalAltitude,CG_height,ground_altitude);
+        printDebug(debugInfo, 0);
+    } else
+        printed = 0;
+
     return FinalAltitude;
 }
 
@@ -740,6 +760,8 @@ void init_pos(PSXTIME *P) {
     P->day = 1;
     P->hour = 12;
     P->minute = 0;
+    PSXTATL.TA = 2000;
+    PSXTATL.TL = 18000;
 }
 
 void SetMSFSPos(void) {
@@ -1015,6 +1037,7 @@ int main(int argc, char **argv) {
 
     printDebug("Initializing position", CONSOLE);
     init_pos(&P);
+    printDebug("Initializing done", CONSOLE);
 
     /*
      * Create a thread mutex so that two threads cannot change simulataneously

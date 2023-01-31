@@ -59,9 +59,14 @@ double pressure_altitude(double mmhg) { return 145366.45 * (1 - pow(mmhg / 100.0
 
 void printDebug(const char *debugInfo, int console) {
 
+    time_t t = time(NULL);
+    struct tm date = *localtime(&t);
+
+    char timestamp[50];
+    strftime(timestamp, 50, "%H:%M:%S", &date);
     if (DEBUG) {
-        fprintf(fdebug, "[%ld.%.03d]\t%s", (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000,
-                debugInfo);
+        fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000,
+                (int)elapsedMs(TimeStart) % 1000, debugInfo);
         fprintf(fdebug, "\n");
         fflush(fdebug);
     }
