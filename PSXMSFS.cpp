@@ -34,6 +34,9 @@ int MSFS_on_ground = 0;
 int PSX_on_ground = 1;
 int MSFS_POS_avail = 0;
 double latMSFS, longMSFS;
+
+int alt_freezed = 1;
+
 int key_press = 0;
 
 float ground_altitude = 0;
@@ -190,19 +193,20 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
          */
 
         printDebug("Freezing Altitude, Attitude and Coordinates in MSFS.", CONSOLE);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 0,
+        alt_freezed = 1;
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 0,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 0,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
+   /*     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT_TOGGLE, 0,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG_TOGGLE, 0,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-
+*/
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -245,8 +249,11 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         case EVENT_P_PRESS: {
             printDebug("EVET_P_PRESS", CONSOLE);
             if (!key_press) {
-                SLAVE = !SLAVE;
+                //        SLAVE = !SLAVE;
                 key_press = 1;
+                SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
+                                               SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                               SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
                 if (DEBUG) {
                     if (!SLAVE) {
                         sendQPSX("Qs419=");
@@ -650,8 +657,8 @@ void *ptUmain(void *) {
 double SetAltitude(int onGround) {
 
     double FinalAltitude;
-    double ctrAltitude; // altitude of Aircraft centre
-                        //
+    double ctrAltitude;   // altitude of Aircraft centre
+    static double altgnd; // to keep track of last good altitude
     char sQi198[128];
 
     /*
@@ -694,33 +701,62 @@ double SetAltitude(int onGround) {
         Qi198SentAirborne = 0;
     }
 
-    if (onGround || CG_height<3) {
+    FinalAltitude = ctrAltitude;
+    if (FinalAltitude <= altgnd) {
+        FinalAltitude = altgnd;
+    }
 
+    if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) || (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) ||
+        PSXTATL.phase == 1) {
+
+        printf("pressure\n");
+        altgnd = -99999;
+        FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
+    }
+
+    if (CG_height >=10) {
+        if (!alt_freezed) {
+            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
+                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        }
+            alt_freezed = 1;
+    }
+
+    if (onGround) {
         FinalAltitude = ground_altitude + MSFSHEIGHT;
+        altgnd = FinalAltitude;
+        if (!alt_freezed) {
+
+            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
+                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        }
+
+        alt_freezed = 1;
     } else {
-        if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) || (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) ||
-            PSXTATL.phase == 1) {
+        if (CG_height < 10 && alt_freezed) {
 
-            FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
-        } else {
-
-            if (CG_height < 0) {
-
-                FinalAltitude = ground_altitude + MSFSHEIGHT;
-
-            } else {
-
-                FinalAltitude = ctrAltitude;
+            if (alt_freezed) {
+                SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
+                                               SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                               SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+                alt_freezed = 0; // we let MSFS control the altitude for landing
             }
+
+            printf("CG_height\n");
+            FinalAltitude = ground_altitude + MSFSHEIGHT;
         }
     }
+
     static int printed;
     printed = 0;
     if (((int)elapsedMs(TimeStart) % 100) < 10 && !printed) {
         printed = 1;
-        sprintf(debugInfo, "On ground:%d\tTA:%d\tTL:%d\tctrAlt:%.2f\tpressure alt:%.2f\tFinalAlt:%.2f\tCG:%.2f\tgroudalt:%.2f", onGround,
-                PSXTATL.TA, PSXTATL.TL, ctrAltitude, pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]),
-                FinalAltitude,CG_height,ground_altitude);
+        sprintf(debugInfo,
+                "On ground:%d\tTA:%d\tTL:%d\tctrAlt:%.2f\tpressure alt:%.2f\tFinalAlt:%.2f\tCG:%.2f\tgroudalt:%.2f",
+                onGround, PSXTATL.TA, PSXTATL.TL, ctrAltitude, pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]),
+                FinalAltitude, CG_height, ground_altitude);
         printDebug(debugInfo, 0);
     } else
         printed = 0;

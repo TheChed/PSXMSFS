@@ -20,6 +20,7 @@ extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 extern HRESULT hr;
 
+extern int PSX_acftelev;
 extern int MSFS_on_ground;
 extern int PSX_on_ground;
 
@@ -210,6 +211,10 @@ struct PSXINST{
     //local QNH on the weather zone
     int weather_zone;
     double QNH[7];
+
+    //Acft elevation
+    //
+    double acftelev;
 
 };
 

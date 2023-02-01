@@ -287,7 +287,10 @@ void I204(const char *s) {
     SetXPDR();
 }
 
-void I219(char *s) { MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10); }
+void I219(char *s) {
+    MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10);
+    PSXDATA.acftelev = strtol(s + 6, NULL, 10);
+}
 
 void Qsweather(char *s) {
 
@@ -506,7 +509,15 @@ int umain(Target *T) {
         // New situ loaded
         if (strstr(line_start, "load3")) {
             printDebug("New situ loaded: no crash detection for 10 seconds", CONSOLE);
+
             printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
+            printDebug("Freezing altitude, attitude and coordinates in MSFS",CONSOLE);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
             sendQPSX("Qi198=-9999910"); // no crash detection fort 20 seconds
             printDebug("Resuming normal operations.", CONSOLE);
             MSFS_on_ground = 0;
