@@ -290,6 +290,8 @@ void I204(const char *s) {
 void I219(char *s) {
     MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10);
     PSXDATA.acftelev = strtol(s + 6, NULL, 10);
+    printDebug(s,CONSOLE);
+    elevupdated=1; //we got a elevation updated
 }
 
 void Qsweather(char *s) {
@@ -322,8 +324,6 @@ void Decode(Target *T, char *s, int boost) {
 
     const char delim[2] = ";";
     char *token, *ptr, *savptr;
-    float flightDeckAlt = 0.0;
-    double latc, longc, latb, longb;
 
     if (boost) {
         /* get the first token */
@@ -333,39 +333,29 @@ void Decode(Target *T, char *s, int boost) {
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
 
-            flightDeckAlt = strtol(token, &ptr, 10);
+            PSXBoost.flightDeckAlt = strtol(token, &ptr, 10) / 100;
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            T->heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+            PSXBoost.heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            T->pitch = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+            PSXBoost.pitch = -strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            T->bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+            PSXBoost.bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            latb = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
+            PSXBoost.latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
         }
 
         if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            longb = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
+            PSXBoost.longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
         }
 
-        /*Put main variables in Boost structure
-         *So that we can update MSFS on high frequency
-         */
-        CalcCoord(APos.heading_true, latb, longb, &latc, &longc);
-        APos.altitude = flightDeckAlt / 100.0;
-        APos.heading_true = T->heading_true;
-        APos.pitch = -T->pitch;
-        APos.longitude = longc;
-        APos.latitude = latc;
-        APos.bank = T->bank;
     } else {
 
         if (strstr(s, "Qs122=")) {
@@ -444,6 +434,9 @@ void Decode(Target *T, char *s, int boost) {
         if (strstr(s, "Qs392")) {
             S392(strstr(s, "Qs392"));
         }
+        if (strstr(s, "Qi219")) {
+            I219(strstr(s, "Qi219"));
+        }
 
         // get the weather zones
         if (strstr(s, "Qs328") || strstr(s, "Qs329") || strstr(s, "Qs330") || strstr(s, "Qs331") ||
@@ -507,22 +500,15 @@ int umain(Target *T) {
         *line_end = 0;
 
         // New situ loaded
+        pthread_mutex_lock(&mutex);
         if (strstr(line_start, "load3")) {
             printDebug("New situ loaded: no crash detection for 10 seconds", CONSOLE);
-
-            printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
-            printDebug("Freezing altitude, attitude and coordinates in MSFS",CONSOLE);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-            sendQPSX("Qi198=-9999910"); // no crash detection fort 20 seconds
+            sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
+            printDebug("Let's wait a few seconds to get ev:bufmaineryone ready.", CONSOLE);
+            printDebug("Freezing altitude, attitude and coordinates in MSFS", CONSOLE);
             printDebug("Resuming normal operations.", CONSOLE);
-            MSFS_on_ground = 0;
+            init_variables();
         }
-        pthread_mutex_lock(&mutex);
         if (line_start[0] == 'Q') {
             Decode(T, line_start, 0);
             if (!SLAVE) {
@@ -579,7 +565,7 @@ int umainBoost(Target *T) {
         if (line_start[0] == 'F' || line_start[0] == 'G') {
             Decode(T, line_start, 1);
             if (!SLAVE) {
-                SetMSFSPos();
+                //     SetMSFSPos();
             }
         } else {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);

@@ -23,6 +23,7 @@ PSXTIME PSXtime;
 
 AcftMSFS APos;
 struct PSXINST PSXDATA;
+struct PSXBOOST PSXBoost;
 struct MSFSFREEZE MSFS_FREEZE_STATE;
 struct TATL PSXTATL;
 
@@ -33,7 +34,8 @@ int ground_altitude_avail = 0;
 int MSFS_on_ground = 0;
 int PSX_on_ground = 1;
 int MSFS_POS_avail = 0;
-double latMSFS, longMSFS;
+int elevupdated=0;
+static int landing, takingoff;
 
 int alt_freezed = 1;
 
@@ -70,6 +72,28 @@ int PSXPort = 10747;
 int PSXBoostPort = 10749;
 
 void update_TCAS(AI_TCAS *ai, double d);
+
+void init_variables(void){
+
+ ground_altitude_avail = 0;
+ MSFS_on_ground = 0;
+// PSX_on_ground = 1;
+ MSFS_POS_avail = 0;
+ elevupdated=0;
+ landing=0;
+ takingoff=0;
+ 
+            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
+                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
+                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
+                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+
+}
 
 void SetUTCTime(struct PSXTIME *P) {
 
@@ -200,13 +224,14 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-   /*     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT_TOGGLE, 0,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG_TOGGLE, 0,
-                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-*/
+        /*     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
+                                            SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY); SimConnect_TransmitClientEvent(hSimConnect,
+           SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT_TOGGLE, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY); SimConnect_TransmitClientEvent(hSimConnect,
+           SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG_TOGGLE, 0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+     */
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -301,6 +326,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
             MSFS_plane_alt = pS->alt_above_ground;
             CG_height = pS->alt_above_ground_minus_CG;
+
             ground_altitude = pS->ground_altitude;
             ground_altitude_avail = 1;
             break;
@@ -395,8 +421,16 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
         pthread_mutex_lock(&mutex);
-        hr =
+
+        /*
+         * Only update the position if we have enough info
+         */
+        if (ground_altitude_avail) {
+
+            SetMSFSPos();
             SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
+        }
+
         pthread_mutex_unlock(&mutex);
 
     }
@@ -654,23 +688,49 @@ void *ptUmain(void *) {
     return NULL;
 }
 
-double SetAltitude(int onGround) {
+double SetAltitude(int onGround, double altfltdeck, double pitch) {
 
     double FinalAltitude;
-    double ctrAltitude;   // altitude of Aircraft centre
-    static double altgnd; // to keep track of last good altitude
+    double ctrAltitude;           // altitude of Aircraft centre
+    static double oldctr, altgnd; // to keep track of last good altitude
+    static double delta = 0;
+    static double inc = 0;
+    static int initalt = 0;
+    static double incland=0;
+
     char sQi198[128];
 
-    /*
-     * Before touching landing of after take off
-     * switch from MSFS elevation to PSX elevation
-     * and vice versa
-     */
+    if (!ground_altitude_avail) {
+        return altfltdeck;
+    }
 
     /*
      * Boost servers gives altitude of flight deck
+     * Need to get the altitude of the Aircraft centre first
      */
-    ctrAltitude = APos.altitude - (28.412073 + 92.5 * sin(-APos.pitch));
+    ctrAltitude = altfltdeck - (28.412073 + 92.5 * sin(pitch));
+
+
+    /*
+     * Now check if we are close to the ground or not
+     * by checking the Variable Qi219 from PSX 
+     * that give the acft height above ground
+     * We assume that below 50 feet we are close
+     */
+    landing=(PSXDATA.acftelev<50);
+    
+    if (initalt) {
+        delta = ctrAltitude - oldctr;
+    }
+    initalt = 1;
+    oldctr = ctrAltitude;
+    inc += delta;
+    if(elevupdated) {
+        incland=0;
+        elevupdated=0;
+    } else {
+        incland +=delta;
+    }
     /*
      * Calculate the altitude if PSX is on the ground
      * or in flight
@@ -684,6 +744,7 @@ double SetAltitude(int onGround) {
             }
             Qi198SentAirborne = 0;
             sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
+            printDebug(sQi198,CONSOLE);
             sendQPSX(sQi198);
         } else {
 
@@ -702,62 +763,46 @@ double SetAltitude(int onGround) {
     }
 
     FinalAltitude = ctrAltitude;
-    if (FinalAltitude <= altgnd) {
-        FinalAltitude = altgnd;
-    }
 
     if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) || (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) ||
         PSXTATL.phase == 1) {
 
-        printf("pressure\n");
-        altgnd = -99999;
         FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
-    }
+        takingoff=0;
+        landing=1; // only choice now is to land !
+        return FinalAltitude;
 
-    if (CG_height >=10) {
-        if (!alt_freezed) {
-            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
-                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        }
-            alt_freezed = 1;
     }
-
     if (onGround) {
         FinalAltitude = ground_altitude + MSFSHEIGHT;
         altgnd = FinalAltitude;
-        if (!alt_freezed) {
+        inc = 0;
+        landing=0;
+        incland=0;
+        takingoff=1; //what else can we do except to take off ?
 
-            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
-                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        }
-
-        alt_freezed = 1;
     } else {
-        if (CG_height < 10 && alt_freezed) {
-
-            if (alt_freezed) {
-                SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
-                                               SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-                                               SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-                alt_freezed = 0; // we let MSFS control the altitude for landing
+        if (takingoff && inc < 300) {
+            if (ground_altitude_avail) {
+                //FinalAltitude = altgnd + inc;
+                FinalAltitude = ground_altitude+MSFSHEIGHT+inc;
             }
-
-            printf("CG_height\n");
-            FinalAltitude = ground_altitude + MSFSHEIGHT;
+        } else {
+            if(landing) {
+            FinalAltitude = ground_altitude+PSXDATA.acftelev+incland;
+            }
         }
     }
 
     static int printed;
     printed = 0;
-    if (((int)elapsedMs(TimeStart) % 100) < 10 && !printed) {
+    if (((int)elapsedMs(TimeStart) % 10) < 10 && !printed) {
         printed = 1;
         sprintf(debugInfo,
-                "On ground:%d\tTA:%d\tTL:%d\tctrAlt:%.2f\tpressure alt:%.2f\tFinalAlt:%.2f\tCG:%.2f\tgroudalt:%.2f",
-                onGround, PSXTATL.TA, PSXTATL.TL, ctrAltitude, pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]),
-                FinalAltitude, CG_height, ground_altitude);
-        printDebug(debugInfo, 0);
+                "Ldg:%d\tTO:%d\tGround:%d\tfltdeck:%.2f\tctralt:%.2f\tFinalAlt:%.2f\tgroundalt:%.2f\tdelta:%."
+                "2f\tinc:%.2f\tincland: %.3f",landing,takingoff,
+                onGround, altfltdeck, ctrAltitude, FinalAltitude,  ground_altitude, delta, inc, incland);
+        printDebug(debugInfo, CONSOLE);
     } else
         printed = 0;
 
@@ -765,6 +810,7 @@ double SetAltitude(int onGround) {
 }
 
 void init_pos(PSXTIME *P) {
+
 
     /*
      * Setting initial position at LFPG"
@@ -798,11 +844,26 @@ void init_pos(PSXTIME *P) {
     P->minute = 0;
     PSXTATL.TA = 2000;
     PSXTATL.TL = 18000;
+    PSXDATA.acftelev=-999;
 }
 
 void SetMSFSPos(void) {
 
-    APos.altitude = SetAltitude(PSX_on_ground);
+    double latc, longc;
+
+    /*
+     * Calculate the coordinates from cetre aircraft
+     * derived from those of the flightDeckAlt
+     */
+
+    APos.altitude = SetAltitude(PSX_on_ground, PSXBoost.flightDeckAlt, -PSXBoost.pitch);
+
+    CalcCoord(PSXBoost.heading_true, PSXBoost.latitude, PSXBoost.longitude, &latc, &longc);
+    APos.latitude = latc;
+    APos.longitude = longc;
+    APos.pitch = PSXBoost.pitch;
+    APos.bank = PSXBoost.bank;
+    APos.heading_true = PSXBoost.heading_true;
 
     //  Update lights
     APos.LandLeftOutboard = light[0];

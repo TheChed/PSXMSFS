@@ -32,6 +32,7 @@ extern char MSFSServer[];
 extern char PSXBoostServer[];
 extern int PSXPort;
 extern int PSXBoostPort;
+extern int elevupdated;
 
 extern char debugInfo[256];
 
@@ -94,6 +95,15 @@ struct AcftMSFS {
 
 };
 
+struct PSXBOOST {
+    // Updated by Boost server
+    double flightDeckAlt;
+    double latitude;
+    double longitude;
+    double heading_true;
+    double pitch;
+    double bank;
+};
 
 enum GROUP_ID {
     GROUP0,
@@ -238,7 +248,9 @@ extern int light[14]; // In that order: lights Outboard landing L, outboard land
 
 extern AcftMSFS APos;
 extern struct PSXINST PSXDATA;
+extern struct PSXBOOST PSXBoost;
 extern struct TATL PSXTATL;
+
 
 typedef struct {
     double pitch;
@@ -266,6 +278,7 @@ typedef struct {
 // Function definitions
 int check_param(const char *);
 int init_socket(void);
+void init_variables(void);
 int close_PSX_socket(int socket);
 int open_connections();
 int umain(Target *T);
