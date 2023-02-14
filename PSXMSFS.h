@@ -15,6 +15,7 @@
 /*Global variable used in readin boost socket*/
 
 extern pthread_mutex_t mutex;
+extern pthread_cond_t pthreadDataAvail;
 
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;

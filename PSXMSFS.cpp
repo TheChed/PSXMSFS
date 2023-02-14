@@ -34,7 +34,7 @@ int ground_altitude_avail = 0;
 int MSFS_on_ground = 0;
 int PSX_on_ground = 1;
 int MSFS_POS_avail = 0;
-int elevupdated=0;
+int elevupdated = 0;
 static int landing, takingoff;
 
 int alt_freezed = 1;
@@ -48,11 +48,13 @@ struct Struct_MSFS MSFS_POS;
 
 Target Tmain, Tboost;
 pthread_mutex_t mutex;
+pthread_cond_t pthreadDataAvail;
 int UTCupdate = 1;
 int validtime = 0;
 HRESULT hr;
 int DEBUG;
 int TCAS_INJECT = 1; /*TCAS injection on by default*/
+int ELEV_INJECT = 1; /*elevation injection on by default below 300 ft AGL */
 int SLAVE = 0;       // 0=PSX is master, 1=MSFS is master
 char debugInfo[256] = {0};
 FILE *fdebug;
@@ -73,26 +75,22 @@ int PSXBoostPort = 10749;
 
 void update_TCAS(AI_TCAS *ai, double d);
 
-void init_variables(void){
+void init_variables(void) {
 
- ground_altitude_avail = 0;
- MSFS_on_ground = 0;
-// PSX_on_ground = 1;
- MSFS_POS_avail = 0;
- elevupdated=0;
- landing=0;
- takingoff=0;
- 
-            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
-                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
-                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-            SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
-                                           SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-                                           SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    ground_altitude_avail = 0;
+    MSFS_on_ground = 0;
+    PSX_on_ground = 0;
+    MSFS_POS_avail = 0;
+    elevupdated = 0;
+    landing = 0;
+    takingoff = 0;
 
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
 void SetUTCTime(struct PSXTIME *P) {
@@ -688,15 +686,15 @@ void *ptUmain(void *) {
     return NULL;
 }
 
-double SetAltitude(int onGround, double altfltdeck, double pitch) {
+double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt) {
 
     double FinalAltitude;
-    double ctrAltitude;           // altitude of Aircraft centre
-    static double oldctr, altgnd; // to keep track of last good altitude
+    double ctrAltitude;   // altitude of Aircraft centre
+    static double oldctr; // to keep track of last good altitude
     static double delta = 0;
     static double inc = 0;
     static int initalt = 0;
-    static double incland=0;
+    static double incland = 0;
 
     char sQi198[128];
 
@@ -710,86 +708,83 @@ double SetAltitude(int onGround, double altfltdeck, double pitch) {
      */
     ctrAltitude = altfltdeck - (28.412073 + 92.5 * sin(pitch));
 
-
     /*
      * Now check if we are close to the ground or not
-     * by checking the Variable Qi219 from PSX 
+     * by checking the Variable Qi219 from PSX
      * that give the acft height above ground
      * We assume that below 50 feet we are close
      */
-    landing=(PSXDATA.acftelev<50);
-    
+    landing = (PSXELEV < 50);
+
     if (initalt) {
         delta = ctrAltitude - oldctr;
     }
     initalt = 1;
     oldctr = ctrAltitude;
     inc += delta;
-    if(elevupdated) {
-        incland=0;
-        elevupdated=0;
+    if (elevupdated) {
+        incland = 0;
+        elevupdated = 0;
     } else {
-        incland +=delta;
+        incland += delta;
     }
     /*
      * Calculate the altitude if PSX is on the ground
      * or in flight
      */
+    if (ELEV_INJECT) {
+        if (ground_altitude_avail) {
+            if (onGround || (ctrAltitude - groundalt < 300)) {
+                if (!Qi198SentLand) {
+                    printDebug("Below 300 ft AGL => using MSFS elevation", CONSOLE);
+                    Qi198SentLand = 1;
+                }
+                Qi198SentAirborne = 0;
+                sprintf(sQi198, "Qi198=%d", (int)(groundalt * 100));
+                sendQPSX(sQi198);
+            } else {
 
-    if (ground_altitude_avail) {
-        if (onGround || (ctrAltitude - ground_altitude < 300)) {
-            if (!Qi198SentLand) {
-                printDebug("Below 300 ft AGL => using MSFS elevation", CONSOLE);
-                Qi198SentLand = 1;
+                if (!Qi198SentAirborne) {
+
+                    printDebug("Above 300 ft AGL => using PSX elevation.", CONSOLE);
+                    sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
+                    Qi198SentAirborne = 1;
+                }
+                Qi198SentLand = 0;
             }
-            Qi198SentAirborne = 0;
-            sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
-            printDebug(sQi198,CONSOLE);
-            sendQPSX(sQi198);
         } else {
 
-            if (!Qi198SentAirborne) {
-
-                printDebug("Above 300 ft AGL => using PSX elevation.", CONSOLE);
-                sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
-                Qi198SentAirborne = 1;
-            }
             Qi198SentLand = 0;
+            Qi198SentAirborne = 0;
         }
-    } else {
-
-        Qi198SentLand = 0;
-        Qi198SentAirborne = 0;
     }
-
     FinalAltitude = ctrAltitude;
 
     if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) || (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) ||
         PSXTATL.phase == 1) {
 
         FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
-        takingoff=0;
-        landing=1; // only choice now is to land !
+        takingoff = 0;
+        landing = 1; // only choice now is to land !
         return FinalAltitude;
-
     }
-    if (onGround) {
-        FinalAltitude = ground_altitude + MSFSHEIGHT;
-        altgnd = FinalAltitude;
+
+
+    if (onGround || PSXELEV+incland<MSFSHEIGHT) {
+        FinalAltitude = groundalt + MSFSHEIGHT;
         inc = 0;
-        landing=0;
-        incland=0;
-        takingoff=1; //what else can we do except to take off ?
+        landing = 0;
+        takingoff = 1; // what else can we do except to take off ?
 
     } else {
         if (takingoff && inc < 300) {
             if (ground_altitude_avail) {
-                //FinalAltitude = altgnd + inc;
-                FinalAltitude = ground_altitude+MSFSHEIGHT+inc;
+                // FinalAltitude = altgnd + inc;
+                FinalAltitude = groundalt + MSFSHEIGHT + inc;
             }
         } else {
-            if(landing) {
-            FinalAltitude = ground_altitude+PSXDATA.acftelev+incland;
+            if (landing) {
+                FinalAltitude = groundalt + PSXELEV + incland;
             }
         }
     }
@@ -798,10 +793,11 @@ double SetAltitude(int onGround, double altfltdeck, double pitch) {
     printed = 0;
     if (((int)elapsedMs(TimeStart) % 10) < 10 && !printed) {
         printed = 1;
-        sprintf(debugInfo,
-                "Ldg:%d\tTO:%d\tGround:%d\tfltdeck:%.2f\tctralt:%.2f\tFinalAlt:%.2f\tgroundalt:%.2f\tdelta:%."
-                "2f\tinc:%.2f\tincland: %.3f",landing,takingoff,
-                onGround, altfltdeck, ctrAltitude, FinalAltitude,  ground_altitude, delta, inc, incland);
+        sprintf(
+            debugInfo,
+            "Ldg:%d\tTO:%d\tGround:%d\tfltdeck:%.2f\tctralt:%.2f\tFinalAlt:%.2f\tgroundalt:%.2f\tPSXelev:%.2f",
+             landing, takingoff, onGround, altfltdeck, ctrAltitude, FinalAltitude, groundalt,
+            PSXELEV + incland);
         printDebug(debugInfo, CONSOLE);
     } else
         printed = 0;
@@ -810,7 +806,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch) {
 }
 
 void init_pos(PSXTIME *P) {
-
 
     /*
      * Setting initial position at LFPG"
@@ -844,7 +839,7 @@ void init_pos(PSXTIME *P) {
     P->minute = 0;
     PSXTATL.TA = 2000;
     PSXTATL.TL = 18000;
-    PSXDATA.acftelev=-999;
+    PSXDATA.acftelev = -999;
 }
 
 void SetMSFSPos(void) {
@@ -856,7 +851,8 @@ void SetMSFSPos(void) {
      * derived from those of the flightDeckAlt
      */
 
-    APos.altitude = SetAltitude(PSX_on_ground, PSXBoost.flightDeckAlt, -PSXBoost.pitch);
+    APos.altitude =
+        SetAltitude(PSX_on_ground, PSXBoost.flightDeckAlt, -PSXBoost.pitch, PSXDATA.acftelev, ground_altitude);
 
     CalcCoord(PSXBoost.heading_true, PSXBoost.latitude, PSXBoost.longitude, &latc, &longc);
     APos.latitude = latc;
@@ -946,6 +942,7 @@ int write_ini_file() {
     fprintf(f, "DEBUG=%d\n", DEBUG);
     fprintf(f, "TCAS_INJECT=%d\n", TCAS_INJECT);
     fprintf(f, "SLAVE=%d\n", SLAVE);
+    fprintf(f, "ELEV_INJECT=%d\n", ELEV_INJECT);
 
     fclose(f);
     return 0;
@@ -978,6 +975,7 @@ int init_param() {
     SLAVE = 0;
     DEBUG = 0;
     TCAS_INJECT = 1;
+    ELEV_INJECT = 1;
 
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
@@ -995,6 +993,8 @@ int init_param() {
         TCAS_INJECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "DEBUG");
         DEBUG = strtol(value, &stop, 10);
+        value = scan_ini(fini, "ELEV_INJECT");
+        ELEV_INJECT = strtol(value, &stop, 10);
         free(value);
     }
 
@@ -1019,7 +1019,7 @@ void parse_arguments(int argc, char **argv) {
         /* getopt_long stores the option index here. */
         int option_index = 0;
 
-        c = getopt_long(argc, argv, "thvsm:b:c:p:f:", long_options, &option_index);
+        c = getopt_long(argc, argv, "Ethvsm:b:c:p:f:", long_options, &option_index);
 
         /* Detect the end of the options. */
         if (c == -1)
@@ -1038,6 +1038,9 @@ void parse_arguments(int argc, char **argv) {
 
         case 'b':
             strcpy(PSXBoostServer, optarg);
+            break;
+        case 'E':
+            ELEV_INJECT = 0;
             break;
         case 't':
             TCAS_INJECT = 0;
@@ -1142,6 +1145,7 @@ int main(int argc, char **argv) {
      */
 
     pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&pthreadDataAvail,NULL);
 
     /*
      * Creating the 3 threads:
@@ -1171,6 +1175,7 @@ int main(int argc, char **argv) {
         printDebug("Failed to join MSFS thread", 1);
     }
     pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&pthreadDataAvail);
 
     printf("Closing MSFS connection...\n");
     SimConnect_Close(hSimConnect);

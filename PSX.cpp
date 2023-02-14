@@ -286,12 +286,14 @@ void I204(const char *s) {
 
     SetXPDR();
 }
+void I257(const char *s) {
+    PSX_on_ground = PSX_on_ground || (int)(s[6] - '0'); }
+
 
 void I219(char *s) {
     MSFS_on_ground = (strtol(s + 6, NULL, 10) < 10);
     PSXDATA.acftelev = strtol(s + 6, NULL, 10);
-    printDebug(s,CONSOLE);
-    elevupdated=1; //we got a elevation updated
+    elevupdated = 1; // we got a elevation updated
 }
 
 void Qsweather(char *s) {
@@ -437,6 +439,9 @@ void Decode(Target *T, char *s, int boost) {
         if (strstr(s, "Qi219")) {
             I219(strstr(s, "Qi219"));
         }
+        if (strstr(s, "Qi257")) {
+            I257(strstr(s, "Qi257"));
+        }
 
         // get the weather zones
         if (strstr(s, "Qs328") || strstr(s, "Qs329") || strstr(s, "Qs330") || strstr(s, "Qs331") ||
@@ -504,16 +509,14 @@ int umain(Target *T) {
         if (strstr(line_start, "load3")) {
             printDebug("New situ loaded: no crash detection for 10 seconds", CONSOLE);
             sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
-            printDebug("Let's wait a few seconds to get ev:bufmaineryone ready.", CONSOLE);
+            printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
             printDebug("Freezing altitude, attitude and coordinates in MSFS", CONSOLE);
-            printDebug("Resuming normal operations.", CONSOLE);
             init_variables();
+            printDebug("Resuming normal operations.", CONSOLE);
+            pthread_cond_signal(&pthreadDataAvail);
         }
         if (line_start[0] == 'Q') {
             Decode(T, line_start, 0);
-            if (!SLAVE) {
-                //  SetMSFSPos();
-            }
         }
         pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;
