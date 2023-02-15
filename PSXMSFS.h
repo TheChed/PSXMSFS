@@ -52,9 +52,6 @@ struct Struct_MSFS {
     double altitude; //plane altitude above MSL
 }; 
 
-
-
-
 /* Definition of the structure used to update MSFS
  * It is VERY important that the order this structure elements are defined is the
  * same order as when mapping the variables in PSXMSFS.cpp
@@ -106,6 +103,81 @@ struct PSXBOOST {
     double bank;
 };
 
+typedef struct {
+
+    int altitude;
+    double latitude;
+    double longitude;
+    int heading;
+    double distance;
+} TCAS;
+
+
+/* 
+ * Structure of AI traffic present in MSFS 
+ */
+
+struct AI_TCAS {
+    double altitude;
+    double latitude;
+    double longitude;
+    double heading;
+};
+
+/*
+* Structure to store the date+time from PSX 
+*/
+struct PSXTIME{
+    int year;
+    int day;
+    int hour;
+    int minute;
+};
+
+/*
+ * Structure containing all PSX instruments we
+ * want to update in MSFS
+ */
+
+struct PSXINST{
+    //COMMS & XPDR
+    int XPDR;
+    int IDENT;
+    int COM1;
+    int COM2;
+
+    //Altimeter
+    double altimeter;
+    int STD ;
+
+    //Speed
+    double IAS;
+    double GS;
+    double TAS;
+
+    //local QNH on the weather zone
+    int weather_zone;
+    double QNH[7];
+
+    //Acft elevation
+    //
+    double acftelev;
+
+};
+
+struct TATL {
+    // TA & TL
+    int TA;
+    int TL;
+
+    // Flight phase as per Qs392
+    // 0 : climb
+    // 1: cruise
+    // 2: descent
+    
+    int phase;
+
+};
 enum GROUP_ID {
     GROUP0,
     GROUP1,
@@ -157,91 +229,9 @@ enum DATA_REQUEST_ID {
     DATA_REQUEST_FREEZE,
     DATA_REQUEST_TCAS,
 };
-typedef struct {
-
-    int altitude;
-    double latitude;
-    double longitude;
-    int heading;
-    double distance;
-} TCAS;
 
 
-/* 
- * Structure of AI traffic present in MSFS 
- */
 
-struct AI_TCAS {
-    double altitude;
-    double latitude;
-    double longitude;
-    double heading;
-};
-
-/*
-* Structure to store the date+time from PSX 
-*/
-struct PSXTIME{
-    int year;
-    int day;
-    int hour;
-    int minute;
-};
-
-/* 
- * Structure storing the Freeze state of MSFS
- */ 
-
-struct MSFSFREEZE{
-    double altfreeze;
-    double attfreeze;
-    double latlongfreeze;
-};
-
-/*
- * Structure containing all PSX instruments we
- * want to update in MSFS
- */
-
-struct PSXINST{
-    //COMMS & XPDR
-    int XPDR;
-    int IDENT;
-    int COM1;
-    int COM2;
-
-    //Altimeter
-    double altimeter;
-    int STD ;
-
-    //Speed
-    double IAS;
-    double GS;
-    double TAS;
-
-    //local QNH on the weather zone
-    int weather_zone;
-    double QNH[7];
-
-    //Acft elevation
-    //
-    double acftelev;
-
-};
-
-struct TATL {
-    // TA & TL
-    int TA;
-    int TL;
-
-    // Flight phase as per Qs392
-    // 0 : climb
-    // 1: cruise
-    // 2: descent
-    
-    int phase;
-
-};
 extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
                    //
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
