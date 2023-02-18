@@ -62,3 +62,5 @@ void printDebug(const char *debugInfo, int console);
 void SetMSFSPos(void);
 
 void err_n_die(const char *fmt, ...);
+
+void parse_arguments(int argc, char **argv);

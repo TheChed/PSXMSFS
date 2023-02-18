@@ -35,6 +35,10 @@ extern int PSXPort;
 extern int PSXBoostPort;
 extern int elevupdated;
 
+extern int TCAS_INJECT;
+extern int ELEV_INJECT;
+extern int INHIB_CRASH_DETECT;
+
 extern char debugInfo[256];
 
 
@@ -267,6 +271,7 @@ typedef struct {
 
 
 // Function definitions
+int init_param(void);
 int check_param(const char *);
 int init_socket(void);
 void init_variables(void);
