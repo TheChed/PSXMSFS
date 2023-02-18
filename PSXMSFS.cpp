@@ -631,29 +631,6 @@ void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
         int hr = SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
-        if (hr == E_FAIL) {
-            printf("Error: %ld\r", (long)elapsedMs(TimeStart) / 1000);
-            printf("Sleeping 5 seconds and trying to reinitialize everything\n");
-            sleep(5);
-
-            SimConnect_Close(hSimConnect);
-
-            /*
-             * First start by clearing the data definition, in case we call this
-             * function after an error
-             */
-
-            hr = SimConnect_ClearDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA);
-            hr = SimConnect_ClearDataDefinition(hSimConnect, MSFS_CLIENT_DATA);
-            fprintf(fdebug, "\tOpening new connection.....\n");
-
-            init_connect_MSFS(&hSimConnect);
-            if (init_MS_data() < 0) {
-                fprintf(fdebug, "\tUnable to reinitilize....Sorry folks, quitting now\n");
-                fflush(NULL);
-                quit = 1;
-            }
-        }
 
         Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
                   // to avoid heavy polling
