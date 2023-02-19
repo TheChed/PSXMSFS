@@ -714,6 +714,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
                 Qi198SentLand = 1;
             }
             Qi198SentAirborne = 0;
+            sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
             sendQPSX(sQi198);
         } else {
 

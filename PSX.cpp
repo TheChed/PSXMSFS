@@ -456,10 +456,6 @@ int sendQPSX(const char *s) {
     char *dem;
     dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
 
-    if (DEBUG) {
-        sprintf(debugInfo, "Preparing to send to PSX: %s",s);
-        printDebug(debugInfo, 0);
-    }
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
     // dem[strlen(s)+1] = 0;
@@ -468,11 +464,6 @@ int sendQPSX(const char *s) {
 
     if (nbsend == 0) {
         printf("Error sending variable %s to PSX\n", s);
-    }
-
-    if (DEBUG) {
-        sprintf(debugInfo, "Sending to PSX: %s", dem);
-        printDebug(debugInfo, 0);
     }
 
     free(dem);
