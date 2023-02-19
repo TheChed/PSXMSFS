@@ -8,7 +8,6 @@
 #define MAXLEN 8192
 #define PRINT 1
 #define MSFSHEIGHT 15.13   //offset when on ground compared to PSX
-#define CONSOLE 1   //print debug info on the console
 #define MAXBUFF 165536
 #define DELIM ";"
 

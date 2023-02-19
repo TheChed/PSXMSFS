@@ -278,7 +278,7 @@ void I240(char *s) {
     PSXDATA.weather_zone = zone;
     if (DEBUG) {
         sprintf(debugInfo, "Active weather zone: %d\t", PSXDATA.weather_zone);
-        printDebug(debugInfo, 0);
+        printDebug(debugInfo, DEBUG);
     }
 }
 void I204(const char *s) {
@@ -319,13 +319,15 @@ void Qsweather(char *s) {
     if (zone >= 0 && zone < 8) {
         PSXDATA.QNH[zone] = strtoul(sav, NULL, 10);
     }
-    sprintf(debugInfo, "Weather zone: %d\t QNH:%.2f", zone, PSXDATA.QNH[zone]);
-    printDebug(debugInfo, CONSOLE);
+    if (DEBUG) {
+        sprintf(debugInfo, "Weather zone: %d\t QNH:%.2f", zone, PSXDATA.QNH[zone]);
+        printDebug(debugInfo,0);
+    }
 }
 
 void Decode(Target *T, char *s, int boost) {
 
-    const char delim[2]=";";
+    const char delim[2] = ";";
     char *token, *ptr, *savptr;
 
     if (boost) {
@@ -474,7 +476,7 @@ int umain(Target *T) {
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
     if (bufmain_remain == 0) {
-        printDebug("Main socket line exceeded buffer length! Discarding input", 1);
+        printDebug("Main socket line exceeded buffer length! Discarding input", DEBUG);
         bufmain_used = 0;
         printDebug(bufmain, 0);
         return 0;
@@ -509,15 +511,15 @@ int umain(Target *T) {
         // New situ loaded
         pthread_mutex_lock(&mutex);
         if (strstr(line_start, "load3")) {
-            printDebug("New situ loaded", CONSOLE);
+            printDebug("New situ loaded",1);
             if (INHIB_CRASH_DETECT) {
-                printDebug("No crash detection for 10 seconds", CONSOLE);
+                printDebug("No crash detection for 10 seconds",DEBUG);
                 sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
             }
-            printDebug("Let's wait a few seconds to get everyone ready.", CONSOLE);
-            printDebug("Freezing altitude, attitude and coordinates in MSFS", CONSOLE);
+            printDebug("Let's wait a few seconds to get everyone ready.",DEBUG);
+            printDebug("Freezing altitude, attitude and coordinates in MSFS",DEBUG);
             init_variables();
-            printDebug("Resuming normal operations.", CONSOLE);
+            printDebug("Resuming normal operations.",DEBUG);
             pthread_cond_signal(&pthreadDataAvail);
         }
         if (line_start[0] == 'Q') {
@@ -564,9 +566,6 @@ int umainBoost(Target *T) {
     char *line_end;
     while ((line_end = (char *)memchr((void *)line_start, '\n', bufboost_used - (line_start - bufboost)))) {
         *line_end = 0;
-        if (line_start[0] != 'F' && line_start[0] != 'G') {
-            printDebug(line_start, 1);
-        }
 
         pthread_mutex_lock(&mutex);
 
@@ -577,7 +576,7 @@ int umainBoost(Target *T) {
             }
         } else {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);
-            printDebug(debugInfo, CONSOLE);
+            printDebug(debugInfo,DEBUG);
         }
         pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;

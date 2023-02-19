@@ -187,7 +187,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         snprintf(debugInfo, sizeof(debugInfo), "Exception risen: %ld, by sender: %ld at index: %ld, dwLastID: %ld",
                  evt->dwException, evt->dwSendID, evt->dwIndex, dwLastID);
         printDebug(debugInfo, 1);
-        printDebug("RECV_ID_EXCEPTION", CONSOLE);
+        printDebug("RECV_ID_EXCEPTION", DEBUG);
     } break;
 
     case SIMCONNECT_RECV_ID_OPEN: {
@@ -204,7 +204,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
                 evt->dwApplicationBuildMinor, evt->dwSimConnectVersionMajor, evt->dwSimConnectVersionMinor,
                 evt->dwSimConnectBuildMajor, evt->dwSimConnectBuildMinor);
 
-        printDebug(debugInfo, CONSOLE);
+        printDebug(debugInfo, DEBUG);
 
         /*
          * In this event, received when MSFS is opened
@@ -213,7 +213,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
          * engines.
          */
 
-        printDebug("Freezing Altitude, Attitude and Coordinates in MSFS.", CONSOLE);
+        printDebug("Freezing Altitude, Attitude and Coordinates in MSFS.", DEBUG);
         alt_freezed = 1;
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
@@ -261,7 +261,6 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_P_PRESS: {
-            printDebug("EVET_P_PRESS", CONSOLE);
             if (!key_press) {
                 key_press = 1;
                 SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
@@ -285,7 +284,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         default:
-            printDebug("Event not captured", CONSOLE);
+            printDebug("Event not captured", DEBUG);
         }
     } break;
 
@@ -326,7 +325,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
         default:
             sprintf(debugInfo, "Did not process request ID: %lu\n", pObjData->dwRequestID);
-            printDebug(debugInfo, CONSOLE);
+            printDebug(debugInfo, 1);
         }
 
     } break;
@@ -352,26 +351,9 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
                 //   less than 40NM away from us
                 if (abs(ai->altitude - alt) < 7000) { // show only aircraft 2700 above or below us
                     if (PSX_on_ground) {
-                        if (abs(ai->altitude - alt) < 500) { // on the ground only update if
-                                                             // 500 above us
                             update_TCAS(ai, d);
-                            sprintf(debugInfo,
-                                    "Ground:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: "
-                                    "%lf\tDist: %.2lf nm",
-                                    pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, d);
-                            printDebug(debugInfo, CONSOLE); //"Distance: %lf\n", d);
-
-                        } else {
-                            sprintf(debugInfo,
-                                    "Air:\tAcft[%ld/%ld]\tai.lat: %lf\tai.long: %lf\tDist: "
-                                    "%.2lf nm",
-                                    pObjData->dwentrynumber, pObjData->dwoutof, ai->latitude, ai->longitude, d);
-                            printDebug(debugInfo, CONSOLE); //"Distance: %lf\n", d);
-                            update_TCAS(ai, d);
-                        }
                     }
                 }
-                // }
             }
 
             /*
@@ -402,7 +384,6 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         }
     } break;
     case SIMCONNECT_RECV_ID_QUIT: {
-        printDebug("RECV_ID_QUIT", CONSOLE);
         quit = 1;
         printDebug("MSFS was exited. I guess I should do the same...", 1);
     } break;
@@ -425,8 +406,8 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     break;
     default:
-        sprintf(debugInfo, "In Callbackfunction default case: nothing was done. Event: %ld\n", pData->dwID);
-        printDebug(debugInfo, 1);
+        sprintf(debugInfo, "In Callbackfunction default case: nothing was done. Event: %ld", pData->dwID);
+        printDebug(debugInfo, DEBUG);
         break;
     }
 }
@@ -710,7 +691,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
     if (ELEV_INJECT) {
         if (onGround || (PSXELEV < 300)) {
             if (!Qi198SentLand) {
-                printDebug("Below 300 ft AGL => using MSFS elevation", CONSOLE);
+                printDebug("Below 300 ft AGL => using MSFS elevation", DEBUG);
                 Qi198SentLand = 1;
             }
             Qi198SentAirborne = 0;
@@ -720,7 +701,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
             if (!Qi198SentAirborne) {
 
-                printDebug("Above 300 ft AGL => using PSX elevation.", CONSOLE);
+                printDebug("Above 300 ft AGL => using PSX elevation.", DEBUG);
                 sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
                 Qi198SentAirborne = 1;
             }
@@ -768,17 +749,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
         }
     }
 
-    /*  if (DEBUG) {
-          static int printed;
-          printed = 0;
-          if (((int)elapsedMs(TimeStart) % 10) < 10 && !printed) {
-              printed = 1;
-              sprintf(debugInfo,
-                      "Ldg:%d\tTO:%d\tGround:%d\tfltdeck:%.2f\tctralt:%.2f\tFinalAlt:%."
-                      "2f\tgroundalt:%.2f\tPSXelev:%.2f",
-                      landing, takingoff, onGround, altfltdeck, ctrAltitude, FinalAltitude, groundalt, PSXELEV +
-      incland); printDebug(debugInfo, CONSOLE); } else printed = 0;
-      }*/
     return FinalAltitude;
 }
 
@@ -936,9 +906,9 @@ int main(int argc, char **argv) {
      * as boost and main threads are not yet available
      */
 
-    printDebug("Initializing position", CONSOLE);
+    printDebug("Initializing position", DEBUG);
     init_pos(&P);
-    printDebug("Initializing done", CONSOLE);
+    printDebug("Initializing done", DEBUG);
 
     /*
      * Create a thread mutex so that two threads cannot change simulataneously
