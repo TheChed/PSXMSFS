@@ -630,7 +630,7 @@ int init_MS_data(void) {
 void *ptDatafromMSFS(void *thread_param) {
     (void)(&thread_param);
     while (!quit) {
-        int hr = SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
+        SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
 
         Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
                   // to avoid heavy polling
@@ -671,7 +671,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
      */
 
     if (PSXELEV == -999) {
-        printDebug("Elev = -999", 1);
         return altfltdeck;
     }
 
@@ -768,19 +767,17 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
         }
     }
 
-    if (DEBUG) {
-        static int printed;
-        printed = 0;
-        if (((int)elapsedMs(TimeStart) % 10) < 10 && !printed) {
-            printed = 1;
-            sprintf(debugInfo,
-                    "Ldg:%d\tTO:%d\tGround:%d\tfltdeck:%.2f\tctralt:%.2f\tFinalAlt:%."
-                    "2f\tgroundalt:%.2f\tPSXelev:%.2f",
-                    landing, takingoff, onGround, altfltdeck, ctrAltitude, FinalAltitude, groundalt, PSXELEV + incland);
-            printDebug(debugInfo, CONSOLE);
-        } else
-            printed = 0;
-    }
+    /*  if (DEBUG) {
+          static int printed;
+          printed = 0;
+          if (((int)elapsedMs(TimeStart) % 10) < 10 && !printed) {
+              printed = 1;
+              sprintf(debugInfo,
+                      "Ldg:%d\tTO:%d\tGround:%d\tfltdeck:%.2f\tctralt:%.2f\tFinalAlt:%."
+                      "2f\tgroundalt:%.2f\tPSXelev:%.2f",
+                      landing, takingoff, onGround, altfltdeck, ctrAltitude, FinalAltitude, groundalt, PSXELEV +
+      incland); printDebug(debugInfo, CONSOLE); } else printed = 0;
+      }*/
     return FinalAltitude;
 }
 

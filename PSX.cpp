@@ -276,9 +276,9 @@ void I240(char *s) {
         zone = 0;
     }
     PSXDATA.weather_zone = zone;
-    if(DEBUG){
+    if (DEBUG) {
         sprintf(debugInfo, "Active weather zone: %d\t", PSXDATA.weather_zone);
-    printDebug(debugInfo, CONSOLE);
+        printDebug(debugInfo, 0);
     }
 }
 void I204(const char *s) {
@@ -325,7 +325,7 @@ void Qsweather(char *s) {
 
 void Decode(Target *T, char *s, int boost) {
 
-    const char delim[2] = ";";
+    const char delim[2]=";";
     char *token, *ptr, *savptr;
 
     if (boost) {
@@ -456,9 +456,13 @@ int sendQPSX(const char *s) {
     char *dem;
     dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
 
+    if (DEBUG) {
+        sprintf(debugInfo, "Preparing to send to PSX: %s",s);
+        printDebug(debugInfo, 0);
+    }
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
-   // dem[strlen(s)+1] = 0;
+    // dem[strlen(s)+1] = 0;
 
     int nbsend = send(sPSX, dem, strlen(s) + 1, 0);
 
@@ -578,7 +582,7 @@ int umainBoost(Target *T) {
         if (line_start[0] == 'F' || line_start[0] == 'G') {
             Decode(T, line_start, 1);
             if (!SLAVE) {
-                //     SetMSFSPos();
+                SetMSFSPos();
             }
         } else {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);
