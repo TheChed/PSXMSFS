@@ -520,7 +520,6 @@ int umain(Target *T) {
             printDebug("Freezing altitude, attitude and coordinates in MSFS",DEBUG);
             init_variables();
             printDebug("Resuming normal operations.",DEBUG);
-            pthread_cond_signal(&pthreadDataAvail);
         }
         if (line_start[0] == 'Q') {
             Decode(T, line_start, 0);

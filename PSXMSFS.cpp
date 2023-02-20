@@ -46,7 +46,6 @@ struct Struct_MSFS MSFS_POS;
 
 Target Tmain, Tboost;
 pthread_mutex_t mutex;
-pthread_cond_t pthreadDataAvail;
 int UTCupdate = 1;
 int validtime = 0;
 HRESULT hr;
@@ -864,11 +863,12 @@ int main(int argc, char **argv) {
      * used in the program
      */
     if (!init_param()) {
-        printf("Could not initialize default parameters... Quitting\n");
+        printDebug("Could not initialize default parameters... Quitting",1);
         exit(EXIT_FAILURE);
     }
-    /* Override those values by arguments taken
-     * from command line
+
+    /* 
+     * check command line arguments
      */
     parse_arguments(argc, argv);
 
@@ -916,7 +916,6 @@ int main(int argc, char **argv) {
      */
 
     pthread_mutex_init(&mutex, NULL);
-    pthread_cond_init(&pthreadDataAvail, NULL);
 
     /*
      * Creating the 3 threads:
@@ -926,15 +925,18 @@ int main(int argc, char **argv) {
      */
 
     if (pthread_create(&t1, NULL, &ptUmain, &Tmain) != 0) {
-        err_n_die("Error creating thread Umain");
+        printDebug("Error creating thread Umain",1);
+        quit=1;
     }
 
     if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
-        err_n_die("Error creating thread Umainboost");
+        printDebug("Error creating thread Umainboost",1);
+        quit=1;
     }
 
     if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
-        err_n_die("Error creating thread DatafromMSFS");
+        printDebug("Error creating thread DatafromMSFS",1);
+        quit=1;
     }
     if (pthread_join(t1, NULL) != 0) {
         printDebug("Failed to join Main thread", 1);
@@ -946,7 +948,6 @@ int main(int argc, char **argv) {
         printDebug("Failed to join MSFS thread", 1);
     }
     pthread_mutex_destroy(&mutex);
-    pthread_cond_destroy(&pthreadDataAvail);
 
     printf("Closing MSFS connection...\n");
     SimConnect_Close(hSimConnect);
