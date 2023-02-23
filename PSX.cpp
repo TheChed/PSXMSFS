@@ -476,7 +476,7 @@ int umain(Target *T) {
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
     if (bufmain_remain == 0) {
-        printDebug("Main socket line exceeded buffer length! Discarding input", DEBUG);
+        printDebug("Main socket line exceeded buffer length! Discarding input",0);
         bufmain_used = 0;
         printDebug(bufmain, 0);
         return 0;
@@ -509,22 +509,22 @@ int umain(Target *T) {
         *line_end = 0;
 
         // New situ loaded
-        pthread_mutex_lock(&mutex);
         if (strstr(line_start, "load3")) {
             printDebug("New situ loaded",1);
             if (INHIB_CRASH_DETECT) {
                 printDebug("No crash detection for 10 seconds",DEBUG);
                 sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
-            }
-            printDebug("Let's wait a few seconds to get everyone ready.",DEBUG);
-            printDebug("Freezing altitude, attitude and coordinates in MSFS",DEBUG);
-            init_variables();
+                printDebug("Let's wait a few seconds to get everyone ready.",DEBUG);
+                sleep(5);
             printDebug("Resuming normal operations.",DEBUG);
+            }
+            init_variables();
         }
         if (line_start[0] == 'Q') {
+        pthread_mutex_lock(&mutex);
             Decode(T, line_start, 0);
-        }
         pthread_mutex_unlock(&mutex);
+        }
         line_start = line_end + 1;
     }
     /* Shift buffer down so the unprocessed data is at the start */
@@ -566,10 +566,11 @@ int umainBoost(Target *T) {
     while ((line_end = (char *)memchr((void *)line_start, '\n', bufboost_used - (line_start - bufboost)))) {
         *line_end = 0;
 
-        pthread_mutex_lock(&mutex);
 
         if (line_start[0] == 'F' || line_start[0] == 'G') {
-            Decode(T, line_start, 1);
+        pthread_mutex_lock(&mutex);
+            Decode(NULL, line_start, 1);
+        pthread_mutex_unlock(&mutex);
             if (!SLAVE) {
                 SetMSFSPos();
             }
@@ -577,7 +578,6 @@ int umainBoost(Target *T) {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);
             printDebug(debugInfo,DEBUG);
         }
-        pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;
     }
     /* Shift buffer down so the unprocessed data is at the start */

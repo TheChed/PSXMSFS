@@ -18,7 +18,7 @@
 int quit = 0;
 DWORD dwLastID;
 
-PSXTIME PSXtime;
+struct PSXTIME PSXtime;
 
 AcftMSFS APos;
 struct PSXINST PSXDATA;
@@ -346,12 +346,8 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             alt = MSFS_POS.altitude;
             if (pObjData->dwentrynumber > 1) {
                 d = dist(ai->latitude, lat, ai->longitude, lon) / NM;
-                //   if (d < 40) {                             // show only aircraft
-                //   less than 40NM away from us
                 if (abs(ai->altitude - alt) < 7000) { // show only aircraft 2700 above or below us
-                    if (PSX_on_ground) {
                             update_TCAS(ai, d);
-                    }
                 }
             }
 
@@ -388,18 +384,15 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
-        pthread_mutex_lock(&mutex);
 
         /*
          * Only update the position if we have enough info
-         */
         if (ground_altitude_avail) {
 
             SetMSFSPos();
-            SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
         }
 
-        pthread_mutex_unlock(&mutex);
+         */
 
     }
 
@@ -630,6 +623,7 @@ void *ptUmain(void *) {
 
     while (!quit) {
         umain(&Tmain);
+        fflush(stdout);
     }
     return NULL;
 }
@@ -751,7 +745,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
     return FinalAltitude;
 }
 
-void init_pos(PSXTIME *P) {
+void init_pos() {
 
     /*
      * Setting initial position at LFPG"
@@ -779,11 +773,6 @@ void init_pos(PSXTIME *P) {
     APos.LightWing = 0.0;
     APos.LightLogo = 0.0;
 
-    P->year = 2022;
-    P->day = 1;
-    P->hour = 12;
-    P->minute = 0;
-    PSXTATL.TA = 2000;
     PSXTATL.TL = 18000;
     PSXDATA = {.XPDR = 0000,
                .IDENT = 0,
@@ -850,11 +839,22 @@ void SetMSFSPos(void) {
     APos.elevator = Tmain.elevator;
 
     APos.ias = PSXDATA.IAS;
+            
+/* 
+ * And the most important:
+ * update positions in MSFS
+ * Could be duplicate from the receive frame event in the 
+ * main callback function
+*/
+ 
+        pthread_mutex_lock(&mutex);
+    SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
+        pthread_mutex_unlock(&mutex);
+
 }
 
 int main(int argc, char **argv) {
     pthread_t t1, t2, t3;
-    PSXTIME P;
 
     /* Initialise the timer */
     elapsedStart(&TimeStart);
@@ -907,7 +907,7 @@ int main(int argc, char **argv) {
      */
 
     printDebug("Initializing position", DEBUG);
-    init_pos(&P);
+    init_pos();
     printDebug("Initializing done", DEBUG);
 
     /*
