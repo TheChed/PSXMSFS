@@ -350,7 +350,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
                 //   less than 40NM away from us
                 if (abs(ai->altitude - alt) < 7000) { // show only aircraft 2700 above or below us
                     if (PSX_on_ground) {
-                            update_TCAS(ai, d);
+                        update_TCAS(ai, d);
                     }
                 }
             }
@@ -863,11 +863,11 @@ int main(int argc, char **argv) {
      * used in the program
      */
     if (!init_param()) {
-        printDebug("Could not initialize default parameters... Quitting",1);
+        printDebug("Could not initialize default parameters... Quitting", 1);
         exit(EXIT_FAILURE);
     }
 
-    /* 
+    /*
      * check command line arguments
      */
     parse_arguments(argc, argv);
@@ -925,18 +925,18 @@ int main(int argc, char **argv) {
      */
 
     if (pthread_create(&t1, NULL, &ptUmain, &Tmain) != 0) {
-        printDebug("Error creating thread Umain",1);
-        quit=1;
+        printDebug("Error creating thread Umain", 1);
+        quit = 1;
     }
 
     if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
-        printDebug("Error creating thread Umainboost",1);
-        quit=1;
+        printDebug("Error creating thread Umainboost", 1);
+        quit = 1;
     }
 
     if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
-        printDebug("Error creating thread DatafromMSFS",1);
-        quit=1;
+        printDebug("Error creating thread DatafromMSFS", 1);
+        quit = 1;
     }
     if (pthread_join(t1, NULL) != 0) {
         printDebug("Failed to join Main thread", 1);

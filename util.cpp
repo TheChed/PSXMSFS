@@ -57,11 +57,7 @@ void err_n_die(const char *fmt, ...) {
     exit(1);
 }
 
-double pressure_altitude(double mmhg) { 
-
-    return 145366.45 * (1 - pow(mmhg / 100.0 * 33.8638 / 1013.25, 0.190284)); 
-
-}
+double pressure_altitude(double mmhg) { return 145366.45 * (1 - pow(mmhg / 100.0 * 33.8638 / 1013.25, 0.190284)); }
 
 void printDebug(const char *debugInfo, int console) {
 

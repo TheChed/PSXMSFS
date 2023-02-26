@@ -321,7 +321,7 @@ void Qsweather(char *s) {
     }
     if (DEBUG) {
         sprintf(debugInfo, "Weather zone: %d\t QNH:%.2f", zone, PSXDATA.QNH[zone]);
-        printDebug(debugInfo,0);
+        printDebug(debugInfo, 0);
     }
 }
 
@@ -476,7 +476,7 @@ int umain(Target *T) {
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
     if (bufmain_remain == 0) {
-        printDebug("Main socket line exceeded buffer length! Discarding input", DEBUG);
+        printDebug("Main socket line exceeded buffer length! Discarding input", 0);
         bufmain_used = 0;
         printDebug(bufmain, 0);
         return 0;
@@ -511,15 +511,16 @@ int umain(Target *T) {
         // New situ loaded
         pthread_mutex_lock(&mutex);
         if (strstr(line_start, "load3")) {
-            printDebug("New situ loaded",1);
+            printDebug("New situ loaded", 1);
             if (INHIB_CRASH_DETECT) {
-                printDebug("No crash detection for 10 seconds",DEBUG);
+                printDebug("No crash detection for 10 seconds", DEBUG);
+                printDebug("Let's wait a few seconds to get everyone ready.", DEBUG);
+                sleep(5);
                 sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
+                printDebug("Resuming normal operations.", DEBUG);
             }
-            printDebug("Let's wait a few seconds to get everyone ready.",DEBUG);
-            printDebug("Freezing altitude, attitude and coordinates in MSFS",DEBUG);
+            printDebug("Freezing altitude, attitude and coordinates in MSFS", DEBUG);
             init_variables();
-            printDebug("Resuming normal operations.",DEBUG);
         }
         if (line_start[0] == 'Q') {
             Decode(T, line_start, 0);
@@ -575,7 +576,7 @@ int umainBoost(Target *T) {
             }
         } else {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);
-            printDebug(debugInfo,DEBUG);
+            printDebug(debugInfo, DEBUG);
         }
         pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;
