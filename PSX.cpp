@@ -608,9 +608,6 @@ int umainBoost(Target *T) {
             pthread_mutex_lock(&mutex);
             Decodeboost(line_start);
             pthread_mutex_unlock(&mutex);
-            if (!SLAVE) {
-           //     SetMSFSPos();
-            }
         } else {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);
             printDebug(debugInfo, DEBUG);
