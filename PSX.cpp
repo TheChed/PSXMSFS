@@ -321,9 +321,46 @@ void Qsweather(char *s) {
     }
     if (DEBUG) {
         sprintf(debugInfo, "Weather zone: %d\t QNH:%.2f", zone, PSXDATA.QNH[zone]);
-        printDebug(debugInfo,0);
+        printDebug(debugInfo, 0);
     }
 }
+
+void Decodeboost(char *s){
+
+    const char delim[2] = ";";
+    char *token, *ptr, *savptr;
+
+        /* get the first token */
+        if ((token = strtok_r(s, delim, &savptr)) != NULL) {
+            PSX_on_ground = (strcmp(token, "G") == 0 ? 1 : 0);
+        }
+
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+
+            PSXBoost.flightDeckAlt = strtol(token, &ptr, 10) / 100;
+        }
+
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+            PSXBoost.heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+        }
+
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+            PSXBoost.pitch = -strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+        }
+
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+            PSXBoost.bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
+        }
+
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+            PSXBoost.latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
+        }
+
+        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+            PSXBoost.longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
+        }
+}
+
 
 void Decode(Target *T, char *s, int boost) {
 
@@ -476,7 +513,7 @@ int umain(Target *T) {
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
     if (bufmain_remain == 0) {
-        printDebug("Main socket line exceeded buffer length! Discarding input",0);
+        printDebug("Main socket line exceeded buffer length! Discarding input", 0);
         bufmain_used = 0;
         printDebug(bufmain, 0);
         return 0;
@@ -508,23 +545,24 @@ int umain(Target *T) {
     while ((line_end = (char *)memchr((void *)line_start, '\n', bufmain_used - (line_start - bufmain)))) {
         *line_end = 0;
 
+    //    printf("%ld\n", (long)elapsedMs(TimeStart) / 10);
         // New situ loaded
+        pthread_mutex_lock(&mutex);
         if (strstr(line_start, "load3")) {
-            printDebug("New situ loaded",1);
+            printDebug("New situ loaded", 1);
             if (INHIB_CRASH_DETECT) {
-                printDebug("No crash detection for 10 seconds",DEBUG);
+                printDebug("No crash detection for 10 seconds", DEBUG);
                 sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
-                printDebug("Let's wait a few seconds to get everyone ready.",DEBUG);
+                printDebug("Let's wait a few seconds to get everyone ready.", DEBUG);
                 sleep(5);
-            printDebug("Resuming normal operations.",DEBUG);
+                printDebug("Resuming normal operations.", DEBUG);
             }
             init_variables();
         }
         if (line_start[0] == 'Q') {
-        pthread_mutex_lock(&mutex);
             Decode(T, line_start, 0);
-        pthread_mutex_unlock(&mutex);
         }
+        pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;
     }
     /* Shift buffer down so the unprocessed data is at the start */
@@ -566,17 +604,16 @@ int umainBoost(Target *T) {
     while ((line_end = (char *)memchr((void *)line_start, '\n', bufboost_used - (line_start - bufboost)))) {
         *line_end = 0;
 
-
         if (line_start[0] == 'F' || line_start[0] == 'G') {
-        pthread_mutex_lock(&mutex);
-            Decode(NULL, line_start, 1);
-        pthread_mutex_unlock(&mutex);
+            pthread_mutex_lock(&mutex);
+            Decodeboost(line_start);
+            pthread_mutex_unlock(&mutex);
             if (!SLAVE) {
-                SetMSFSPos();
+           //     SetMSFSPos();
             }
         } else {
             sprintf(debugInfo, "Wrong boost string received: %s", line_start);
-            printDebug(debugInfo,DEBUG);
+            printDebug(debugInfo, DEBUG);
         }
         line_start = line_end + 1;
     }

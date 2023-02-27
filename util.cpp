@@ -57,11 +57,7 @@ void err_n_die(const char *fmt, ...) {
     exit(1);
 }
 
-double pressure_altitude(double mmhg) { 
-
-    return 145366.45 * (1 - pow(mmhg / 100.0 * 33.8638 / 1013.25, 0.190284)); 
-
-}
+double pressure_altitude(double mmhg) { return 145366.45 * (1 - pow(mmhg / 100.0 * 33.8638 / 1013.25, 0.190284)); }
 
 void printDebug(const char *debugInfo, int console) {
 
@@ -83,7 +79,7 @@ void printDebug(const char *debugInfo, int console) {
 
 void usage() {
 
-    printf("usage: [-E] [-h] [-v] [-s] [-t][-m IP [-p port]] [-b IP [-q port]]\n");
+    printf("usage: [-N] [-E] [-h] [-v] [-s] [-t][-m IP [-p port]] [-b IP [-q port]]\n");
     printf("\t -h, --help");
     printf("\t Prints this help\n");
     printf("\t -d");
@@ -105,6 +101,8 @@ void usage() {
     printf("\t Disables elevation injection into MSFS\n");
     printf("\t -C");
     printf("\t No crash detection during 10 seconds after loading a new situ\n");
+    printf("\t -N");
+    printf("\t Disables pressure altitude injection (usefull for online networks like VATSIM or IVAO\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -133,6 +131,7 @@ int write_ini_file() {
     fprintf(f, "SLAVE=%d\n", SLAVE);
     fprintf(f, "ELEV_INJECT=%d\n", ELEV_INJECT);
     fprintf(f, "INHIB_CRASH_DETECT=%d\n", INHIB_CRASH_DETECT);
+    fprintf(f, "ONLINE=%d\n", ONLINE);
 
     fclose(f);
     return 0;
@@ -167,6 +166,7 @@ int init_param() {
     TCAS_INJECT = 1;
     ELEV_INJECT = 1;
     INHIB_CRASH_DETECT = 0;
+    ONLINE = 0;
 
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
@@ -188,6 +188,8 @@ int init_param() {
         ELEV_INJECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "INHIB_CRASH_DETECT");
         INHIB_CRASH_DETECT = strtol(value, &stop, 10);
+        value = scan_ini(fini, "ONLINE");
+        ONLINE = strtol(value, &stop, 10);
         free(value);
     }
 
@@ -234,6 +236,9 @@ void parse_arguments(int argc, char **argv) {
             break;
         case 'E':
             ELEV_INJECT = 0;
+            break;
+        case 'N':
+            ONLINE = 0;
             break;
         case 'C':
             INHIB_CRASH_DETECT = 0;

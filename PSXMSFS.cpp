@@ -52,6 +52,7 @@ HRESULT hr;
 int DEBUG;
 int TCAS_INJECT = 1; /*TCAS injection on by default*/
 int ELEV_INJECT = 1; /*elevation injection on by default below 300 ft AGL */
+int ONLINE = 1;      /* injecting pressure altitude for online networks like VATSIM and IVAO */
 int INHIB_CRASH_DETECT = 0;
 int SLAVE = 0; // 0=PSX is master, 1=MSFS is master
 char debugInfo[256] = {0};
@@ -347,7 +348,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             if (pObjData->dwentrynumber > 1) {
                 d = dist(ai->latitude, lat, ai->longitude, lon) / NM;
                 if (abs(ai->altitude - alt) < 7000) { // show only aircraft 2700 above or below us
-                            update_TCAS(ai, d);
+                    update_TCAS(ai, d);
                 }
             }
 
@@ -385,14 +386,13 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
-        /*
-         * Only update the position if we have enough info
-        if (ground_altitude_avail) {
-
+        
+       //  * Only update the position if we have enough info
+            pthread_mutex_lock(&mutex);
             SetMSFSPos();
-        }
+            pthread_mutex_unlock(&mutex);
 
-         */
+         
 
     }
 
@@ -718,7 +718,10 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
     if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) || (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) ||
         PSXTATL.phase == 1) {
 
-        FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
+        if (ONLINE) {
+            FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
+        }
+
         takingoff = 0;
         landing = 1; // only choice now is to land !
         return FinalAltitude;
@@ -839,18 +842,15 @@ void SetMSFSPos(void) {
     APos.elevator = Tmain.elevator;
 
     APos.ias = PSXDATA.IAS;
-            
-/* 
- * And the most important:
- * update positions in MSFS
- * Could be duplicate from the receive frame event in the 
- * main callback function
-*/
- 
-        pthread_mutex_lock(&mutex);
-    SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
-        pthread_mutex_unlock(&mutex);
 
+    /*
+     * And the most important:
+     * update positions in MSFS
+     * Could be duplicate from the receive frame event in the
+     * main callback function
+     */
+
+    SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
 }
 
 int main(int argc, char **argv) {
@@ -863,11 +863,11 @@ int main(int argc, char **argv) {
      * used in the program
      */
     if (!init_param()) {
-        printDebug("Could not initialize default parameters... Quitting",1);
+        printDebug("Could not initialize default parameters... Quitting", 1);
         exit(EXIT_FAILURE);
     }
 
-    /* 
+    /*
      * check command line arguments
      */
     parse_arguments(argc, argv);
@@ -925,18 +925,18 @@ int main(int argc, char **argv) {
      */
 
     if (pthread_create(&t1, NULL, &ptUmain, &Tmain) != 0) {
-        printDebug("Error creating thread Umain",1);
-        quit=1;
+        printDebug("Error creating thread Umain", 1);
+        quit = 1;
     }
 
     if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
-        printDebug("Error creating thread Umainboost",1);
-        quit=1;
+        printDebug("Error creating thread Umainboost", 1);
+        quit = 1;
     }
 
     if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
-        printDebug("Error creating thread DatafromMSFS",1);
-        quit=1;
+        printDebug("Error creating thread DatafromMSFS", 1);
+        quit = 1;
     }
     if (pthread_join(t1, NULL) != 0) {
         printDebug("Failed to join Main thread", 1);

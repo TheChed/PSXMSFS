@@ -36,6 +36,7 @@ extern int elevupdated;
 extern int TCAS_INJECT;
 extern int ELEV_INJECT;
 extern int INHIB_CRASH_DETECT;
+extern int ONLINE;
 
 extern char debugInfo[256];
 
