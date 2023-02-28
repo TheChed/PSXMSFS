@@ -571,7 +571,7 @@ int umain(Target *T) {
     return nbread;
 }
 
-int umainBoost(Target *T) {
+int umainBoost(void *) {
 
     size_t bufboost_remain = sizeof(bufboost) - bufboost_used;
 

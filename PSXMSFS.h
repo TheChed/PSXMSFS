@@ -277,7 +277,7 @@ void init_variables(void);
 int close_PSX_socket(int socket);
 int open_connections();
 int umain(Target *T);
-int umainBoost(Target *T);
+int umainBoost(void *);
 void SetUTCTime(PSXTIME *P);
 void SetCOMM(void);
 void SetBARO(void);
