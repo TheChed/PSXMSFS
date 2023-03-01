@@ -1,10 +1,9 @@
 #ifndef __PSXMSFS_H_
 #define __PSXMSFS_H_
 
-#include <pthread.h>
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
-
+#include <pthread.h>
 #define MAXLEN 8192
 #define PRINT 1
 #define MSFSHEIGHT 15.13   //offset when on ground compared to PSX
@@ -226,7 +225,8 @@ enum DATA_DEFINE_ID {
     DATA_MSFS,
     MSFS_CLIENT_DATA,
     MSFS_FREEZE,
-    TCAS_TRAFFIC_DATA  //This is the DATA to be returned for the aircraft in the vicinity
+    TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
+    DATA_LIGHT  //This is the DATA to be sent to MSFS to update the lights
 };
 
 enum DATA_REQUEST_ID {
@@ -235,12 +235,6 @@ enum DATA_REQUEST_ID {
     DATA_REQUEST_TCAS,
 };
 
-
-
-//extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
-                   //
-                   // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
-                   // logo
 
 extern AcftMSFS APos;
 extern struct PSXINST PSXDATA;

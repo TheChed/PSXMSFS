@@ -463,19 +463,19 @@ int init_MS_data(void) {
      * switches cannot be synchronised.
      */
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:3", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LANDING:4", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT TAXI:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT TAXI:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT TAXI:3", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT NAV", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT STROBE", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT BEACON:1", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT BEACON:2", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT WING", "Number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "LIGHT LOGO", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:3", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:4", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:3", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT NAV", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT STROBE", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT BEACON:1", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT BEACON:2", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT WING", "Number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LOGO", "Number");
 
     /* This is to get the ground altitude when positionning the aircraft at
      * initialization or once on ground */
@@ -750,7 +750,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 void init_pos() {
 
-    struct AcftLight Lights;
     /*
      * Setting initial position at LFPG"
      */
@@ -762,20 +761,6 @@ void init_pos() {
     APos.Speedbrake = 0.0;    // Spoilers down
     APos.GearDown = 1.0;
 
-    // All lights off
-    Lights.LandLeftOutboard = 0.0;
-    Lights.LandLeftInboard = 0.0;
-    Lights.LandRightInboard = 0.0;
-    Lights.LandRightOutboard = 0.0;
-    Lights.LeftRwyTurnoff = 0.0;
-    Lights.RightRwyTurnoff = 0.0;
-    Lights.LightTaxi = 0.0;
-    Lights.Strobe = 0.0;
-    Lights.LightNav = 0.0;
-    Lights.Beacon = 0.0;
-    Lights.BeaconLwr = 0.0;
-    Lights.LightWing = 0.0;
-    Lights.LightLogo = 0.0;
 
     PSXTATL.TL = 18000;
     PSXDATA = {.XPDR = 0000,
@@ -790,48 +775,6 @@ void init_pos() {
                .weather_zone = 0,
                .QNH = {2992},
                .acftelev = -999};
-}
-
-void SetMSFSPos(void) {
-
-    double latc, longc;
-
-    /*
-     * Calculate the coordinates from cetre aircraft
-     * derived from those of the flightDeckAlt
-     */
-
-    APos.altitude =
-        SetAltitude(PSX_on_ground, PSXBoost.flightDeckAlt, -PSXBoost.pitch, PSXDATA.acftelev, ground_altitude);
-
-    CalcCoord(PSXBoost.heading_true, PSXBoost.latitude, PSXBoost.longitude, &latc, &longc);
-    APos.latitude = latc;
-    APos.longitude = longc;
-    APos.pitch = PSXBoost.pitch;
-    APos.bank = PSXBoost.bank;
-    APos.heading_true = PSXBoost.heading_true;
-
-    /*
-     * Set the moving surfaces: aileron, rudder, elevator
-     */
-
-    APos.FlapsPosition = Tmain.FlapLever;
-    APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
-
-    APos.rudder = Tmain.rudder;
-    APos.ailerons = Tmain.aileron;
-    APos.elevator = Tmain.elevator;
-
-    APos.ias = PSXDATA.IAS;
-
-    /*
-     * And the most important:
-     * update positions in MSFS
-     * Could be duplicate from the receive frame event in the
-     * main callback function
-     */
-
-    SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0, sizeof(APos), &APos);
 }
 
 int main(int argc, char **argv) {

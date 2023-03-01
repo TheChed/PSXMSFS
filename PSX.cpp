@@ -1,8 +1,4 @@
-#include <cassert>
-#include <cstdint>
-#include <cstdlib>
 #include <math.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,15 +6,16 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"
 #include "util.h"
+#include "update.h"
 
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
-int light[14] = {0};
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
 char bufboost[256];
@@ -212,33 +209,7 @@ void S124(char *s) {
     SetUTCTime(&Ptime);
 }
 
-void updateLights(int *L){
-
-   struct AcftLight Lights;
-    
-   //  Update lights
-    Lights.LandLeftOutboard = L[0];
-    Lights.LandLeftInboard = L[2];
-    Lights.LandRightInboard = L[3];
-    Lights.LandRightOutboard = L[1];
-    Lights.LeftRwyTurnoff = L[4];
-    Lights.RightRwyTurnoff = L[5];
-    Lights.LightTaxi = L[6];
-    Lights.Strobe = L[11];
-    Lights.LightNav = L[9] || L[10];
-    Lights.Beacon = L[7];
-    Lights.BeaconLwr = L[8];
-    Lights.LightWing = L[12];
-    Lights.LightLogo = L[13];
-    // Taxi lights disabled airborne
-    if (PSX_on_ground) {
-        Lights.LeftRwyTurnoff = 0.0;
-        Lights.RightRwyTurnoff = 0.0;
-    }
-
-}
-
-void S443(char *s) {
+void S443(const char *s) {
 
     int *light=(int *)malloc(14*sizeof(int));
 
@@ -392,43 +363,7 @@ void Decodeboost(char *s){
 }
 
 
-void Decode(Target *T, char *s, int boost) {
-
-    const char delim[2] = ";";
-    char *token, *ptr, *savptr;
-
-    if (boost) {
-        /* get the first token */
-        if ((token = strtok_r(s, delim, &savptr)) != NULL) {
-            PSX_on_ground = (strcmp(token, "G") == 0 ? 1 : 0);
-        }
-
-        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-
-            PSXBoost.flightDeckAlt = strtol(token, &ptr, 10) / 100;
-        }
-
-        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            PSXBoost.heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-        }
-
-        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            PSXBoost.pitch = -strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-        }
-
-        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            PSXBoost.bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-        }
-
-        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            PSXBoost.latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
-        }
-
-        if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-            PSXBoost.longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
-        }
-
-    } else {
+void Decode(Target *T, char *s) {
 
         if (strstr(s, "Qs122=")) {
             S122(strstr(s, "Qs122="), T);
@@ -518,7 +453,6 @@ void Decode(Target *T, char *s, int boost) {
             strstr(s, "Qs332") || strstr(s, "Qs333") || strstr(s, "Qs334") || strstr(s, "Qs335")) {
             Qsweather(s);
         }
-    }
 }
 int sendQPSX(const char *s) {
 
@@ -590,7 +524,7 @@ int umain(Target *T) {
             init_variables();
         }
         if (line_start[0] == 'Q') {
-            Decode(T, line_start, 0);
+            Decode(T, line_start);
         }
         pthread_mutex_unlock(&mutex);
         line_start = line_end + 1;
