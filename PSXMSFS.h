@@ -77,7 +77,9 @@ struct AcftMSFS {
     double rudder;
     double elevator;
     double ailerons;
-    
+};
+
+struct AcftLight {
     //Lights
 
     double LandLeftOutboard; // L Inboard
@@ -235,7 +237,7 @@ enum DATA_REQUEST_ID {
 
 
 
-extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
+//extern int light[14]; // In that order: lights Outboard landing L, outboard landing R, inboard landing L, inboard landing
                    //
                    // R, Rwy turnoff L, Rwy turnoff R, taxi, beacon upper, beacon lower, nav L, nav R, strobe, wing,
                    // logo

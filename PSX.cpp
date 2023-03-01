@@ -212,11 +212,41 @@ void S124(char *s) {
     SetUTCTime(&Ptime);
 }
 
+void updateLights(int *L){
+
+   struct AcftLight Lights;
+    
+   //  Update lights
+    Lights.LandLeftOutboard = L[0];
+    Lights.LandLeftInboard = L[2];
+    Lights.LandRightInboard = L[3];
+    Lights.LandRightOutboard = L[1];
+    Lights.LeftRwyTurnoff = L[4];
+    Lights.RightRwyTurnoff = L[5];
+    Lights.LightTaxi = L[6];
+    Lights.Strobe = L[11];
+    Lights.LightNav = L[9] || L[10];
+    Lights.Beacon = L[7];
+    Lights.BeaconLwr = L[8];
+    Lights.LightWing = L[12];
+    Lights.LightLogo = L[13];
+    // Taxi lights disabled airborne
+    if (PSX_on_ground) {
+        Lights.LeftRwyTurnoff = 0.0;
+        Lights.RightRwyTurnoff = 0.0;
+    }
+
+}
+
 void S443(char *s) {
+
+    int *light=(int *)malloc(14*sizeof(int));
 
     for (int i = 0; i < 14; i++) {
         light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
+    updateLights(light);
+    free(light);
 }
 
 void S122(char *s, Target *T) {

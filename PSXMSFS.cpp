@@ -750,6 +750,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 void init_pos() {
 
+    struct AcftLight Lights;
     /*
      * Setting initial position at LFPG"
      */
@@ -762,19 +763,19 @@ void init_pos() {
     APos.GearDown = 1.0;
 
     // All lights off
-    APos.LandLeftOutboard = 0.0;
-    APos.LandLeftInboard = 0.0;
-    APos.LandRightInboard = 0.0;
-    APos.LandRightOutboard = 0.0;
-    APos.LeftRwyTurnoff = 0.0;
-    APos.RightRwyTurnoff = 0.0;
-    APos.LightTaxi = 0.0;
-    APos.Strobe = 0.0;
-    APos.LightNav = 0.0;
-    APos.Beacon = 0.0;
-    APos.BeaconLwr = 0.0;
-    APos.LightWing = 0.0;
-    APos.LightLogo = 0.0;
+    Lights.LandLeftOutboard = 0.0;
+    Lights.LandLeftInboard = 0.0;
+    Lights.LandRightInboard = 0.0;
+    Lights.LandRightOutboard = 0.0;
+    Lights.LeftRwyTurnoff = 0.0;
+    Lights.RightRwyTurnoff = 0.0;
+    Lights.LightTaxi = 0.0;
+    Lights.Strobe = 0.0;
+    Lights.LightNav = 0.0;
+    Lights.Beacon = 0.0;
+    Lights.BeaconLwr = 0.0;
+    Lights.LightWing = 0.0;
+    Lights.LightLogo = 0.0;
 
     PSXTATL.TL = 18000;
     PSXDATA = {.XPDR = 0000,
@@ -809,26 +810,6 @@ void SetMSFSPos(void) {
     APos.pitch = PSXBoost.pitch;
     APos.bank = PSXBoost.bank;
     APos.heading_true = PSXBoost.heading_true;
-
-    //  Update lights
-    APos.LandLeftOutboard = light[0];
-    APos.LandLeftInboard = light[2];
-    APos.LandRightInboard = light[3];
-    APos.LandRightOutboard = light[1];
-    APos.LeftRwyTurnoff = light[4];
-    APos.RightRwyTurnoff = light[5];
-    APos.LightTaxi = light[6];
-    APos.Strobe = light[11];
-    APos.LightNav = light[9] || light[10];
-    APos.Beacon = light[7];
-    APos.BeaconLwr = light[8];
-    APos.LightWing = light[12];
-    APos.LightLogo = light[13];
-    // Taxi lights disabled airborne
-    if (PSX_on_ground) {
-        APos.LeftRwyTurnoff = 0.0;
-        APos.RightRwyTurnoff = 0.0;
-    }
 
     /*
      * Set the moving surfaces: aileron, rudder, elevator

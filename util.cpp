@@ -324,10 +324,6 @@ void stateMSFS(struct AcftMSFS *A, FILE *fd, int console) {
     fprintf(fd, "GearDown: %.1f\t", A->GearDown);
     fprintf(fd, "FlapsPosition: %.1f\t", A->FlapsPosition);
     fprintf(fd, "Speedbrake: %.1f\t", A->Speedbrake);
-    // Lights
-    fprintf(fd, "Lights: ");
-    for (int i = 0; i < 14; ++i)
-        fprintf(fd, "%d", light[i]);
     fprintf(fd, "\t");
     // moving surfaces
     fprintf(fd, "rudder: %.1f\t", A->rudder);
@@ -350,10 +346,6 @@ void stateMSFS(struct AcftMSFS *A, FILE *fd, int console) {
         printf("GearDown: %.1f\t", A->GearDown);
         printf("FlapsPosition: %.1f\t", A->FlapsPosition);
         printf("Speedbrake: %.1f\t", A->Speedbrake);
-        // Lights
-        printf("Lights: ");
-        for (int i = 0; i < 14; ++i)
-            printf("%d", light[i]);
         printf("\t");
         // moving surfaces
         printf("rudder: %.1f\t", A->rudder);
