@@ -5,6 +5,10 @@
 void updateLights(int *L);
 
 
+/*
+ * Function used to update the moving surface in MSFS once we got a change in PSX
+ */
+void SetMovingSurfaces(void);
 
 /*
  * Updates the position of MSFS 

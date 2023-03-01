@@ -226,7 +226,8 @@ enum DATA_DEFINE_ID {
     MSFS_CLIENT_DATA,
     MSFS_FREEZE,
     TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
-    DATA_LIGHT  //This is the DATA to be sent to MSFS to update the lights
+    DATA_LIGHT,  //This is the DATA to be sent to MSFS to update the lights
+    DATA_MOVING_SURFACES
 };
 
 enum DATA_REQUEST_ID {

@@ -3,7 +3,7 @@ CC = x86_64-w64-mingw32-gcc
 CFLAGS = -std=c++20 -g -IInclude -Wall -Wextra -pedantic
 
 DEPS = PSXMSFS.h
-OBJ = PSXMSFS.o PSX.o connect.o util.o
+OBJ = PSXMSFS.o PSX.o connect.o util.o update.o
 OBJSIM = sim.o
 OBJDEBUG = debug.o
 OBJERR = err.o

@@ -8,7 +8,22 @@
 #include "SimConnect.h"
 #include "util.h"
 
-void SetMSFSPos(double heading, double latitude, double longitude ) {
+
+void SetMovingSurfaces(void){
+    /*
+     * Set the moving surfaces: aileron, rudder, elevator
+
+    APos.FlapsPosition = Tmain.FlapLever;
+    APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
+
+    APos.rudder = Tmain.rudder;
+    APos.ailerons = Tmain.aileron;
+    APos.elevator = Tmain.elevator;
+     */
+}
+
+
+void SetMSFSPos(double flightDeckAlt ,double heading, double latitude, double longitude, double bank, double pitch)  {
 
     struct AcftMSFS MSFS;
     double latc, longc;
@@ -17,27 +32,22 @@ void SetMSFSPos(double heading, double latitude, double longitude ) {
      * Calculate the coordinates from cetre aircraft
      * derived from those of the flightDeckAlt
      */
-
-    MSFS.altitude =
-        SetAltitude(PSX_on_ground, PSXBoost.flightDeckAlt, -PSXBoost.pitch, PSXDATA.acftelev, ground_altitude);
-
-    CalcCoord(PSXBoost.heading_true, PSXBoost.latitude, PSXBoost.longitude, &latc, &longc);
-    APos.latitude = latc;
-    APos.longitude = longc;
-    APos.pitch = PSXBoost.pitch;
-    APos.bank = PSXBoost.bank;
-    APos.heading_true = PSXBoost.heading_true;
+    CalcCoord(heading,latitude, longitude, &latc, &longc);
 
     /*
-     * Set the moving surfaces: aileron, rudder, elevator
+     * Calculate the altitude depeding on the phase of flight
+     * in order to smoothen the ground effects in MSFS
      */
 
-    APos.FlapsPosition = Tmain.FlapLever;
-    APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
+    MSFS.altitude =
+        SetAltitude(PSX_on_ground, flightDeckAlt, -pitch, PSXDATA.acftelev, ground_altitude);
 
-    APos.rudder = Tmain.rudder;
-    APos.ailerons = Tmain.aileron;
-    APos.elevator = Tmain.elevator;
+    MSFS.latitude = latc;
+    MSFS.longitude = longc;
+    MSFS.pitch = pitch;
+    MSFS.bank = bank;
+    MSFS.heading_true = heading;
+
 
     APos.ias = PSXDATA.IAS;
 

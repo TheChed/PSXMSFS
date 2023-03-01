@@ -449,12 +449,12 @@ int init_MS_data(void) {
      * Moving Surfaces: Ailerons, rudder , elevator
      *
      */
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "GEAR HANDLE POSITION", "percent over 100");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "FLAPS HANDLE INDEX", "number");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "SPOILERS HANDLE POSITION", "position");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "RUDDER POSITION", "position 16K");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "ELEVATOR POSITION", "position 16K");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AILERON POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "GEAR HANDLE POSITION", "percent over 100");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "FLAPS HANDLE INDEX", "number");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "SPOILERS HANDLE POSITION", "position");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "RUDDER POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "ELEVATOR POSITION", "position 16K");
+    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "AILERON POSITION", "position 16K");
 
     /*
      * Data definition for lights. Even though in the SDK documentation they are
