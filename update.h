@@ -16,3 +16,10 @@ void SetMovingSurfaces(void);
  * and should not be called at will as it leads to some untraceable crashes
  */
 void SetMSFSPos(void);
+
+
+/*
+ * Setting the correct altitude
+ * plus some hacks to make the transition ground<->flight smooth in MSFS
+ */
+double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt);

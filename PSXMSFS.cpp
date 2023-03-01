@@ -33,7 +33,6 @@ int MSFS_on_ground = 0;
 int PSX_on_ground = 0;
 int MSFS_POS_avail = 0;
 int elevupdated = 0;
-static int landing, takingoff;
 
 int alt_freezed = 1;
 
@@ -81,8 +80,6 @@ void init_variables(void) {
     PSX_on_ground = 0;
     MSFS_POS_avail = 0;
     elevupdated = 0;
-    landing = 0;
-    takingoff = 0;
 
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
@@ -442,9 +439,6 @@ int init_MS_data(void) {
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE PITCH DEGREES", "radians");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "PLANE BANK DEGREES", "radians");
 
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AIRSPEED TRUE", "knot");
-    hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MSFS, "AIRSPEED INDICATED", "knot");
-
     /*
      * Moving Surfaces: Ailerons, rudder , elevator
      *
@@ -626,126 +620,6 @@ void *ptUmain(void *) {
         fflush(stdout);
     }
     return NULL;
-}
-
-double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt) {
-
-    double FinalAltitude;
-    double ctrAltitude;   // altitude of Aircraft centre
-    static double oldctr; // to keep track of last good altitude
-    static double delta = 0;
-    static double inc = 0;
-    static int initalt = 0;
-    static double incland = 0;
-
-    char sQi198[128];
-
-    /*
-     * PSXELEV = -999 when we just launched PSXMSFS
-     */
-
-    if (PSXELEV == -999) {
-        return altfltdeck;
-    }
-
-    /*
-     * Boost servers gives altitude of flight deck
-     * Need to get the altitude of the Aircraft centre first
-     */
-    ctrAltitude = altfltdeck - (28.412073 + 92.5 * sin(pitch));
-
-    /*
-     * Now check if we are close to the ground or not
-     * by checking the Variable Qi219 from PSX
-     * that give the acft height above ground
-     * We assume that below 50 feet we are close
-     */
-    landing = (PSXELEV < 50);
-
-    if (initalt) {
-        delta = ctrAltitude - oldctr;
-    }
-    initalt = 1;
-    oldctr = ctrAltitude;
-    inc += delta;
-
-    /*
-     * we received a new elevation from PSX
-     * therefore we can reset the decrement (incland)
-     */
-
-    if (elevupdated) {
-        incland = 0;
-        elevupdated = 0;
-    } else {
-        incland += delta;
-    }
-
-    if (ELEV_INJECT) {
-        if (onGround || (PSXELEV < 300)) {
-            if (!Qi198SentLand) {
-                printDebug("Below 300 ft AGL => using MSFS elevation", DEBUG);
-                Qi198SentLand = 1;
-            }
-            Qi198SentAirborne = 0;
-            sprintf(sQi198, "Qi198=%d", (int)(ground_altitude * 100));
-            sendQPSX(sQi198);
-        } else {
-
-            if (!Qi198SentAirborne) {
-
-                printDebug("Above 300 ft AGL => using PSX elevation.", DEBUG);
-                sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
-                Qi198SentAirborne = 1;
-            }
-            Qi198SentLand = 0;
-        }
-    }
-
-    /*
-     * by default the altitude is the ctrAltitude given by boost
-     * But we will adjust that depeding on the flight phase
-     * to cater for MSFS discrepencies with PSX
-     */
-
-    FinalAltitude = ctrAltitude;
-
-    /*
-     * If we are crusing, return the pressure altitude to have it correcly
-     * displayed in VATSIM or IVAO
-     */
-
-    if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) || (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) ||
-        PSXTATL.phase == 1) {
-
-        if (ONLINE) {
-            FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
-        }
-
-        takingoff = 0;
-        landing = 1; // only choice now is to land !
-        return FinalAltitude;
-    }
-
-    if (onGround || (PSXELEV + incland < MSFSHEIGHT)) {
-        FinalAltitude = groundalt + MSFSHEIGHT;
-        inc = 0;
-        landing = 0;
-        takingoff = 1; // what else can we do except to take off ?
-
-    } else {
-        if (takingoff && inc < 300) {
-            if (ground_altitude_avail) {
-                FinalAltitude = groundalt + MSFSHEIGHT + inc;
-            }
-        } else {
-            if (landing) {
-                FinalAltitude = groundalt + PSXELEV + incland;
-            }
-        }
-    }
-
-    return FinalAltitude;
 }
 
 void init_pos() {
