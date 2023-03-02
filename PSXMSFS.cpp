@@ -18,7 +18,6 @@
 
 struct PSXTIME PSXtime;
 
-AcftMSFS APos;
 struct PSXINST PSXDATA;
 struct PSXBOOST PSXBoost;
 struct TATL PSXTATL;
@@ -157,13 +156,6 @@ void init_pos()
   /*
    * Setting initial position at LFPG"
    */
-
-  APos.rudder = 0.0;
-  APos.ailerons = 0.0;
-  APos.elevator = 0.0;
-  APos.FlapsPosition = 0.0; // Flaps down
-  APos.Speedbrake = 0.0;    // Spoilers down
-  APos.GearDown = 1.0;
 
   PSXTATL.TL = 18000;
   PSXDATA = {.XPDR = 0000,
