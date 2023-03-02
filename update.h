@@ -31,3 +31,23 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
  * Function used to update the PSXBOOST structure as soon as we got info from PSX
  */
 void  updatePSXBOOST(double flightDeckAlt,double heading_true, double pitch,double bank, double latitude, double longitude);
+
+/*
+ * Update gear position
+ */
+void updateGear(double position);
+
+/*
+ * Update Flapposition
+ */
+void updateFlap(int position);
+
+/*
+ * Update moving surfaces
+ */
+void SetMovingSurfaces(double rudder, double aileron, double elevator);
+
+/*
+ * Update Speedbrake
+ */
+void SetSpeedBrake(double position);

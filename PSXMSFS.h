@@ -18,9 +18,6 @@ extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 extern HRESULT hr;
 
-extern int PSX_acftelev;
-extern int MSFS_on_ground;
-extern int PSX_on_ground;
 
 extern int DEBUG;
 extern int SLAVE;
@@ -66,10 +63,9 @@ struct AcftMSFS {
     double heading_true;
     double pitch;
     double bank;
+};
     
-    double tas;
-    double ias;
-    
+struct MovingParts{
     double GearDown;
     double FlapsPosition;
     double Speedbrake;
@@ -237,7 +233,6 @@ enum DATA_REQUEST_ID {
 };
 
 
-extern AcftMSFS APos;
 extern struct PSXINST PSXDATA;
 extern struct TATL PSXTATL;
 
