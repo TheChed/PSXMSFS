@@ -13,7 +13,7 @@
 /*Global variable used in readin boost socket*/
 
 extern pthread_mutex_t mutex;
-
+extern int quit;
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 extern HRESULT hr;
@@ -239,7 +239,6 @@ enum DATA_REQUEST_ID {
 
 extern AcftMSFS APos;
 extern struct PSXINST PSXDATA;
-extern struct PSXBOOST PSXBoost;
 extern struct TATL PSXTATL;
 
 

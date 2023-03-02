@@ -3,4 +3,5 @@ Makefile
 algo.txt
 bin/
 err.cpp
+*.exe
 .gitattributes
