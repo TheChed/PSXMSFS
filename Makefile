@@ -3,7 +3,7 @@ CC = x86_64-w64-mingw32-gcc
 CFLAGS = -std=c++20 -g -IInclude -Wall -Wextra -pedantic
 
 DEPS = PSXMSFS.h
-OBJ = PSXMSFS.o PSX.o connect.o util.o update.o
+OBJ = PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o
 OBJSIM = sim.o
 OBJDEBUG = debug.o
 OBJERR = err.o
@@ -16,7 +16,7 @@ deb: debug move win
 
 error: err win
 
-comp: PSXMSFS hash move
+comp: PSXMSFS
 
 PSXMSFS: $(OBJ) $(DEPS)
 	$(CC) -static $(OBJ) -g -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthread 
