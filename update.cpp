@@ -8,26 +8,30 @@
 #include "SimConnect.h"
 #include "util.h"
 #include "MSFS.h"
+#include "update.h"
 
-static struct PSXBOOST PSXBoost;
+static struct BOOST PSXBoost;
 static struct MovingParts APos;
+static struct PSX PSXDATA;
+
+void SetOnGround(int onGround){
+    PSXBoost.onGround=onGround;
+}
 
 void updatePSXBOOST(double altitude, double heading, double pitch, double bank, double latitude,
-		    double longitude)
+                    double longitude, int onGround)
 {
 
     PSXBoost = {.flightDeckAlt = altitude,
-		.latitude = latitude,
-		.longitude = longitude,
-		.heading_true = heading,
-		.pitch = pitch,
-		.bank = bank};
+                .latitude = latitude,
+                .longitude = longitude,
+                .heading_true = heading,
+                .pitch = pitch,
+                .bank = bank,
+                .onGround=onGround};
 }
 
-struct PSXBOOST getPSXBoost(void)
-{
-    return PSXBoost;
-}
+struct BOOST getPSXBoost(void) { return PSXBoost; }
 
 void SetMovingSurfaces(double rudder, double aileron, double elevator)
 {
@@ -41,26 +45,26 @@ void SetMovingSurfaces(double rudder, double aileron, double elevator)
     APos.ailerons = aileron;
     APos.elevator = elevator;
     SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-				  0, sizeof(APos), &APos);
+                                  0, sizeof(APos), &APos);
 }
 
 void updateFlap(int position)
 {
     APos.FlapsPosition = position;
     SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-				  0, sizeof(APos), &APos);
+                                  0, sizeof(APos), &APos);
 }
 void updateGear(double position)
 {
     APos.GearDown = position;
     SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-				  0, sizeof(APos), &APos);
+                                  0, sizeof(APos), &APos);
 }
 void SetSpeedBrake(double position)
 {
     APos.Speedbrake = position;
     SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-				  0, sizeof(APos), &APos);
+                                  0, sizeof(APos), &APos);
 }
 
 double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt)
@@ -68,7 +72,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
     static int landing, takingoff;
     double FinalAltitude;
-    double ctrAltitude;	  // altitude of Aircraft centre
+    double ctrAltitude;   // altitude of Aircraft centre
     static double oldctr; // to keep track of last good altitude
     static double delta = 0;
     static double inc = 0;
@@ -83,7 +87,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
      */
 
     if (PSXELEV == -999) {
-	return altfltdeck;
+        return altfltdeck;
     }
 
     /*
@@ -101,7 +105,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
     landing = (PSXELEV < 50);
 
     if (initalt) {
-	delta = ctrAltitude - oldctr;
+        delta = ctrAltitude - oldctr;
     }
     initalt = 1;
     oldctr = ctrAltitude;
@@ -113,31 +117,31 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
      */
 
     if (elevupdated) {
-	incland = 0;
-	elevupdated = 0;
+        incland = 0;
+        elevupdated = 0;
     } else {
-	incland += delta;
+        incland += delta;
     }
 
     if (ELEV_INJECT) {
-	if (onGround || (PSXELEV < 300)) {
-	    if (!Qi198SentLand) {
-		printDebug("Below 300 ft AGL => using MSFS elevation", DEBUG);
-		Qi198SentLand = 1;
-	    }
-	    Qi198SentAirborne = 0;
-	    sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
-	    sendQPSX(sQi198);
-	} else {
+        if (onGround || (PSXELEV < 300)) {
+            if (!Qi198SentLand) {
+                printDebug("Below 300 ft AGL => using MSFS elevation", DEBUG);
+                Qi198SentLand = 1;
+            }
+            Qi198SentAirborne = 0;
+            sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
+            sendQPSX(sQi198);
+        } else {
 
-	    if (!Qi198SentAirborne) {
+            if (!Qi198SentAirborne) {
 
-		printDebug("Above 300 ft AGL => using PSX elevation.", DEBUG);
-		sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
-		Qi198SentAirborne = 1;
-	    }
-	    Qi198SentLand = 0;
-	}
+                printDebug("Above 300 ft AGL => using PSX elevation.", DEBUG);
+                sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
+                Qi198SentAirborne = 1;
+            }
+            Qi198SentLand = 0;
+        }
     }
 
     /*
@@ -154,33 +158,33 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
      */
 
     if ((PSXTATL.phase == 0 && ctrAltitude > PSXTATL.TA) ||
-	(PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) || PSXTATL.phase == 1) {
+        (PSXTATL.phase == 2 && ctrAltitude > PSXTATL.TL) || PSXTATL.phase == 1) {
 
-	if (ONLINE) {
-	    FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
-	}
+        if (ONLINE) {
+            FinalAltitude = pressure_altitude(PSXDATA.QNH[PSXDATA.weather_zone]) + ctrAltitude;
+        }
 
-	takingoff = 0;
-	landing = 1; // only choice now is to land !
-	return FinalAltitude;
+        takingoff = 0;
+        landing = 1; // only choice now is to land !
+        return FinalAltitude;
     }
 
     if (onGround || (PSXELEV + incland < MSFSHEIGHT)) {
-	FinalAltitude = groundalt + MSFSHEIGHT;
-	inc = 0;
-	landing = 0;
-	takingoff = 1; // what else can we do except to take off ?
+        FinalAltitude = groundalt + MSFSHEIGHT;
+        inc = 0;
+        landing = 0;
+        takingoff = 1; // what else can we do except to take off ?
 
     } else {
-	if (takingoff && inc < 300) {
-	    if (isGroundAltitudeAvailable()) {
-		FinalAltitude = groundalt + MSFSHEIGHT + inc;
-	    }
-	} else {
-	    if (landing) {
-		FinalAltitude = groundalt + PSXELEV + incland;
-	    }
-	}
+        if (takingoff && inc < 300) {
+            if (isGroundAltitudeAvailable()) {
+                FinalAltitude = groundalt + MSFSHEIGHT + inc;
+            }
+        } else {
+            if (landing) {
+                FinalAltitude = groundalt + PSXELEV + incland;
+            }
+        }
     }
 
     return FinalAltitude;
@@ -189,7 +193,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 void SetMSFSPos()
 {
 
-    struct PSXBOOST PSX;
+    struct BOOST PSX;
     struct AcftMSFS MSFS;
     double latc, longc, groundAltitude;
 
@@ -208,7 +212,7 @@ void SetMSFSPos()
 
     groundAltitude = getGroundAltitude();
     MSFS.altitude =
-	SetAltitude(PSX_on_ground, PSX.flightDeckAlt, -PSX.pitch, PSXDATA.acftelev, groundAltitude);
+        SetAltitude(PSX.OnGround, PSX.flightDeckAlt, -PSX.pitch, PSXDATA.acftelev, groundAltitude);
 
     MSFS.latitude = latc;
     MSFS.longitude = longc;
@@ -224,7 +228,7 @@ void SetMSFSPos()
      */
 
     SimConnect_SetDataOnSimObject(hSimConnect, DATA_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-				  sizeof(MSFS), &MSFS);
+                                  sizeof(MSFS), &MSFS);
 }
 
 void updateLights(int *L)
@@ -248,11 +252,76 @@ void updateLights(int *L)
     Lights.LightLogo = L[13];
     // Taxi lights disabled airborne
     if (PSX_on_ground) {
-	Lights.LeftRwyTurnoff = 0.0;
-	Lights.RightRwyTurnoff = 0.0;
+        Lights.LeftRwyTurnoff = 0.0;
+        Lights.RightRwyTurnoff = 0.0;
     }
 
     // Finally update in MSFS the lights
     SimConnect_SetDataOnSimObject(hSimConnect, DATA_LIGHT, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-				  sizeof(Lights), &Lights);
+                                  sizeof(Lights), &Lights);
+}
+
+void setWeatherZone(int zone){
+    PSX.weatherZone=zone;
+}
+
+void setWeather(int zone, double QNH){
+    PSX.QNH[zone]=QNH;
+}
+
+void SetXPDR(int XPDR, int IDENT)
+{
+
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR,XPDR,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT,
+                                   IDENT, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+}
+
+void init_pos()
+{
+
+    /*
+     * Setting initial position at LFPG"
+     */
+
+    PSXTATL.TL = 18000;
+    PSX = {.XPDR = 0000,
+               .IDENT = 0,
+               .COM1 = 122800,
+               .COM2 = 122800,
+               .altimeter = 1035,
+               .STD = 0,
+               .IAS = 0,
+               .GS = 0,
+               .TAS = 0,
+               .weather_zone = 0,
+               .QNH = {2992},
+               .acftelev = -999};
+}
+
+void SetCOMM(int COM1, int COM2)
+{
+
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM,COM1,
+                                   SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY,
+                                   COM2, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+}
+
+void SetBARO(long altimeter, int standard)
+{
+
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
+                                   altimeter * 16.0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    if (standard) {
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
+                                       SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                       SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+    }
 }

@@ -65,14 +65,6 @@ struct AcftMSFS {
     double bank;
 };
     
-struct MovingParts{
-    double GearDown;
-    double FlapsPosition;
-    double Speedbrake;
-    double rudder;
-    double elevator;
-    double ailerons;
-};
 
 struct AcftLight {
     //Lights
@@ -93,15 +85,6 @@ struct AcftLight {
 
 };
 
-struct PSXBOOST {
-    // Updated by Boost server
-    double flightDeckAlt;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
-};
 
 typedef struct {
 
@@ -134,36 +117,7 @@ struct PSXTIME{
     int minute;
 };
 
-/*
- * Structure containing all PSX instruments we
- * want to update in MSFS
- */
 
-struct PSXINST{
-    //COMMS & XPDR
-    int XPDR;
-    int IDENT;
-    int COM1;
-    int COM2;
-
-    //Altimeter
-    double altimeter;
-    int STD ;
-
-    //Speed
-    double IAS;
-    double GS;
-    double TAS;
-
-    //local QNH on the weather zone
-    int weather_zone;
-    double QNH[7];
-
-    //Acft elevation
-    //
-    double acftelev;
-
-};
 
 struct TATL {
     // TA & TL
@@ -233,7 +187,6 @@ enum DATA_REQUEST_ID {
 };
 
 
-extern struct PSXINST PSXDATA;
 extern struct TATL PSXTATL;
 
 
@@ -269,10 +222,6 @@ int close_PSX_socket(int socket);
 int open_connections();
 int umain(Target *T);
 int umainBoost(void *);
-void SetUTCTime(PSXTIME *P);
-void SetCOMM(void);
-void SetBARO(void);
-void SetXPDR(void);
 double SetAltitude(int onGround); 
 int sendQPSX(const char *s);
 int init_connect_MSFS(HANDLE *p);

@@ -30,38 +30,18 @@ void CalcCoord(double heading, double lato, double longo, double *latr, double *
     dist = 92.5;
 
     *latr = asin(sin(lato) * cos(dist * FTM / EARTH_RAD) +
-		 cos(lato) * sin(dist * FTM / EARTH_RAD) * cos(bearing));
+                 cos(lato) * sin(dist * FTM / EARTH_RAD) * cos(bearing));
     *longr = longo + atan2(sin(bearing) * sin(dist * FTM / EARTH_RAD) * cos(lato),
-			   cos(dist * FTM / EARTH_RAD) - sin(lato) * sin(*latr));
+                           cos(dist * FTM / EARTH_RAD) - sin(lato) * sin(*latr));
 }
 
 double dist(double lat1, double lat2, double long1, double long2)
 {
     return 2 * EARTH_RAD *
-	   (sqrt(pow(sin((lat2 - lat1) / 2), 2) +
-		 cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2)));
+           (sqrt(pow(sin((lat2 - lat1) / 2), 2) +
+                 cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2)));
 }
 
-void err_n_die(const char *fmt, ...)
-{
-    int errno_save;
-    va_list ap;
-
-    errno_save = errno;
-
-    va_start(ap, fmt);
-    vfprintf(stdout, fmt, ap);
-    fprintf(stdout, "\n");
-    fflush(stdout);
-
-    if (errno_save != 0) {
-	fprintf(stdout, "(errno= %d) : %s\n", errno_save, strerror(errno_save));
-	fprintf(stdout, "\n");
-	fflush(stdout);
-    }
-    va_end(ap);
-    exit(1);
-}
 
 double pressure_altitude(double mmhg)
 {
@@ -77,13 +57,13 @@ void printDebug(const char *debugInfo, int console)
     char timestamp[50];
     strftime(timestamp, 50, "%H:%M:%S", &date);
     if (DEBUG) {
-	fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000,
-		(int)elapsedMs(TimeStart) % 1000, debugInfo);
-	fprintf(fdebug, "\n");
-	fflush(fdebug);
+        fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000,
+                (int)elapsedMs(TimeStart) % 1000, debugInfo);
+        fprintf(fdebug, "\n");
+        fflush(fdebug);
     }
     if (console) {
-	printf("%s\n", debugInfo);
+        printf("%s\n", debugInfo);
     }
 }
 
@@ -95,7 +75,7 @@ void usage()
     printf("\t Prints this help\n");
     printf("\t -d");
     printf("\t debug. Prints out debug info on console and in file "
-	   "DEBUG.TXT. Warning: can be very verbose\n");
+           "DEBUG.TXT. Warning: can be very verbose\n");
     printf("\t -m");
     printf("\t Main server IP. Default is 127.0.0.1\n");
     printf("\t -p");
@@ -114,7 +94,7 @@ void usage()
     printf("\t No crash detection during 10 seconds after loading a new situ\n");
     printf("\t -N");
     printf("\t Disables pressure altitude injection (usefull for online networks like VATSIM or "
-	   "IVAO\n");
+           "IVAO\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -124,9 +104,9 @@ int write_ini_file()
 
     f = fopen("PSXMSFS.ini", "w");
     if (!f) {
-	printf("Cannot create PSXMSFS.ini file. Aborting...\n");
-	fclose(f);
-	return -1;
+        printf("Cannot create PSXMSFS.ini file. Aborting...\n");
+        fclose(f);
+        return -1;
     }
 
     /*PSX server addresses and port*/
@@ -157,9 +137,9 @@ char *scan_ini(FILE *file, const char *key)
     char val[64];
     rewind(file);
     while (fscanf(file, "%63[^=]=%63[^\n]%*c", name, val) == 2) {
-	if (0 == strcmp(name, key)) {
-	    return strdup(val);
-	}
+        if (0 == strcmp(name, key)) {
+            return strdup(val);
+        }
     }
     return NULL;
 }
@@ -185,27 +165,27 @@ int init_param()
 
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
-	printf("Cannot open config file.\nTrying to create one with educated "
-	       "guesses...\n");
-	write_ini_file();
+        printf("Cannot open config file.\nTrying to create one with educated "
+               "guesses...\n");
+        write_ini_file();
     } else {
-	strcpy(PSXMainServer, scan_ini(fini, "PSXMainServer"));
-	strcpy(PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
-	strcpy(MSFSServer, scan_ini(fini, "MSFSServer"));
+        strcpy(PSXMainServer, scan_ini(fini, "PSXMainServer"));
+        strcpy(PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
+        strcpy(MSFSServer, scan_ini(fini, "MSFSServer"));
 
-	value = scan_ini(fini, "SLAVE");
-	SLAVE = strtol(value, &stop, 10);
-	value = scan_ini(fini, "TCAS_INJECT");
-	TCAS_INJECT = strtol(value, &stop, 10);
-	value = scan_ini(fini, "DEBUG");
-	DEBUG = strtol(value, &stop, 10);
-	value = scan_ini(fini, "ELEV_INJECT");
-	ELEV_INJECT = strtol(value, &stop, 10);
-	value = scan_ini(fini, "INHIB_CRASH_DETECT");
-	INHIB_CRASH_DETECT = strtol(value, &stop, 10);
-	value = scan_ini(fini, "ONLINE");
-	ONLINE = strtol(value, &stop, 10);
-	free(value);
+        value = scan_ini(fini, "SLAVE");
+        SLAVE = strtol(value, &stop, 10);
+        value = scan_ini(fini, "TCAS_INJECT");
+        TCAS_INJECT = strtol(value, &stop, 10);
+        value = scan_ini(fini, "DEBUG");
+        DEBUG = strtol(value, &stop, 10);
+        value = scan_ini(fini, "ELEV_INJECT");
+        ELEV_INJECT = strtol(value, &stop, 10);
+        value = scan_ini(fini, "INHIB_CRASH_DETECT");
+        INHIB_CRASH_DETECT = strtol(value, &stop, 10);
+        value = scan_ini(fini, "ONLINE");
+        ONLINE = strtol(value, &stop, 10);
+        free(value);
     }
 
     return 1;
@@ -216,85 +196,85 @@ void parse_arguments(int argc, char **argv)
 
     int c;
     while (1) {
-	static struct option long_options[] = {/* These options set a flag. */
-					       {"verbose", no_argument, &DEBUG, 1},
-					       /* These options don’t set a flag.
-						  We distinguish them by their indices. */
-					       {"boost", required_argument, 0, 'b'},
-					       {"help", no_argument, 0, 'h'},
-					       {"main", required_argument, 0, 'm'},
-					       {"boost-port", required_argument, 0, 'c'},
-					       {"main-port", required_argument, 0, 'p'},
-					       {"slave", required_argument, 0, 's'},
-					       {0, 0, 0, 0}};
-	/* getopt_long stores the option index here. */
-	int option_index = 0;
+        static struct option long_options[] = {/* These options set a flag. */
+                                               {"verbose", no_argument, &DEBUG, 1},
+                                               /* These options don’t set a flag.
+                                                  We distinguish them by their indices. */
+                                               {"boost", required_argument, 0, 'b'},
+                                               {"help", no_argument, 0, 'h'},
+                                               {"main", required_argument, 0, 'm'},
+                                               {"boost-port", required_argument, 0, 'c'},
+                                               {"main-port", required_argument, 0, 'p'},
+                                               {"slave", required_argument, 0, 's'},
+                                               {0, 0, 0, 0}};
+        /* getopt_long stores the option index here. */
+        int option_index = 0;
 
-	c = getopt_long(argc, argv, "CEthvsm:b:c:p:f:", long_options, &option_index);
+        c = getopt_long(argc, argv, "CEthvsm:b:c:p:f:", long_options, &option_index);
 
-	/* Detect the end of the options. */
-	if (c == -1)
-	    break;
+        /* Detect the end of the options. */
+        if (c == -1)
+            break;
 
-	switch (c) {
-	case 0:
-	    /* If this option set a flag, do nothing else now. */
-	    if (long_options[option_index].flag != 0)
-		break;
-	    printf("option %s", long_options[option_index].name);
-	    if (optarg)
-		printf(" with arg %s", optarg);
-	    printf("\n");
-	    break;
+        switch (c) {
+        case 0:
+            /* If this option set a flag, do nothing else now. */
+            if (long_options[option_index].flag != 0)
+                break;
+            printf("option %s", long_options[option_index].name);
+            if (optarg)
+                printf(" with arg %s", optarg);
+            printf("\n");
+            break;
 
-	case 'b':
-	    strcpy(PSXBoostServer, optarg);
-	    break;
-	case 'E':
-	    ELEV_INJECT = 0;
-	    break;
-	case 'N':
-	    ONLINE = 0;
-	    break;
-	case 'C':
-	    INHIB_CRASH_DETECT = 0;
-	    break;
-	case 't':
-	    TCAS_INJECT = 0;
-	    break;
-	case 'h':
-	    usage();
-	    break;
-	case 'm':
-	    strcpy(PSXMainServer, optarg);
-	    break;
-	case 'q':
-	    PSXBoostPort = (int)strtol(optarg, NULL, 10);
-	    break;
-	case 'p':
-	    PSXPort = (int)strtol(optarg, NULL, 10);
-	    break;
-	case 'd':
-	    DEBUG = 1;
-	    break;
-	case 's':
-	    SLAVE = 1;
-	    break;
+        case 'b':
+            strcpy(PSXBoostServer, optarg);
+            break;
+        case 'E':
+            ELEV_INJECT = 0;
+            break;
+        case 'N':
+            ONLINE = 0;
+            break;
+        case 'C':
+            INHIB_CRASH_DETECT = 0;
+            break;
+        case 't':
+            TCAS_INJECT = 0;
+            break;
+        case 'h':
+            usage();
+            break;
+        case 'm':
+            strcpy(PSXMainServer, optarg);
+            break;
+        case 'q':
+            PSXBoostPort = (int)strtol(optarg, NULL, 10);
+            break;
+        case 'p':
+            PSXPort = (int)strtol(optarg, NULL, 10);
+            break;
+        case 'd':
+            DEBUG = 1;
+            break;
+        case 's':
+            SLAVE = 1;
+            break;
 
-	case '?':
-	    /* getopt_long already printDebug an error message. */
-	    usage();
-	    break;
+        case '?':
+            /* getopt_long already printDebug an error message. */
+            usage();
+            break;
 
-	default:
-	    abort();
-	}
+        default:
+            abort();
+        }
     }
 
     /* Print any remaining command line arguments (not options). */
     if (optind < argc) {
-	// printf("non-option ARGV-elements: ");
-	while (optind < argc)
-	    optind++;
+        // printf("non-option ARGV-elements: ");
+        while (optind < argc)
+            optind++;
     }
 }
