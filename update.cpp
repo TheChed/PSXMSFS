@@ -13,6 +13,7 @@
 static struct BOOST PSXBoost;
 static struct MovingParts APos;
 static struct PSX PSXDATA;
+static struct SpeedStruct PSXSPEED;
 
 double getlocalQNH(void) { return PSXDATA.QNH[PSXDATA.weatherZone]; }
 
@@ -249,9 +250,18 @@ void SetMSFSPos()
 
 	SimConnect_SetDataOnSimObject(hSimConnect, BOOST_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0,
 								  sizeof(MSFS), &MSFS);
+	SimConnect_SetDataOnSimObject(hSimConnect, DATA_SPEED, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+								  sizeof(PSXSPEED), &PSXSPEED);
 }
 
-void SetSpeedIAS(double IAS) { PSXDATA.IAS = IAS; }
+void SetSpeedIAS(double IAS) { 
+
+    PSXSPEED.IAS = IAS;
+  //  PSXSPEED.GS=575.0;
+    PSXSPEED.TAS=0.0;
+    PSXSPEED.VS=0.0;
+    
+}
 
 void updateFlightPhase(int phase, int TA, int TL)
 {

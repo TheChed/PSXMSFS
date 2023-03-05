@@ -28,6 +28,12 @@ struct MovingParts{
     double ailerons;
 };
 
+struct SpeedStruct{
+    double IAS;
+    double TAS;
+  //  double GS;
+    double VS;
+};
 /*
  * Structure containing PSX information
  * we want to update in MSFS

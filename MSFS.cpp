@@ -414,24 +414,20 @@ int init_MS_data(void)
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
-	hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
+	
+    /*
+     * Definition to store various speeds
+     */
+  hr = SimConnect_AddToDataDefinition(hSimConnect,DATA_SPEED, "AIRSPEED INDICATED", "knots");
+  hr = SimConnect_AddToDataDefinition(hSimConnect,DATA_SPEED, "AIRSPEED TRUE", "knots");
+	//hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "GROUND VELOCITY","knots");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "VERTICAL SPEED","feet per minute");
+	
+
+  hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
 										   SIMCONNECT_OBJECT_ID_USER,
 										   SIMCONNECT_PERIOD_VISUAL_FRAME);
 
-	/*
-	 * This is to get have a state of MSFS being freezed or nothing
-	 * On severla instances the freeze flag was not properly set and
-	 * we need to make sure it is  before injecting altitude, attitude
-	 * and coordinates to MSFS.
-	 */
-	hr =
-		SimConnect_AddToDataDefinition(hSimConnect, MSFS_FREEZE, "IS ALTITUDE FREEZE ON", "Number");
-	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_FREEZE, "IS ATTITUDE FREEZE ON",
-										"Boolean");
-	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_FREEZE, "IS LATITUDE LONGITUDE FREEZE ON",
-										"Boolean");
-	hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST_FREEZE, MSFS_FREEZE,
-										   SIMCONNECT_OBJECT_ID_USER, SIMCONNECT_PERIOD_SECOND);
 
 	// Request a simulation start event
 
