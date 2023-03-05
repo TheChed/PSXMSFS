@@ -16,12 +16,10 @@ extern pthread_mutex_t mutex;
 extern int quit;
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
-extern HRESULT hr;
 
 
 extern int DEBUG;
 extern int SLAVE;
-extern FILE *fdebug;
 extern char PSXMainServer[];
 extern char MSFSServer[];
 extern char PSXBoostServer[];
@@ -172,7 +170,7 @@ enum EVENT_ID {
 };
 
 enum DATA_DEFINE_ID {
-    DATA_MSFS,
+    BOOST_TO_MSFS,
     MSFS_CLIENT_DATA,
     MSFS_FREEZE,
     TCAS_TRAFFIC_DATA,  //This is the DATA to be returned for the aircraft in the vicinity
@@ -186,8 +184,6 @@ enum DATA_REQUEST_ID {
     DATA_REQUEST_TCAS,
 };
 
-
-extern struct TATL PSXTATL;
 
 
 typedef struct {
@@ -220,8 +216,8 @@ int init_socket(void);
 void init_variables(void);
 int close_PSX_socket(int socket);
 int open_connections();
-int umain(Target *T);
-int umainBoost(void *);
+int umain(void);
+int umainBoost(void);
 double SetAltitude(int onGround); 
 int sendQPSX(const char *s);
 int init_connect_MSFS(HANDLE *p);

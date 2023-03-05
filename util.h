@@ -56,8 +56,12 @@ double pressure_altitude(double mmhg);
 void state(AcftMSFS *T, FILE *fdebug, int console); // prints PSX information 
 void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints MSFS information 
 
-char *convert(double, int);
+void remove_debug(void);
+
+  char *convert(double, int);
 void printDebug(const char *debugInfo, int console);
+
+int init_debug(void);
 
 void SetMSFSPos(void);
 

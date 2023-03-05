@@ -52,30 +52,49 @@ struct PSX{
     int weatherZone;
     double QNH[7];
 
-    //Acft elevation
+    /*
+     * Acft elevation and indicator whether it has been 
+     *  updated from PSX
+     */
     double acftelev;
+    int elevupdated;
     
-    //ground indicator
-    int onGround;
+    int flightPhase;
+    int TA;
+    int TL;
+
 };
 
 /*
  * Functions declaration
  */
-void SetUTCTime(PSXTIME *P);
+void SetUTCTime(int hour, int minute, int day, int year);
 void SetCOMM(int COM1, int COM2);
 void SetBARO(long altimeter, int stdbar);
 void SetXPDR(int XPDR, int IDENT); 
+void SetAcftElevation(double elevation);
 void init_pos(void);
+int getFlightPhase(void);
+void getTATL(int *TA, int *TL);
 /*
  * Function used to update the state inflight<->onground
  */
 void SetOnGround(int onGround);
 
-/*
+int GetOnGround(void);
+
+
+void SetSpeedIAS(double IAS);
+
+ /*
  * Function used to update the lights in MSFS once we got a change in PSX
  */
 void updateLights(int *L);
+ /*
+ * Function used to update the flight phase (landing, cruise, takingoff)
+ * as well as the TL and TA as set up in PSX
+ */
+void updateFlightPhase(int phase, int TA, int TL);
 
 /*
  * Functions used to set the weather zones
@@ -113,6 +132,11 @@ void  updatePSXBOOST(double flightDeckAlt,double heading_true, double pitch,doub
  * Update gear position
  */
 void updateGear(double position);
+
+/*
+ * Update gear position
+ */
+void updateParkingBreak(int position);
 
 /*
  * Update Flapposition
