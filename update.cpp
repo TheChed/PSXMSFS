@@ -254,13 +254,13 @@ void SetMSFSPos()
 								  sizeof(PSXSPEED), &PSXSPEED);
 }
 
-void SetSpeedIAS(double IAS) { 
+void SetSpeedIAS(double IAS)
+{
 
-    PSXSPEED.IAS = IAS;
-  //  PSXSPEED.GS=575.0;
-    PSXSPEED.TAS=0.0;
-    PSXSPEED.VS=0.0;
-    
+	PSXSPEED.IAS = IAS;
+	//  PSXSPEED.GS=575.0;
+	PSXSPEED.TAS = 0.0;
+	PSXSPEED.VS = 0.0;
 }
 
 void updateFlightPhase(int phase, int TA, int TL)

@@ -414,20 +414,17 @@ int init_MS_data(void)
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
 
-	
-    /*
-     * Definition to store various speeds
-     */
-  hr = SimConnect_AddToDataDefinition(hSimConnect,DATA_SPEED, "AIRSPEED INDICATED", "knots");
-  hr = SimConnect_AddToDataDefinition(hSimConnect,DATA_SPEED, "AIRSPEED TRUE", "knots");
-	//hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "GROUND VELOCITY","knots");
-	hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "VERTICAL SPEED","feet per minute");
-	
+	/*
+	 * Definition to store various speeds
+	 */
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "AIRSPEED INDICATED", "knots");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "AIRSPEED TRUE", "knots");
+	// hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "GROUND VELOCITY","knots");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "VERTICAL SPEED", "feet per minute");
 
-  hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
+	hr = SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
 										   SIMCONNECT_OBJECT_ID_USER,
 										   SIMCONNECT_PERIOD_VISUAL_FRAME);
-
 
 	// Request a simulation start event
 

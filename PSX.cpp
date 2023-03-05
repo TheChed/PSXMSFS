@@ -269,7 +269,7 @@ void Qsweather(char *s)
 
 	/* Get the active zone */
 
-	zone = (int)strtoul(s + 2, NULL, 10) - 328; //Because the first zone is Qs328
+	zone = (int)strtoul(s + 2, NULL, 10) - 328; // Because the first zone is Qs328
 
 	if ((token = strtok_r(s + 6, DELIM, &savptr)) != NULL) {
 
@@ -295,10 +295,13 @@ void Decodeboost(char *s)
 
 	double flightDeckAlt, heading_true, pitch, bank, VS;
 	double latitude, longitude;
-  static float Tms ;
-  static float alt ;
-  float vs, tvs, altdiff;
+	static float Tms;
+	static float alt;
+	float vs, tvs, altdiff, lapsedtime;
 	int onGround;
+	static int nbiter;
+	double altarray[5];
+	int timearray[5];
 	char *token, *ptr, *savptr;
 
 	/* get the first token */
@@ -309,8 +312,10 @@ void Decodeboost(char *s)
 	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
 
 		flightDeckAlt = strtol(token, &ptr, 10) / 100;
-    altdiff=flightDeckAlt-alt;
-    alt=flightDeckAlt;
+		altarray[nbiter] = flightDeckAlt;
+
+		altdiff = flightDeckAlt - alt;
+		alt = flightDeckAlt;
 	}
 
 	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
@@ -334,18 +339,28 @@ void Decodeboost(char *s)
 	}
 
 	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-    vs=strtol(token,NULL,10);
-    if(vs<=Tms){
-        tvs= vs-Tms +1000;
-    } else {
-        tvs=vs-Tms;
-    }
-    if(tvs)
-        VS=1000*(altdiff / tvs) *60.0;
-    printf("VS: %.2f\n",VS);
-    Tms=vs;
-  }
-
+		vs = strtol(token, NULL, 10);
+		timearray[nbiter] = vs;
+		if (vs <= Tms) {
+			tvs = vs - Tms + 1000;
+		} else {
+			tvs = vs - Tms;
+		}
+		if (tvs)
+			VS = 1000 * (altdiff / tvs) * 60.0;
+		Tms = vs;
+	}
+	nbiter++;
+	altdiff = 0;
+	if ((nbiter % 5) == 0) {
+		for (int i = 0; i < 5; i++) {
+			lapsedtime = (timearray[i + 1] - timearray[i] + 1000) % 1000;
+			altdiff += (altarray[i + 1] - altarray[i]);
+		}
+    nbiter=0;
+		printf("lapsed: %.2f\n", lapsedtime);
+		printf("altdiff: %.2f\n", altdiff);
+	}
 	updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
 }
 
@@ -510,9 +525,9 @@ int umain(void)
 			init_variables();
 		}
 		if (line_start[0] == 'Q') {
-		pthread_mutex_lock(&mutex);
+			pthread_mutex_lock(&mutex);
 			Decode(line_start);
-		pthread_mutex_unlock(&mutex);
+			pthread_mutex_unlock(&mutex);
 		}
 		line_start = line_end + 1;
 	}
