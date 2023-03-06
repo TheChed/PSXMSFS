@@ -15,6 +15,7 @@
 #include "update.h"
 #include "MSFS.h"
 
+#define VSSAMPLE 500    //number of samples used from boost string to calculate the vertical speed
 const char delim[2] = ";"; // delimiter for parsing the Q variable strings
 
 size_t bufboost_used = 0;
@@ -295,13 +296,13 @@ void Decodeboost(char *s)
 
 	double flightDeckAlt, heading_true, pitch, bank, VS;
 	double latitude, longitude;
-	static float Tms;
 	static float alt;
-	float vs, tvs, altdiff, lapsedtime;
+	float  altdiff=0; 
+  int lapsedtime=0;
 	int onGround;
 	static int nbiter;
-	double altarray[5];
-	int timearray[5];
+	static double altarray[VSSAMPLE];
+	static int timearray[VSSAMPLE];
 	char *token, *ptr, *savptr;
 
 	/* get the first token */
@@ -313,7 +314,6 @@ void Decodeboost(char *s)
 
 		flightDeckAlt = strtol(token, &ptr, 10) / 100;
 		altarray[nbiter] = flightDeckAlt;
-
 		altdiff = flightDeckAlt - alt;
 		alt = flightDeckAlt;
 	}
@@ -339,27 +339,27 @@ void Decodeboost(char *s)
 	}
 
 	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-		vs = strtol(token, NULL, 10);
-		timearray[nbiter] = vs;
-		if (vs <= Tms) {
-			tvs = vs - Tms + 1000;
-		} else {
-			tvs = vs - Tms;
-		}
-		if (tvs)
-			VS = 1000 * (altdiff / tvs) * 60.0;
-		Tms = vs;
+		timearray[nbiter]= strtol(token, NULL, 10);
 	}
-	nbiter++;
-	altdiff = 0;
-	if ((nbiter % 5) == 0) {
-		for (int i = 0; i < 5; i++) {
-			lapsedtime = (timearray[i + 1] - timearray[i] + 1000) % 1000;
+	
+  nbiter++;
+	if (nbiter >VSSAMPLE) {
+		for (int i = 0; i <VSSAMPLE; i++) {
+			lapsedtime += ((timearray[i + 1] - timearray[i] + 1000) % 1000);
 			altdiff += (altarray[i + 1] - altarray[i]);
 		}
-    nbiter=0;
-		printf("lapsed: %.2f\n", lapsedtime);
-		printf("altdiff: %.2f\n", altdiff);
+		memmove(&altarray[0], &altarray[1], sizeof(double) * (VSSAMPLE-1));
+		memmove(&timearray[0], &timearray[1], sizeof(int) * (VSSAMPLE-1));
+		if (lapsedtime)
+			VS = 60 * 1000 * altdiff / lapsedtime;
+		else
+			VS = 0;
+		printf("VS: %.2f\n", VS);
+		printf("altdiff: %.4f\n", altdiff);
+		printf("lapsedtime: %d\n", lapsedtime);
+		lapsedtime = 0;
+		nbiter = VSSAMPLE;
+		altdiff = 0;
 	}
 	updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
 }
