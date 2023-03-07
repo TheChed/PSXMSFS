@@ -291,18 +291,40 @@ void Qsweather(char *s)
 	}
 }
 
+double calcVS(double alt, int ms)
+{
+	static double altarray[VSSAMPLE];
+	static int timearray[VSSAMPLE];
+	static int nbiter;
+	double altdiff, VS;
+	int lapsedtime=0;
+
+	altarray[nbiter] = alt;
+	timearray[nbiter] = ms;
+	nbiter++;
+	if (nbiter == VSSAMPLE) {
+		for (int i = 0; i < VSSAMPLE - 1; i++) {
+			lapsedtime += ((timearray[i + 1] - timearray[i] + 1000) % 1000);
+			altdiff += (altarray[i + 1] - altarray[i]);
+		}
+		memmove(&altarray[0], &altarray[1], sizeof(double) * (VSSAMPLE - 1));
+		memmove(&timearray[0], &timearray[1], sizeof(int) * (VSSAMPLE - 1));
+		if (lapsedtime)
+			VS = 60 * 1000 * altdiff / lapsedtime;
+		else
+			VS = -999;
+		lapsedtime = 0;
+		nbiter = VSSAMPLE - 1; // to update the last item of the array
+		altdiff = 0;
+	}
+	return VS;
+}
 void Decodeboost(char *s)
 {
 
 	double flightDeckAlt, heading_true, pitch, bank, VS;
 	double latitude, longitude;
-	static float alt;
-	float  altdiff=0; 
-  int lapsedtime=0;
-	int onGround;
-	static int nbiter;
-	static double altarray[VSSAMPLE];
-	static int timearray[VSSAMPLE];
+	int onGround, ms;
 	char *token, *ptr, *savptr;
 
 	/* get the first token */
@@ -313,9 +335,6 @@ void Decodeboost(char *s)
 	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
 
 		flightDeckAlt = strtol(token, &ptr, 10) / 100;
-		altarray[nbiter] = flightDeckAlt;
-		altdiff = flightDeckAlt - alt;
-		alt = flightDeckAlt;
 	}
 
 	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
@@ -339,28 +358,11 @@ void Decodeboost(char *s)
 	}
 
 	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-		timearray[nbiter]= strtol(token, NULL, 10);
+		ms= strtol(token, NULL, 10);
 	}
-	
-  nbiter++;
-	if (nbiter >VSSAMPLE) {
-		for (int i = 0; i <VSSAMPLE; i++) {
-			lapsedtime += ((timearray[i + 1] - timearray[i] + 1000) % 1000);
-			altdiff += (altarray[i + 1] - altarray[i]);
-		}
-		memmove(&altarray[0], &altarray[1], sizeof(double) * (VSSAMPLE-1));
-		memmove(&timearray[0], &timearray[1], sizeof(int) * (VSSAMPLE-1));
-		if (lapsedtime)
-			VS = 60 * 1000 * altdiff / lapsedtime;
-		else
-			VS = 0;
-		printf("VS: %.2f\n", VS);
-		printf("altdiff: %.4f\n", altdiff);
-		printf("lapsedtime: %d\n", lapsedtime);
-		lapsedtime = 0;
-		nbiter = VSSAMPLE;
-		altdiff = 0;
-	}
+
+	VS=calcVS(flightDeckAlt,ms);
+
 	updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
 }
 
