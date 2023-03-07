@@ -28,10 +28,20 @@ struct MovingParts{
     double ailerons;
 };
 
+enum SpeedType { IAS, TAS, VS};
+
+struct SpeedUpdate{
+    SpeedType Type;
+    union {
+    double IAS;
+    double TAS;
+    double VS;
+    };
+};
+
 struct SpeedStruct{
     double IAS;
     double TAS;
-  //  double GS;
     double VS;
 };
 /*
@@ -89,8 +99,10 @@ void SetOnGround(int onGround);
 
 int GetOnGround(void);
 
-
-void SetSpeedIAS(double IAS);
+/*
+ * Function used to update the speeds in MSFS
+ */
+void SetSpeed(struct SpeedUpdate *S);
 
  /*
  * Function used to update the lights in MSFS once we got a change in PSX

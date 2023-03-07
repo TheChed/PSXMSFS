@@ -254,13 +254,20 @@ void SetMSFSPos()
 								  sizeof(PSXSPEED), &PSXSPEED);
 }
 
-void SetSpeedIAS(double IAS)
+void SetSpeed(struct SpeedUpdate *S)
 {
 
-	PSXSPEED.IAS = IAS;
-	//  PSXSPEED.GS=575.0;
-	PSXSPEED.TAS = 0.0;
-	PSXSPEED.VS = 0.0;
+	switch (S->Type) {
+	case IAS:
+		PSXSPEED.IAS = S->IAS;
+		break;
+	case TAS:
+		PSXSPEED.TAS = S->TAS;
+		break;
+	case VS:
+		PSXSPEED.VS = S->VS;
+		break;
+	}
 }
 
 void updateFlightPhase(int phase, int TA, int TL)

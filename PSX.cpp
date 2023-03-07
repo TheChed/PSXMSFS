@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,8 +16,7 @@
 #include "update.h"
 #include "MSFS.h"
 
-#define VSSAMPLE 500    //number of samples used from boost string to calculate the vertical speed
-const char delim[2] = ";"; // delimiter for parsing the Q variable strings
+#define VSSAMPLE 50 // number of samples used from boost string to calculate the vertical speed
 
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
@@ -64,21 +64,39 @@ void H388(char *s)
 {
 	double SpeedBrakelevel = 0;
 	char *token, *ptr, *savptr;
-	if ((token = strtok_r(s + 6, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(s + 6, DELIM, &savptr)) != NULL) {
 		SpeedBrakelevel = strtol(token, &ptr, 10);
 		SetSpeedBrake(SpeedBrakelevel);
 	}
 }
 
+void S121(char *s)
+{
+
+	char *token, *savptr;
+	struct SpeedUpdate SU;
+
+	token = strtok_r(s + 6, DELIM, &savptr);
+	token = strtok_r(NULL, DELIM, &savptr);
+	token = strtok_r(NULL, DELIM, &savptr);
+	token = strtok_r(NULL, DELIM, &savptr);
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+		SU.TAS = (double)strtoul(token, NULL, 10) / 1000.0;
+	}
+  SU.Type=TAS;
+	SetSpeed(&SU);
+}
+
 void S483(char *s)
 {
-	double IAS;
 	char *token, *ptr;
+	struct SpeedUpdate SU;
 
 	if ((token = strtok_r(s + 6, DELIM, &ptr)) != NULL) {
-		IAS = strtol(token, NULL, 10) / 10.0;
+		SU.IAS = strtol(token, NULL, 10) / 10.0;
 	}
-	SetSpeedIAS(IAS);
+	SU.Type = IAS;
+	SetSpeed(&SU);
 }
 
 void S392(char *s)
@@ -128,15 +146,15 @@ void S448(char *s)
 	 * 5th token is STD setting
 	 */
 
-	token = strtok_r(s + 6, delim, &savptr);
-	token = strtok_r(NULL, delim, &savptr);
-	token = strtok_r(NULL, delim, &savptr);
+	token = strtok_r(s + 6, DELIM, &savptr);
+	token = strtok_r(NULL, DELIM, &savptr);
+	token = strtok_r(NULL, DELIM, &savptr);
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 		altimeter = strtol(token, &ptr, 10) / 100.0;
 	}
 	/* STD setting*/
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 		stdbar = ((abs(strtod(token, NULL)) == 1) ? 0 : 1);
 	}
 	SetBARO(altimeter, stdbar);
@@ -296,8 +314,9 @@ double calcVS(double alt, int ms)
 	static double altarray[VSSAMPLE];
 	static int timearray[VSSAMPLE];
 	static int nbiter;
-	double altdiff, VS;
-	int lapsedtime=0;
+	double altdiff = 0;
+	double VS = 0;
+	int lapsedtime = 0;
 
 	altarray[nbiter] = alt;
 	timearray[nbiter] = ms;
@@ -312,7 +331,7 @@ double calcVS(double alt, int ms)
 		if (lapsedtime)
 			VS = 60 * 1000 * altdiff / lapsedtime;
 		else
-			VS = -999;
+			VS = 0;
 		lapsedtime = 0;
 		nbiter = VSSAMPLE - 1; // to update the last item of the array
 		altdiff = 0;
@@ -322,46 +341,53 @@ double calcVS(double alt, int ms)
 void Decodeboost(char *s)
 {
 
-	double flightDeckAlt, heading_true, pitch, bank, VS;
+	double flightDeckAlt, heading_true, pitch, bank;
 	double latitude, longitude;
 	int onGround, ms;
 	char *token, *ptr, *savptr;
 
+	struct SpeedUpdate SU;
+
 	/* get the first token */
-	if ((token = strtok_r(s, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(s, DELIM, &savptr)) != NULL) {
 		onGround = (strcmp(token, "G") == 0 ? 1 : 0);
 	}
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 
 		flightDeckAlt = strtol(token, &ptr, 10) / 100;
 	}
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 		heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
 	}
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 		pitch = -strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
 	}
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 		bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
 	}
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 		latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
 	}
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
 		longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
 	}
 
-	if ((token = strtok_r(NULL, delim, &savptr)) != NULL) {
-		ms= strtol(token, NULL, 10);
+	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+		ms = strtol(token, NULL, 10);
 	}
 
-	VS=calcVS(flightDeckAlt,ms);
+	/*
+	 * We update the speed via the speed structure
+	 */
+	SU.Type = VS;
+	SU.VS = calcVS(flightDeckAlt, ms);
+	SetSpeed(&SU);
 
 	updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
 }
@@ -398,6 +424,10 @@ void Decode(char *s)
 		S124(strstr(s, "Qs124"));
 	}
 
+	// Update TAS
+	if (strstr(s, "Qs121")) {
+		S121(strstr(s, "Qs121"));
+	}
 	// Indicated Airspeed IAS
 	if (strstr(s, "Qs483")) {
 		S483(strstr(s, "Qs483"));
