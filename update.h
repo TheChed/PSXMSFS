@@ -28,6 +28,9 @@ struct MovingParts{
     double ailerons;
 };
 
+/*
+ * Structures used to update MSFS
+ */
 enum SpeedType { IAS, TAS, VS};
 
 struct SpeedUpdate{
