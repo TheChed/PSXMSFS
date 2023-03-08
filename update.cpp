@@ -36,40 +36,6 @@ void updatePSXBOOST(double altitude, double heading, double pitch, double bank, 
 
 struct BOOST getPSXBoost(void) { return PSXBoost; }
 
-void SetMovingSurfaces(double rudder, double aileron, double elevator)
-{
-	/*
-	 * Set the moving surfaces: aileron, rudder, elevator
-
-	APos.Speedbrake = Tmain.SpdBrkLever / 800.0;
-	 */
-
-	APos.rudder = rudder;
-	APos.ailerons = aileron;
-	APos.elevator = elevator;
-	SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-								  0, sizeof(APos), &APos);
-}
-
-void updateFlap(int position)
-{
-	APos.FlapsPosition = position;
-	SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-								  0, sizeof(APos), &APos);
-}
-void updateGear(double position)
-{
-	APos.GearDown = position;
-	SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-								  0, sizeof(APos), &APos);
-}
-void SetSpeedBrake(double position)
-{
-	APos.Speedbrake = position;
-	SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0,
-								  0, sizeof(APos), &APos);
-}
-
 void SetAcftElevation(double elevation)
 {
 	PSXDATA.acftelev = elevation;
@@ -252,20 +218,42 @@ void SetMSFSPos()
 								  sizeof(MSFS), &MSFS);
 	SimConnect_SetDataOnSimObject(hSimConnect, DATA_SPEED, SIMCONNECT_OBJECT_ID_USER, 0, 0,
 								  sizeof(PSXSPEED), &PSXSPEED);
+	SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+								  sizeof(APos), &APos);
 }
 
+void SetMovingSurfaces(struct SurfaceUpdate *S)
+{
+	switch (S->Type) {
+	case GEAR:
+		APos.GearDown = S->UN.GearDown;
+		break;
+	case FLAPS:
+		APos.FlapsPosition = S->UN.FlapsPosition;
+		break;
+	case SPEED:
+		APos.SpeedBrake = S->UN.SpeedBrake;
+		break;
+
+	case MOVING:
+		APos.rudder = S->UN.movingElements.rudder;
+		APos.ailerons = S->UN.movingElements.ailerons;
+		APos.elevator = S->UN.movingElements.elevator;
+		break;
+	}
+}
 void SetSpeed(struct SpeedUpdate *S)
 {
 
 	switch (S->Type) {
 	case IAS:
-		PSXSPEED.IAS = S->IAS;
+		PSXSPEED.IAS = S->Speed.IAS;
 		break;
 	case TAS:
-		PSXSPEED.TAS = S->TAS;
+		PSXSPEED.TAS = S->Speed.TAS;
 		break;
 	case VS:
-		PSXSPEED.VS = S->VS;
+		PSXSPEED.VS = S->Speed.VS;
 		break;
 	}
 }

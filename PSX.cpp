@@ -21,7 +21,6 @@
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
 char bufboost[256];
-// char bufmain[MAXBUFF];
 char bufmain[4096];
 
 // Position of Gear
@@ -29,12 +28,26 @@ char bufmain[4096];
 void H170(char *s)
 {
 	int gearpos;
+	struct SurfaceUpdate S;
+
 	gearpos = (int)(s[6] - '0');
-	updateGear(((gearpos == 3) ? 1.0 : 0.0));
+	S.Type=GEAR;
+	S.UN.GearDown=((gearpos == 3) ? 1.0 : 0.0);
+	SetMovingSurfaces(&S);
 }
 
 // Flap lever variable Qh389
-void H389(char *s) { updateFlap((int)(s[6] - '0')); }
+void H389(char *s)
+{
+	struct SurfaceUpdate S;
+	int position;
+
+	position = (int)(s[6] - '0');
+
+	S.Type = FLAPS;
+	S.UN.FlapsPosition = position;
+	SetMovingSurfaces(&S);
+}
 
 // Parking break
 void H397(char *s)
@@ -63,11 +76,14 @@ void H426(char *s)
 void H388(char *s)
 {
 	double SpeedBrakelevel = 0;
+	struct SurfaceUpdate S;
 	char *token, *ptr, *savptr;
 	if ((token = strtok_r(s + 6, DELIM, &savptr)) != NULL) {
 		SpeedBrakelevel = strtol(token, &ptr, 10);
-		SetSpeedBrake(SpeedBrakelevel);
 	}
+	S.Type = SPEED;
+	S.UN.SpeedBrake = SpeedBrakelevel;
+	SetMovingSurfaces(&S);
 }
 
 void S121(char *s)
@@ -81,9 +97,9 @@ void S121(char *s)
 	token = strtok_r(NULL, DELIM, &savptr);
 	token = strtok_r(NULL, DELIM, &savptr);
 	if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
-		SU.TAS = (double)strtoul(token, NULL, 10) / 1000.0;
+		SU.Speed.TAS = (double)strtoul(token, NULL, 10) / 1000.0;
 	}
-  SU.Type=TAS;
+	SU.Type = TAS;
 	SetSpeed(&SU);
 }
 
@@ -93,7 +109,7 @@ void S483(char *s)
 	struct SpeedUpdate SU;
 
 	if ((token = strtok_r(s + 6, DELIM, &ptr)) != NULL) {
-		SU.IAS = strtol(token, NULL, 10) / 10.0;
+		SU.Speed.IAS = strtol(token, NULL, 10) / 10.0;
 	}
 	SU.Type = IAS;
 	SetSpeed(&SU);
@@ -191,7 +207,7 @@ void S458(char *s)
 void S480(char *s)
 {
 	double rudder, aileron, elevator;
-
+	struct SurfaceUpdate S;
 	int val[10];
 	for (int i = 0; i < 10; i++) {
 		val[i] = (s[2 * i + 6] - '0') * 10 + (s[2 * i + 1 + 6] - '0');
@@ -201,7 +217,12 @@ void S480(char *s)
 	aileron = -16384 * (val[0] - 20) / 20.0;			  // maximum deflection in PSX  = 40
 	elevator = 16384 * (val[6] - 21) / 21.0;			  // maximum deflection in PSX = 42
 														  //
-	SetMovingSurfaces(rudder, aileron, elevator);
+	S.Type = MOVING;
+	S.UN.movingElements.rudder = rudder;
+
+	S.UN.movingElements.ailerons = aileron;
+	S.UN.movingElements.elevator = elevator;
+	SetMovingSurfaces(&S);
 }
 
 void S124(char *s)
@@ -386,7 +407,7 @@ void Decodeboost(char *s)
 	 * We update the speed via the speed structure
 	 */
 	SU.Type = VS;
-	SU.VS = calcVS(flightDeckAlt, ms);
+	SU.Speed.VS = calcVS(flightDeckAlt, ms);
 	SetSpeed(&SU);
 
 	updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);

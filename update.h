@@ -9,79 +9,102 @@
  */
 
 struct BOOST {
-    // Updated by Boost server
-    double flightDeckAlt;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
-    int onGround;
+	// Updated by Boost server
+	double flightDeckAlt;
+	double latitude;
+	double longitude;
+	double heading_true;
+	double pitch;
+	double bank;
+	int onGround;
 };
 
-struct MovingParts{
-    double GearDown;
-    double FlapsPosition;
-    double Speedbrake;
-    double rudder;
-    double elevator;
-    double ailerons;
+struct MovingParts {
+	double GearDown;
+	double FlapsPosition;
+	double SpeedBrake;
+	double rudder;
+	double elevator;
+	double ailerons;
 };
 
 /*
  * Structures used to update MSFS
  */
-enum SpeedType { IAS, TAS, VS};
+enum SpeedType { IAS,
+				 TAS,
+				 VS } ;
 
-struct SpeedUpdate{
-    SpeedType Type;
-    union {
-    double IAS;
-    double TAS;
-    double VS;
-    };
+enum SurfaceType {
+	GEAR,
+	FLAPS,
+	SPEED,
+  MOVING
 };
 
-struct SpeedStruct{
-    double IAS;
-    double TAS;
-    double VS;
+struct SpeedUpdate {
+	SpeedType Type;
+	union {
+		double IAS;
+		double TAS;
+		double VS;
+	} Speed;
+};
+
+
+struct SurfaceUpdate {
+	SurfaceType Type;
+	union {
+    double FlapsPosition;
+		double SpeedBrake;
+		double GearDown;
+    struct {
+        double rudder;
+        double ailerons;
+        double elevator;
+    } movingElements;
+	} UN;
+};
+
+struct SpeedStruct {
+	double IAS;
+	double TAS;
+	double VS;
 };
 /*
  * Structure containing PSX information
  * we want to update in MSFS
  */
-struct PSX{
-    //COMMS & XPDR
-    int XPDR;
-    int IDENT;
-    int COM1;
-    int COM2;
+struct PSX {
+	// COMMS & XPDR
+	int XPDR;
+	int IDENT;
+	int COM1;
+	int COM2;
 
-    //Altimeter
-    double altimeter;
-    int STD ;
+	// Altimeter
+	double altimeter;
+	int STD;
 
-    //Speed
-    double IAS;
-    double GS;
-    double TAS;
+	// Speed
+	double IAS;
+	double GS;
+	double TAS;
 
-    //local QNH on the weather zone
-    int weatherZone;
-    double QNH[7];
+	// local QNH on the weather zone
+	int weatherZone;
+	double QNH[7];
 
-    /*
-     * Acft elevation and indicator whether it has been 
-     *  updated from PSX
-     */
-    double acftelev;
-    int elevupdated;
-    
-    int flightPhase;
-    int TA;
-    int TL;
+	/*
+	 * Acft elevation and indicator whether it has been
+	 *  updated from PSX
+	 */
+	double acftelev;
+	int elevupdated;
 
+	int flightPhase;
+	int TA;
+	int TL;
 };
 
 /*
@@ -90,7 +113,7 @@ struct PSX{
 void SetUTCTime(int hour, int minute, int day, int year);
 void SetCOMM(int COM1, int COM2);
 void SetBARO(long altimeter, int stdbar);
-void SetXPDR(int XPDR, int IDENT); 
+void SetXPDR(int XPDR, int IDENT);
 void SetAcftElevation(double elevation);
 void init_pos(void);
 int getFlightPhase(void);
@@ -107,11 +130,17 @@ int GetOnGround(void);
  */
 void SetSpeed(struct SpeedUpdate *S);
 
- /*
+/*
+ * Function used to update the moving Surfaces,
+ * gear and Speedbrakes in MSFS
+ */
+void SetMovingSurfaces(struct SurfaceUpdate *S);
+
+/*
  * Function used to update the lights in MSFS once we got a change in PSX
  */
 void updateLights(int *L);
- /*
+/*
  * Function used to update the flight phase (landing, cruise, takingoff)
  * as well as the TL and TA as set up in PSX
  */
@@ -124,18 +153,14 @@ void updateFlightPhase(int phase, int TA, int TL);
 void setWeather(int zone, double QNH);
 void setWeatherZone(int zone);
 
-/*
- * Function used to update the moving surface in MSFS once we got a change in PSX
- */
-void SetMovingSurfaces(void);
 
 /*
- * Updates the position of MSFS 
+ * Updates the position of MSFS
  * This function should be called in a frame change event in the callback function
  * and should not be called at will as it leads to some untraceable crashes
  */
 void SetMSFSPos(double flightDeckAlt, double heading, double latitude, double longitude,
-		double bank, double pitch);
+				double bank, double pitch);
 
 /*
  * Setting the correct altitude
@@ -143,11 +168,10 @@ void SetMSFSPos(double flightDeckAlt, double heading, double latitude, double lo
  */
 double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt);
 
-
 /*
  * Function used to update the PSXBOOST structure as soon as we got info from PSX
  */
-void  updatePSXBOOST(double flightDeckAlt,double heading_true, double pitch,double bank, double latitude, double longitude, int onGround);
+void updatePSXBOOST(double flightDeckAlt, double heading_true, double pitch, double bank, double latitude, double longitude, int onGround);
 
 /*
  * Update gear position
@@ -159,17 +183,4 @@ void updateGear(double position);
  */
 void updateParkingBreak(int position);
 
-/*
- * Update Flapposition
- */
-void updateFlap(int position);
 
-/*
- * Update moving surfaces
- */
-void SetMovingSurfaces(double rudder, double aileron, double elevator);
-
-/*
- * Update Speedbrake
- */
-void SetSpeedBrake(double position);
