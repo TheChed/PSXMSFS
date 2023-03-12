@@ -214,8 +214,10 @@ void SetMSFSPos()
 	 * main callback function
 	 */
 
+
 	SimConnect_SetDataOnSimObject(hSimConnect, BOOST_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-								  sizeof(MSFS), &MSFS);
+						  sizeof(MSFS), &MSFS);
+
 	SimConnect_SetDataOnSimObject(hSimConnect, DATA_SPEED, SIMCONNECT_OBJECT_ID_USER, 0, 0,
 								  sizeof(PSXSPEED), &PSXSPEED);
 	SimConnect_SetDataOnSimObject(hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0, 0,
@@ -384,5 +386,8 @@ void SetBARO(long altimeter, int standard)
 		SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
 									   SIMCONNECT_GROUP_PRIORITY_HIGHEST,
 									   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
+								   1013.25 * 16.0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+								   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 	}
 }

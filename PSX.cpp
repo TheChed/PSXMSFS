@@ -31,8 +31,8 @@ void H170(char *s)
 	struct SurfaceUpdate S;
 
 	gearpos = (int)(s[6] - '0');
-	S.Type=GEAR;
-	S.UN.GearDown=((gearpos == 3) ? 1.0 : 0.0);
+	S.Type = GEAR;
+	S.UN.GearDown = ((gearpos == 3) ? 1.0 : 0.0);
 	SetMovingSurfaces(&S);
 }
 
