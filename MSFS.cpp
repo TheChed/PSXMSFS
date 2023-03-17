@@ -22,8 +22,14 @@ static int key_press = 0;
 static int nb_acft = 0;
 static double min_dist = 999999;
 
-int getGroundAltitude(void) { return ground_altitude; }
-int isGroundAltitudeAvailable(void) { return (ground_altitude != -9999 ? 1 : 0); }
+int getGroundAltitude(void)
+{
+	return ground_altitude;
+}
+int isGroundAltitudeAvailable(void)
+{
+	return (ground_altitude != -9999 ? 1 : 0);
+}
 void Inject_MSFS_PSX(void)
 {
 	char tmpchn[128] = {0};
@@ -345,11 +351,11 @@ int init_MS_data(void)
 	 * It is VERY important that the order of those variables matches the order
 	 * in with the structures defined in PSXMSFS.h
 	 */
-		hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
-		hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");
-		printf("Trying to hack the altitude issue on IVAO/VATSIM. If not successfull try with ONLINE=1 in the ini file\n");
-		hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_STD_ALT, "INDICATED ALTITUDE", "feet");
-		printf("Trying to hack the altitude issue on IVAO/VATSIM. If not successfull try with ONLINE=0 in the ini file\n");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");
+	printf("Trying to hack the altitude issue on IVAO/VATSIM. If not successfull try with ONLINE=1 in the ini file\n");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_STD_ALT, "INDICATED ALTITUDE", "feet");
+	printf("Trying to hack the altitude issue on IVAO/VATSIM. If not successfull try with ONLINE=0 in the ini file\n");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE LATITUDE", "radians");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE LONGITUDE", "radians");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE HEADING DEGREES TRUE",

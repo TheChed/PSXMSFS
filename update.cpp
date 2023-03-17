@@ -15,11 +15,20 @@ static struct MovingParts APos;
 static struct PSX PSXDATA;
 static struct SpeedStruct PSXSPEED;
 
-double getlocalQNH(void) { return PSXDATA.QNH[PSXDATA.weatherZone]; }
+double getlocalQNH(void)
+{
+	return PSXDATA.QNH[PSXDATA.weatherZone];
+}
 
-void SetOnGround(int onGround) { PSXBoost.onGround = onGround; }
+void SetOnGround(int onGround)
+{
+	PSXBoost.onGround = onGround;
+}
 
-int GetOnGround(void) { return PSXBoost.onGround; }
+int GetOnGround(void)
+{
+	return PSXBoost.onGround;
+}
 
 void updatePSXBOOST(double altitude, double heading, double pitch, double bank, double latitude,
 					double longitude, int onGround)
@@ -34,15 +43,24 @@ void updatePSXBOOST(double altitude, double heading, double pitch, double bank, 
 				.onGround = onGround};
 }
 
-struct BOOST getPSXBoost(void) { return PSXBoost; }
+struct BOOST getPSXBoost(void)
+{
+	return PSXBoost;
+}
 
 void SetAcftElevation(double elevation)
 {
 	PSXDATA.acftelev = elevation;
 }
 
-int getFlightPhase(void) { return PSXDATA.flightPhase; }
-int getElevation(void) { return PSXDATA.acftelev; }
+int getFlightPhase(void)
+{
+	return PSXDATA.flightPhase;
+}
+int getElevation(void)
+{
+	return PSXDATA.acftelev;
+}
 
 void getTATL(int *TA, int *TL)
 {
@@ -214,9 +232,8 @@ void SetMSFSPos()
 	 * main callback function
 	 */
 
-
 	SimConnect_SetDataOnSimObject(hSimConnect, BOOST_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0,
-						  sizeof(MSFS), &MSFS);
+								  sizeof(MSFS), &MSFS);
 
 	SimConnect_SetDataOnSimObject(hSimConnect, DATA_SPEED, SIMCONNECT_OBJECT_ID_USER, 0, 0,
 								  sizeof(PSXSPEED), &PSXSPEED);
@@ -299,9 +316,15 @@ void updateLights(int *L)
 								  sizeof(Lights), &Lights);
 }
 
-void setWeatherZone(int zone) { PSXDATA.weatherZone = zone; }
+void setWeatherZone(int zone)
+{
+	PSXDATA.weatherZone = zone;
+}
 
-void setWeather(int zone, double QNH) { PSXDATA.QNH[zone] = QNH; }
+void setWeather(int zone, double QNH)
+{
+	PSXDATA.QNH[zone] = QNH;
+}
 
 void SetXPDR(int XPDR, int IDENT)
 {
@@ -386,8 +409,8 @@ void SetBARO(long altimeter, int standard)
 		SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
 									   SIMCONNECT_GROUP_PRIORITY_HIGHEST,
 									   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-	SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
-								   1013.25 * 16.0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-								   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+		SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
+									   1013.25 * 16.0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+									   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 	}
 }

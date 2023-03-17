@@ -10,7 +10,11 @@
 HANDLE hSimConnect = NULL;
 
 int sPSX, sPSXBOOST;
-int close_PSX_socket(int sockid) { return closesocket(sockid); }
+
+int close_PSX_socket(int sockid)
+{
+	return closesocket(sockid);
+}
 
 int init_socket()
 {
@@ -47,7 +51,10 @@ int init_connect_PSX(const char *hostname, int portno)
 	}
 }
 
-int init_connect_MSFS(HANDLE *p) { return (SimConnect_Open(p, "PSX", NULL, 0, 0, 0) == S_OK); }
+int init_connect_MSFS(HANDLE *p)
+{
+	return (SimConnect_Open(p, "PSX", NULL, 0, 0, 0) == S_OK);
+}
 
 int open_connections()
 {
