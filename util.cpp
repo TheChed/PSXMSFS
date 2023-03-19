@@ -48,34 +48,37 @@ double pressure_altitude(double mmhg)
 	return 145366.45 * (1 - pow(mmhg / 100.0 * 33.8638 / 1013.25, 0.190284));
 }
 
-int init_debug(void)
+
+void printDebug(int level, const char *debugInfo, ...)
 {
 
-	if (DEBUG) {
-		fdebug = fopen("DEBUG.TXT", "w");
-		if (!fdebug) {
-			return 1;
-		}
-	}
-	return 0;
-}
-
-void printDebug(const char *debugInfo, int console)
-{
+	va_list ap;
+	char msg[MAXLEN];
+	char timestamp[50];
 
 	time_t t = time(NULL);
 	struct tm date = *localtime(&t);
+	FILE *fdebug;
 
-	char timestamp[50];
+	fdebug=fopen("DEBUG.TXT","a");
+	if (!fdebug) return;
+
+
+	va_start(ap,debugInfo);
+
+	vsnprintf(msg,sizeof(msg),debugInfo,ap);
+	va_end(ap);
+
 	strftime(timestamp, 50, "%H:%M:%S", &date);
-	if (DEBUG) {
-		fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000, debugInfo);
+	if (LOG_LEVEL) {
+		fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000,msg);
 		fprintf(fdebug, "\n");
 		fflush(fdebug);
 	}
 	if (console) {
-		printf("%s\n", debugInfo);
+		printf("%s\n",msg);
 	}
+	fclose(fdebug);
 }
 
 void usage()
@@ -130,7 +133,7 @@ int write_ini_file()
 	fprintf(f, "MSFSServer=%s\n", MSFSServer);
 
 	/* Switches */
-	fprintf(f, "DEBUG=%d\n", DEBUG);
+	fprintf(f, "LOG_LEVEL=%d\n", LOG_LEVEL);
 	fprintf(f, "TCAS_INJECT=%d\n", TCAS_INJECT);
 	fprintf(f, "SLAVE=%d\n", SLAVE);
 	fprintf(f, "ELEV_INJECT=%d\n", ELEV_INJECT);
@@ -168,7 +171,7 @@ int init_param()
 	PSXPort = 10747;
 	PSXBoostPort = 10749;
 	SLAVE = 0;
-	DEBUG = 0;
+	LOG_LEVEL = LL_NOTICE;
 	TCAS_INJECT = 1;
 	ELEV_INJECT = 1;
 	INHIB_CRASH_DETECT = 0;
@@ -188,8 +191,8 @@ int init_param()
 		SLAVE = strtol(value, &stop, 10);
 		value = scan_ini(fini, "TCAS_INJECT");
 		TCAS_INJECT = strtol(value, &stop, 10);
-		value = scan_ini(fini, "DEBUG");
-		DEBUG = strtol(value, &stop, 10);
+		value = scan_ini(fini, "LOG_LEVEL");
+	//	LOG_LEVEL= (int)strtol(value, &stop, 10);
 		value = scan_ini(fini, "ELEV_INJECT");
 		ELEV_INJECT = strtol(value, &stop, 10);
 		value = scan_ini(fini, "INHIB_CRASH_DETECT");
@@ -204,7 +207,7 @@ int init_param()
 void remove_debug()
 {
 	fclose(fdebug);
-	if (!DEBUG)
+	if (!LOG_LEVEL)
 		remove("DEBUG.TXT");
 }
 
@@ -214,7 +217,7 @@ void parse_arguments(int argc, char **argv)
 	int c;
 	while (1) {
 		static struct option long_options[] = {/* These options set a flag. */
-											   {"verbose", no_argument, &DEBUG, 1},
+											   {"verbose", no_argument, (int*)&LOG_LEVEL, 1},
 											   /* These options don’t set a flag.
 											  We distinguish them by their indices. */
 											   {"boost", required_argument, 0, 'b'},
@@ -272,7 +275,7 @@ void parse_arguments(int argc, char **argv)
 			PSXPort = (int)strtol(optarg, NULL, 10);
 			break;
 		case 'd':
-			DEBUG = 1;
+			LOG_LEVEL = LL_DEBUG;
 			break;
 		case 's':
 			SLAVE = 1;

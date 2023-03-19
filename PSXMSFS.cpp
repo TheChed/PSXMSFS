@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 	 * used in the program
 	 */
 	if (init_param()) {
-		printDebug("Could not initialize default parameters... Quitting", 1);
+		printDebug(CONSOLE, "Could not initialize default parameters... Quitting");
 		exit(EXIT_FAILURE);
 	}
 
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	 * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
 	 */
 	if (!open_connections()) {
-		printDebug("Could not initialize all connections. Exiting...", 1);
+		printDebug(CONSOLE, "Could not initialize all connections. Exiting...");
 		exit(EXIT_FAILURE);
 	}
 
@@ -118,9 +118,9 @@ int main(int argc, char **argv)
 	 * as boost and main threads are not yet available
 	 */
 
-	printDebug("Initializing position", DEBUG);
+	printDebug(DEBUG, "Initializing position");
 	init_pos();
-	printDebug("Initializing done", DEBUG);
+	printDebug(DEBUG, "Initializing done");
 
 	/*
 	 * Create a thread mutex so that two threads cannot change simulataneously
@@ -137,27 +137,27 @@ int main(int argc, char **argv)
 	 */
 
 	if (pthread_create(&t1, NULL, &ptUmain, NULL) != 0) {
-		printDebug("Error creating thread Umain", 1);
+		printDebug(CONSOLE, "Error creating thread Umain");
 		quit = 1;
 	}
 
 	if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
-		printDebug("Error creating thread Umainboost", 1);
+		printDebug(CONSOLE, "Error creating thread Umainboost");
 		quit = 1;
 	}
 
 	if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
-		printDebug("Error creating thread DatafromMSFS", 1);
+		printDebug(CONSOLE, "Error creating thread DatafromMSFS");
 		quit = 1;
 	}
 	if (pthread_join(t1, NULL) != 0) {
-		printDebug("Failed to join Main thread", 1);
+		printDebug(CONSOLE, "Failed to join Main thread");
 	}
 	if (pthread_join(t2, NULL) != 0) {
-		printDebug("Failed to join Boost thread", 1);
+		printDebug(CONSOLE, "Failed to join Boost thread");
 	}
 	if (pthread_join(t3, NULL) != 0) {
-		printDebug("Failed to join MSFS thread", 1);
+		printDebug(CONSOLE, "Failed to join MSFS thread");
 	}
 	pthread_mutex_destroy(&mutex);
 

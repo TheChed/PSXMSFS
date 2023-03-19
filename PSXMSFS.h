@@ -9,6 +9,7 @@
 #define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
 #define MAXBUFF 165536
 #define DELIM ";"
+#define CONSOLE 1
 
 /*Global variable used in readin boost socket*/
 
@@ -17,7 +18,6 @@ extern int quit;
 extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 
-extern int DEBUG;
 extern int SLAVE;
 extern char PSXMainServer[];
 extern char MSFSServer[];
@@ -32,6 +32,14 @@ extern int INHIB_CRASH_DETECT;
 extern int ONLINE;
 
 extern char debugInfo[256];
+
+/*Log levels*/
+#define LL_DEBUG 0
+#define LL_VERBOSE 1
+#define LL_INFO 2
+
+/*Anti-warning macro*/
+#define UNUSED(V) ((void) V)
 
 struct Struct_MSFS {
 	double ground_altitude;			  // ground altitude above MSL

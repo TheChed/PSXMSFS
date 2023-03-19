@@ -57,7 +57,7 @@ void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints 
 void remove_debug(void);
 
 char *convert(double, int);
-void printDebug(const char *debugInfo, int console);
+void printDebug(int console, const char *debugInfo, ...);
 
 int init_debug(void);
 

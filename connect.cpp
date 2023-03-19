@@ -33,7 +33,7 @@ int init_connect_PSX(const char *hostname, int portno)
 
 	// Create a socket
 	if ((socketID = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		printDebug("Error while creating the main PSX socket", 1);
+		printDebug(CONSOLE, "Error while creating the main PSX socket");
 		return -1;
 	}
 
@@ -61,43 +61,42 @@ int open_connections()
 
 	// initialise Win32 socket library
 	if (!init_socket()) {
-		printDebug("Could not initialize Windows sockets. Exiting...\n", 1);
+		printDebug(CONSOLE,"Could not initialize Windows sockets. Exiting...\n");
 		return 0;
 	}
 
 	// connect to PSX main socket
 
 	sprintf(debugInfo, "Connecting to PSX main server on: %s:%d", PSXMainServer, PSXPort);
-	printDebug(debugInfo, 1);
+	printDebug(CONSOLE,debugInfo);
 
 	sPSX = init_connect_PSX(PSXMainServer, PSXPort);
 	if (sPSX < 0) {
-		printDebug("Error connecting to the PSX socket. Exiting...", 1);
+		printDebug(CONSOLE,"Error connecting to the PSX socket. Exiting...");
 		return 0;
 	} else {
-		printDebug("Connected to PSX main server.", 1);
+		printDebug(CONSOLE,"Connected to PSX main server.");
 	}
 
 	// connect to boost socket
 	sprintf(debugInfo, "Connecting to PSX boost server on: %s:%d", PSXBoostServer, PSXBoostPort);
-	printDebug(debugInfo, 1);
+	printDebug(CONSOLE,debugInfo);
 
 	sPSXBOOST = init_connect_PSX(PSXBoostServer, PSXBoostPort);
 	if (sPSXBOOST < 0) {
-		printDebug("Error connecting to the PSX boost socket. Are you sure it is "
-				   "running? Exiting...",
-				   1);
+		printDebug(CONSOLE,"Error connecting to the PSX boost socket. Are you sure it is "
+				   "running? Exiting...");
 		return 0;
 	} else {
-		printDebug("Connected to PSX boost server.", 1);
+		printDebug(CONSOLE, "Connected to PSX boost server.");
 	}
 
 	// finally connect to MSFS socket via SimConnect
 	if (!init_connect_MSFS(&hSimConnect)) {
-		printDebug("Could not connect to Simconnect.dll. Is MSFS running?", 1);
+		printDebug(CONSOLE, "Could not connect to Simconnect.dll. Is MSFS running?");
 		return 0;
 	} else {
-		printDebug("Connected to MSFS.", 1);
+		printDebug(CONSOLE, "Connected to MSFS.");
 		return 1;
 	}
 }

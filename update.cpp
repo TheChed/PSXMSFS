@@ -127,7 +127,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	if (ELEV_INJECT) {
 		if (onGround || (PSXELEV < 300)) {
 			if (!Qi198SentLand) {
-				printDebug("Below 300 ft AGL => using MSFS elevation", DEBUG);
+				printDebug(LOG_LEVEL,"Below 300 ft AGL => using MSFS elevation");
 				Qi198SentLand = 1;
 			}
 			Qi198SentAirborne = 0;
@@ -137,7 +137,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 			if (!Qi198SentAirborne) {
 
-				printDebug("Above 300 ft AGL => using PSX elevation.", DEBUG);
+				printDebug(LOG_LEVEL,"Above 300 ft AGL => using PSX elevation.");
 				sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
 				Qi198SentAirborne = 1;
 			}

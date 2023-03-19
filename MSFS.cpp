@@ -154,8 +154,8 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 		snprintf(debugInfo, sizeof(debugInfo),
 				 "Exception risen: %ld, by sender: %ld at index: %ld",
 				 evt->dwException, evt->dwSendID, evt->dwIndex);
-		printDebug(debugInfo, 1);
-		printDebug("RECV_ID_EXCEPTION", DEBUG);
+		printDebug(CONSOLE,debugInfo);
+		printDebug(LL_DEBUG,"RECV_ID_EXCEPTION");
 	} break;
 
 	case SIMCONNECT_RECV_ID_OPEN: {
@@ -173,7 +173,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 				evt->dwSimConnectVersionMajor, evt->dwSimConnectVersionMinor,
 				evt->dwSimConnectBuildMajor, evt->dwSimConnectBuildMinor);
 
-		printDebug(debugInfo, DEBUG);
+		printDebug(LL_DEBUG,debugInfo);
 
 		/*
 		 * In this event, received when MSFS is opened
@@ -182,7 +182,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 		 * engines.
 		 */
 
-		printDebug("Freezing Altitude, Attitude and Coordinates in MSFS.", DEBUG);
+		printDebug(LL_DEBUG, "Freezing Altitude, Attitude and Coordinates in MSFS.");
 		freezeMSFS();
 	} break;
 
@@ -230,7 +230,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 				SimConnect_TransmitClientEvent(
 					hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
 					SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-				if (DEBUG) {
+				if (LL_DEBUG) {
 					if (!SLAVE) {
 						sendQPSX("Qs419=");
 						printf("Injecting position to MSFS from PSX\n");
@@ -248,7 +248,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 		} break;
 
 		default:
-			printDebug("Event not captured", DEBUG);
+			printDebug(LL_DEBUG, "Event not captured");
 		}
 	} break;
 
@@ -284,7 +284,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
 		default:
 			sprintf(debugInfo, "Did not process request ID: %lu\n", pObjData->dwRequestID);
-			printDebug(debugInfo, 1);
+			printDebug(CONSOLE, debugInfo);
 		}
 
 	} break;
@@ -322,7 +322,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 	} break;
 	case SIMCONNECT_RECV_ID_QUIT: {
 		quit = 1;
-		printDebug("MSFS was exited. I guess I should do the same...", 1);
+		printDebug(CONSOLE,"MSFS was exited. I guess I should do the same...");
 	} break;
 
 	case SIMCONNECT_RECV_ID_EVENT_FRAME: {
@@ -338,7 +338,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 	default:
 		sprintf(debugInfo, "In Callbackfunction default case: nothing was done. Event: %ld",
 				pData->dwID);
-		printDebug(debugInfo, DEBUG);
+		printDebug(LL_DEBUG,debugInfo);
 		break;
 	}
 }
