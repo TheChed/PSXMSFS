@@ -124,10 +124,10 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	incland = ((oldElevation != elevation) ? 0 : +delta);
 	oldElevation = elevation;
 
-	if (ELEV_INJECT) {
+	if (flags.ELEV_INJECT) {
 		if (onGround || (PSXELEV < 300)) {
 			if (!Qi198SentLand) {
-				printDebug(LOG_LEVEL,"Below 300 ft AGL => using MSFS elevation");
+				printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation");
 				Qi198SentLand = 1;
 			}
 			Qi198SentAirborne = 0;
@@ -137,7 +137,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 			if (!Qi198SentAirborne) {
 
-				printDebug(LOG_LEVEL,"Above 300 ft AGL => using PSX elevation.");
+				printDebug(LL_INFO, "Above 300 ft AGL => using PSX elevation.");
 				sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
 				Qi198SentAirborne = 1;
 			}
@@ -165,7 +165,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	if ((flightPhase == 0 && ctrAltitude > TA) || (flightPhase == 2 && ctrAltitude > TL) ||
 		flightPhase == 1) {
 
-		if (ONLINE) {
+		if (flags.ONLINE) {
 			FinalAltitude = pressure_altitude(getlocalQNH()) + ctrAltitude;
 		}
 

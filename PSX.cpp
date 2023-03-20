@@ -142,10 +142,10 @@ void S78(const char *s)
 {
 
 	if (strstr(s, "MSFS")) {
-		SLAVE = 1;
+		flags.SLAVE = 1;
 	} else {
 		if (strstr(s, "PSX")) {
-			SLAVE = 0;
+			flags.SLAVE = 0;
 		}
 	}
 }
@@ -268,7 +268,7 @@ void I240(char *s)
 		zone = 0;
 	}
 	setWeatherZone(zone);
-		printDebug(LL_INFO, "Active weather zone: %d\t", zone);
+	printDebug(LL_INFO, "Active weather zone: %d\t", zone);
 }
 void I204(const char *s)
 {
@@ -321,8 +321,7 @@ void Qsweather(char *s)
 		QNH = strtoul(sav, NULL, 10);
 		setWeather(zone, QNH);
 	}
-		printDebug(LL_INFO, "Weather zone: %d\t QNH:%.2f", zone, QNH);
-	
+	printDebug(LL_INFO, "Weather zone: %d\t QNH:%.2f", zone, QNH);
 }
 
 double calcVS(double alt, int ms)
@@ -510,7 +509,7 @@ int sendQPSX(const char *s)
 	dem[strlen(s)] = 10;
 	// dem[strlen(s)+1] = 0;
 
-	int nbsend = send(sPSX, dem, strlen(s) + 1, 0);
+	int nbsend = send(flags.sPSX, dem, strlen(s) + 1, 0);
 
 	if (nbsend == 0) {
 		printf("Error sending variable %s to PSX\n", s);
@@ -525,25 +524,25 @@ int umain(void)
 	size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
 	if (bufmain_remain == 0) {
-		printDebug(CONSOLE, "Main socket line exceeded buffer length! Discarding input");
+		printDebug(LL_INFO, "Main socket line exceeded buffer length! Discarding input");
 		bufmain_used = 0;
-		printDebug(CONSOLE,bufmain);
+		printDebug(LL_ERROR, bufmain);
 		return 0;
 	}
 
-	int nbread = recv(sPSX, (char *)&bufmain[bufmain_used], bufmain_remain, 0);
+	int nbread = recv(flags.sPSX, (char *)&bufmain[bufmain_used], bufmain_remain, 0);
 
 	if (nbread == 0) {
-		printDebug(CONSOLE,"Main socket connection closed.");
+		printDebug(LL_ERROR, "Main socket connection closed.");
 		return 0;
 	}
 	if (nbread < 0 && errno == EAGAIN) {
-		printDebug(CONSOLE,"No data received.");
+		printDebug(LL_VERBOSE, "No data received.");
 		/* no data for now, call back when the socket is readable */
 		return 0;
 	}
 	if (nbread < 0) {
-		printDebug(CONSOLE,"Main socket Connection error");
+		printDebug(LL_ERROR, "Main socket Connection error");
 		return 0;
 	}
 	bufmain_used += nbread;
@@ -561,13 +560,13 @@ int umain(void)
 		//    printf("%ld\n", (long)elapsedMs(TimeStart) / 10);
 		// New situ loaded
 		if (strstr(line_start, "load3")) {
-			printDebug(CONSOLE,"New situ loaded");
-			if (INHIB_CRASH_DETECT) {
-				printDebug(LL_INFO,"No crash detection for 10 seconds");
+			printDebug(LL_INFO, "New situ loaded");
+			if (flags.INHIB_CRASH_DETECT) {
+				printDebug(LL_INFO, "No crash detection for 10 seconds");
 				sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
-				printDebug(LL_INFO,"Let's wait a few seconds to get everyone ready.");
+				printDebug(LL_INFO, "Let's wait a few seconds to get everyone ready.");
 				sleep(5);
-				printDebug(LL_INFO,"Resuming normal operations.");
+				printDebug(LL_INFO, "Resuming normal operations.");
 			}
 			freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
 			init_variables();
@@ -591,21 +590,21 @@ int umainBoost(void)
 	size_t bufboost_remain = sizeof(bufboost) - bufboost_used;
 
 	if (bufboost_remain == 0) {
-		printDebug(CONSOLE,"Boost Line exceeded buffer length!");
+		printDebug(LL_VERBOSE, "Boost Line exceeded buffer length!");
 		return 0;
 	}
 
-	int nbread = recv(sPSXBOOST, (char *)&bufboost[bufboost_used], bufboost_remain, 0);
+	int nbread = recv(flags.sPSXBOOST, (char *)&bufboost[bufboost_used], bufboost_remain, 0);
 	if (nbread == 0) {
-		printDebug(CONSOLE, "Boost connection closed.");
+		printDebug(LL_ERROR, "Boost connection closed.");
 		return 0;
 	}
 	if (nbread < 0 && errno == EAGAIN) {
-		printDebug(CONSOLE, "no data for now, call back when the socket is readable");
+		printDebug(LL_ERROR, "no data for now, call back when the socket is readable");
 		return 0;
 	}
 	if (nbread < 0) {
-		printDebug(CONSOLE, "Boost Connection error");
+		printDebug(LL_ERROR, "Boost Connection error");
 		return 0;
 	}
 	bufboost_used += nbread;

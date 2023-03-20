@@ -48,7 +48,6 @@ double pressure_altitude(double mmhg)
 	return 145366.45 * (1 - pow(mmhg / 100.0 * 33.8638 / 1013.25, 0.190284));
 }
 
-
 void printDebug(int level, const char *debugInfo, ...)
 {
 
@@ -60,23 +59,23 @@ void printDebug(int level, const char *debugInfo, ...)
 	struct tm date = *localtime(&t);
 	FILE *fdebug;
 
-	fdebug=fopen("DEBUG.TXT","a");
-	if (!fdebug) return;
+	fdebug = fopen("DEBUG.TXT", "a");
+	if (!fdebug)
+		return;
 
+	va_start(ap, debugInfo);
 
-	va_start(ap,debugInfo);
-
-	vsnprintf(msg,sizeof(msg),debugInfo,ap);
+	vsnprintf(msg, sizeof(msg), debugInfo, ap);
 	va_end(ap);
 
 	strftime(timestamp, 50, "%H:%M:%S", &date);
-	if (LOG_LEVEL) {
-		fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000,msg);
+	if (level <= flags.LOG_VERBOSITY) {
+		fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000, msg);
 		fprintf(fdebug, "\n");
 		fflush(fdebug);
-	}
-	if (console) {
-		printf("%s\n",msg);
+
+		// and also print on the console
+		printf("%s\n", msg);
 	}
 	fclose(fdebug);
 }
@@ -84,12 +83,12 @@ void printDebug(int level, const char *debugInfo, ...)
 void usage()
 {
 
-	printf("usage: [-N] [-E] [-h] [-v] [-s] [-t][-m IP [-p port]] [-b IP [-q port]]\n");
+	printf("usage: [-N] [-E] [-h] [-d] [-v] [-s] [-t][-m IP [-p port]] [-b IP [-q port]]\n");
 	printf("\t -h, --help");
 	printf("\t Prints this help\n");
 	printf("\t -d");
 	printf("\t debug. Prints out debug info on console and in file "
-		   "DEBUG.TXT. Warning: can be very verbose\n");
+		   "DEBUG.TXT. Warning: can be very verbose. Adjust verbosity level in the ini file\n");
 	printf("\t -m");
 	printf("\t Main server IP. Default is 127.0.0.1\n");
 	printf("\t -p");
@@ -124,21 +123,21 @@ int write_ini_file()
 	}
 
 	/*PSX server addresses and port*/
-	fprintf(f, "PSXMainServer=%s\n", PSXMainServer);
-	fprintf(f, "PSXBoostServer=%s\n", PSXBoostServer);
-	fprintf(f, "PSXPort=%d\n", PSXPort);
-	fprintf(f, "PSXBoostPort=%d\n", PSXBoostPort);
+	fprintf(f, "PSXMainServer=%s\n", flags.PSXMainServer);
+	fprintf(f, "PSXBoostServer=%s\n", flags.PSXBoostServer);
+	fprintf(f, "PSXPort=%d\n", flags.PSXPort);
+	fprintf(f, "PSXBoostPort=%d\n", flags.PSXBoostPort);
 
 	/*MSFS address*/
-	fprintf(f, "MSFSServer=%s\n", MSFSServer);
+	fprintf(f, "MSFSServer=%s\n", flags.MSFSServer);
 
 	/* Switches */
-	fprintf(f, "LOG_LEVEL=%d\n", LOG_LEVEL);
-	fprintf(f, "TCAS_INJECT=%d\n", TCAS_INJECT);
-	fprintf(f, "SLAVE=%d\n", SLAVE);
-	fprintf(f, "ELEV_INJECT=%d\n", ELEV_INJECT);
-	fprintf(f, "INHIB_CRASH_DETECT=%d\n", INHIB_CRASH_DETECT);
-	fprintf(f, "ONLINE=%d\n", ONLINE);
+	fprintf(f, "LOG_VERBOSITY=%d\n", flags.LOG_VERBOSITY);
+	fprintf(f, "TCAS_INJECT=%d\n", flags.TCAS_INJECT);
+	fprintf(f, "SLAVE=%d\n", flags.SLAVE);
+	fprintf(f, "ELEV_INJECT=%d\n", flags.ELEV_INJECT);
+	fprintf(f, "INHIB_CRASH_DETECT=%d\n", flags.INHIB_CRASH_DETECT);
+	fprintf(f, "ONLINE=%d\n", flags.ONLINE);
 
 	fclose(f);
 	return 0;
@@ -165,17 +164,17 @@ int init_param()
 	char *stop;
 
 	/* Sensible default values*/
-	strcpy(PSXMainServer, "127.0.0.1");
-	strcpy(PSXBoostServer, "127.0.0.1");
-	strcpy(MSFSServer, "127.0.0.1");
-	PSXPort = 10747;
-	PSXBoostPort = 10749;
-	SLAVE = 0;
-	LOG_LEVEL = LL_NOTICE;
-	TCAS_INJECT = 1;
-	ELEV_INJECT = 1;
-	INHIB_CRASH_DETECT = 0;
-	ONLINE = 0;
+	strcpy(flags.PSXMainServer, "127.0.0.1");
+	strcpy(flags.PSXBoostServer, "127.0.0.1");
+	strcpy(flags.MSFSServer, "127.0.0.1");
+	flags.PSXPort = 10747;
+	flags.PSXBoostPort = 10749;
+	flags.SLAVE = 0;
+	flags.LOG_VERBOSITY = LL_INFO;
+	flags.TCAS_INJECT = 1;
+	flags.ELEV_INJECT = 1;
+	flags.INHIB_CRASH_DETECT = 0;
+	flags.ONLINE = 0;
 
 	fini = fopen("PSXMSFS.ini", "r");
 	if (!fini) {
@@ -183,22 +182,22 @@ int init_param()
 			   "guesses...\n");
 		write_ini_file();
 	} else {
-		strcpy(PSXMainServer, scan_ini(fini, "PSXMainServer"));
-		strcpy(PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
-		strcpy(MSFSServer, scan_ini(fini, "MSFSServer"));
+		flags.PSXMainServer = scan_ini(fini, "PSXMainServer");
+		flags.PSXBoostServer = scan_ini(fini, "PSXBoostServer");
+		flags.MSFSServer = scan_ini(fini, "MSFSServer");
 
 		value = scan_ini(fini, "SLAVE");
-		SLAVE = strtol(value, &stop, 10);
+		flags.SLAVE = strtol(value, &stop, 10);
 		value = scan_ini(fini, "TCAS_INJECT");
-		TCAS_INJECT = strtol(value, &stop, 10);
-		value = scan_ini(fini, "LOG_LEVEL");
-	//	LOG_LEVEL= (int)strtol(value, &stop, 10);
+		flags.TCAS_INJECT = strtol(value, &stop, 10);
+		value = scan_ini(fini, "LOG_VERBOSITY");
+		//	LOG_VERBOSITY= (int)strtol(value, &stop, 10);
 		value = scan_ini(fini, "ELEV_INJECT");
-		ELEV_INJECT = strtol(value, &stop, 10);
+		flags.ELEV_INJECT = strtol(value, &stop, 10);
 		value = scan_ini(fini, "INHIB_CRASH_DETECT");
-		INHIB_CRASH_DETECT = strtol(value, &stop, 10);
+		flags.INHIB_CRASH_DETECT = strtol(value, &stop, 10);
 		value = scan_ini(fini, "ONLINE");
-		ONLINE = strtol(value, &stop, 10);
+		flags.ONLINE = strtol(value, &stop, 10);
 		free(value);
 	}
 
@@ -207,8 +206,7 @@ int init_param()
 void remove_debug()
 {
 	fclose(fdebug);
-	if (!LOG_LEVEL)
-		remove("DEBUG.TXT");
+	remove("DEBUG.TXT");
 }
 
 void parse_arguments(int argc, char **argv)
@@ -217,15 +215,15 @@ void parse_arguments(int argc, char **argv)
 	int c;
 	while (1) {
 		static struct option long_options[] = {/* These options set a flag. */
-											   {"verbose", no_argument, (int*)&LOG_LEVEL, 1},
+											   {"debug", no_argument, NULL, 'd'},
 											   /* These options don’t set a flag.
 											  We distinguish them by their indices. */
-											   {"boost", required_argument, 0, 'b'},
-											   {"help", no_argument, 0, 'h'},
-											   {"main", required_argument, 0, 'm'},
-											   {"boost-port", required_argument, 0, 'c'},
-											   {"main-port", required_argument, 0, 'p'},
-											   {"slave", required_argument, 0, 's'},
+											   {"boost", required_argument, NULL, 'b'},
+											   {"help", no_argument, NULL, 'h'},
+											   {"main", required_argument, NULL, 'm'},
+											   {"boost-port", required_argument, NULL, 'c'},
+											   {"main-port", required_argument, NULL, 'p'},
+											   {"slave", required_argument, NULL, 's'},
 											   {0, 0, 0, 0}};
 		/* getopt_long stores the option index here. */
 		int option_index = 0;
@@ -248,37 +246,37 @@ void parse_arguments(int argc, char **argv)
 			break;
 
 		case 'b':
-			strcpy(PSXBoostServer, optarg);
+			flags.PSXBoostServer = optarg;
 			break;
 		case 'E':
-			ELEV_INJECT = 0;
+			flags.ELEV_INJECT = 0;
 			break;
 		case 'N':
-			ONLINE = 0;
+			flags.ONLINE = 0;
 			break;
 		case 'C':
-			INHIB_CRASH_DETECT = 0;
+			flags.INHIB_CRASH_DETECT = 0;
 			break;
 		case 't':
-			TCAS_INJECT = 0;
+			flags.TCAS_INJECT = 0;
 			break;
 		case 'h':
 			usage();
 			break;
 		case 'm':
-			strcpy(PSXMainServer, optarg);
+			flags.PSXMainServer = optarg;
 			break;
 		case 'q':
-			PSXBoostPort = (int)strtol(optarg, NULL, 10);
+			flags.PSXBoostPort = (int)strtol(optarg, NULL, 10);
 			break;
 		case 'p':
-			PSXPort = (int)strtol(optarg, NULL, 10);
+			flags.PSXPort = (int)strtol(optarg, NULL, 10);
 			break;
 		case 'd':
-			LOG_LEVEL = LL_DEBUG;
+			flags.LOG_VERBOSITY = LL_ERROR;
 			break;
 		case 's':
-			SLAVE = 1;
+			flags.SLAVE = 1;
 			break;
 
 		case '?':

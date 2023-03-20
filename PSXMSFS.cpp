@@ -18,10 +18,11 @@
 
 struct PSXTIME PSXtime;
 
-int quit = 0;
+struct PSXMSFSFLAGS flags;
 
 pthread_mutex_t mutex;
 int DEBUG = 1;
+int quit = 0;
 int TCAS_INJECT = 1; /*TCAS injection on by default*/
 int ELEV_INJECT = 1; /*elevation injection on by default below 300 ft AGL */
 int ONLINE = 1;		 /* injecting pressure altitude for online networks like VATSIM and IVAO */
@@ -34,8 +35,6 @@ char MSFSServer[] = "999.999.999.999";
 char PSXBoostServer[] = "999.999.999.999";
 int PSXPort = 10747;
 int PSXBoostPort = 10749;
-
-void update_TCAS(AI_TCAS *ai, double d);
 
 void *ptDatafromMSFS(void *thread_param)
 {
@@ -73,19 +72,11 @@ int main(int argc, char **argv)
 	/* Initialise the timer */
 	elapsedStart(&TimeStart);
 
-	/*
-	 * open debug file
-	 */
-	if (init_debug()) {
-		printf("Error creating debug file...\n");
-		exit(EXIT_FAILURE);
-	}
-
 	/* Read from .ini file the various values
 	 * used in the program
 	 */
 	if (init_param()) {
-		printDebug(CONSOLE, "Could not initialize default parameters... Quitting");
+		printDebug(LL_VERBOSE, "Could not initialize default parameters... Quitting");
 		exit(EXIT_FAILURE);
 	}
 
@@ -98,7 +89,7 @@ int main(int argc, char **argv)
 	 * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
 	 */
 	if (!open_connections()) {
-		printDebug(CONSOLE, "Could not initialize all connections. Exiting...");
+		printDebug(LL_VERBOSE, "Could not initialize all connections. Exiting...");
 		exit(EXIT_FAILURE);
 	}
 
@@ -137,27 +128,27 @@ int main(int argc, char **argv)
 	 */
 
 	if (pthread_create(&t1, NULL, &ptUmain, NULL) != 0) {
-		printDebug(CONSOLE, "Error creating thread Umain");
+		printDebug(LL_VERBOSE, "Error creating thread Umain");
 		quit = 1;
 	}
 
 	if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
-		printDebug(CONSOLE, "Error creating thread Umainboost");
+		printDebug(LL_VERBOSE, "Error creating thread Umainboost");
 		quit = 1;
 	}
 
 	if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
-		printDebug(CONSOLE, "Error creating thread DatafromMSFS");
+		printDebug(LL_VERBOSE, "Error creating thread DatafromMSFS");
 		quit = 1;
 	}
 	if (pthread_join(t1, NULL) != 0) {
-		printDebug(CONSOLE, "Failed to join Main thread");
+		printDebug(LL_VERBOSE, "Failed to join Main thread");
 	}
 	if (pthread_join(t2, NULL) != 0) {
-		printDebug(CONSOLE, "Failed to join Boost thread");
+		printDebug(LL_VERBOSE, "Failed to join Boost thread");
 	}
 	if (pthread_join(t3, NULL) != 0) {
-		printDebug(CONSOLE, "Failed to join MSFS thread");
+		printDebug(LL_VERBOSE, "Failed to join MSFS thread");
 	}
 	pthread_mutex_destroy(&mutex);
 
@@ -169,11 +160,11 @@ int main(int argc, char **argv)
 
 	// and gracefully close main + boost sockets
 	printf("Closing PSX boost connection...\n");
-	if (close_PSX_socket(sPSXBOOST)) {
+	if (close_PSX_socket(flags.sPSXBOOST)) {
 		printf("Could not close boost PSX socket...\n");
 	}
 	printf("Closing PSX main connection...\n");
-	if (close_PSX_socket(sPSX)) {
+	if (close_PSX_socket(flags.sPSX)) {
 		printf("Could not close main PSX socket...\n");
 	}
 

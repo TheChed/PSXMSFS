@@ -9,32 +9,39 @@
 #define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
 #define MAXBUFF 165536
 #define DELIM ";"
-#define CONSOLE 1
-
-/*Global variable used in readin boost socket*/
 
 extern pthread_mutex_t mutex;
 extern int quit;
-extern int sPSX, sPSXBOOST;
 extern HANDLE hSimConnect;
 
-extern int SLAVE;
-extern char PSXMainServer[];
-extern char MSFSServer[];
-extern char PSXBoostServer[];
-extern int PSXPort;
-extern int PSXBoostPort;
-extern int elevupdated;
+extern struct PSXMSFSFLAGS flags;
 
-extern int TCAS_INJECT;
-extern int ELEV_INJECT;
-extern int INHIB_CRASH_DETECT;
-extern int ONLINE;
 
-extern char debugInfo[256];
+struct PSXMSFSFLAGS{
+  
+	char *PSXMainServer; //IP address of the PSX main server
+	char *MSFSServer; //IP address of the PSX boost server
+  char *PSXBoostServer; // IP address of the MSFS server
+  int PSXPort;
+  int PSXBoostPort;
+
+	int TCAS_INJECT; //1 if TCAS is injected to PSX, 0 otherwise
+	int ELEV_INJECT; //1 if MSFS elevation is injected into PSX. 0 otherwise
+	int INHIB_CRASH_DETECT; //1 if no crash detection in PSX when loading new situ. 0 otherwise
+	
+	int ONLINE; //1 if PSXMSFS is used on online on VATSIM,IVAO etc, 0 otherwise
+	
+	int LOG_VERBOSITY; //verbosity of the logs
+  
+	int SLAVE; //0 if PSX is slave, 1 if MSFS is slave
+ 
+	int sPSX; //main PSX socket id
+	int sPSXBOOST; //PSX boost socket id
+};
+
 
 /*Log levels*/
-#define LL_DEBUG 0
+#define LL_ERROR 0
 #define LL_VERBOSE 1
 #define LL_INFO 2
 
@@ -70,8 +77,6 @@ struct AcftMSFS {
 };
 
 struct AcftLight {
-	// Lights
-
 	double LandLeftOutboard;  // L Inboard
 	double LandLeftInboard;	  // L Inboard
 	double LandRightInboard;  // R Inboard
