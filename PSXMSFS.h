@@ -22,7 +22,7 @@ struct PSXMSFSFLAGS{
 	char *PSXMainServer; //IP address of the PSX main server
 	char *MSFSServer; //IP address of the PSX boost server
   char *PSXBoostServer; // IP address of the MSFS server
-  int PSXPort;
+  int PSXPort; //Main PSX port
   int PSXBoostPort;
 
 	int TCAS_INJECT; //1 if TCAS is injected to PSX, 0 otherwise
