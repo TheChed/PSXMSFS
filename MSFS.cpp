@@ -269,7 +269,9 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
 			MSFS_POS.latitude = pS->latitude;
 			MSFS_POS.longitude = pS->longitude;
-
+			MSFS_POS.mmHg= pS->mmHg;
+			MSFS_POS.MSL= pS->MSL;
+			MSFS_POS.baro= pS->baro;
 			ground_altitude = pS->ground_altitude;
 			break;
 		}
@@ -347,9 +349,7 @@ int init_MS_data(void)
 	 */
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");
-	printf("Trying to hack the altitude issue on IVAO/VATSIM. If not successfull try with ONLINE=1 in the ini file\n");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_STD_ALT, "INDICATED ALTITUDE", "feet");
-	printf("Trying to hack the altitude issue on IVAO/VATSIM. If not successfull try with ONLINE=0 in the ini file\n");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE LATITUDE", "radians");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE LONGITUDE", "radians");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE HEADING DEGREES TRUE",
@@ -417,6 +417,9 @@ int init_MS_data(void)
 										"feet per minute");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AMBIENT PRESSURE", "mmhg");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "SEA LEVEL PRESSURE", "hectopascal");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "BAROMETER PRESSURE", "hectopascal");
 
 	/*
 	 * Definition to store various speeds

@@ -166,7 +166,9 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 		flightPhase == 1) {
 
 		if (flags.ONLINE) {
-			FinalAltitude = pressure_altitude(getlocalQNH()) + ctrAltitude;
+		//	FinalAltitude = pressure_altitude(getlocalQNH()) + ctrAltitude;
+			FinalAltitude = -pressure_altitude(2953) + ctrAltitude;
+			printDebug(LL_INFO,"ctralt: %.2f\tSent Alt: %.2f\tPressure alt: %.2f",ctrAltitude,FinalAltitude,pressure_altitude(2953));
 		}
 
 		takingoff = 0;

@@ -60,6 +60,9 @@ struct Struct_MSFS {
 	double VS;
 	double TAS;
 	double altitude; // plane altitude above MSL
+	double mmHg; // ambiant pressure
+	double MSL; // ambiant pressure
+	double baro; // ambiant pressure
 };
 
 /* Definition of the structure used to update MSFS

@@ -268,7 +268,7 @@ void I240(char *s)
 		zone = 0;
 	}
 	setWeatherZone(zone);
-	printDebug(LL_INFO, "Active weather zone: %d\t", zone);
+	printDebug(LL_VERBOSE, "Active weather zone: %d\t", zone);
 }
 void I204(const char *s)
 {
@@ -321,7 +321,7 @@ void Qsweather(char *s)
 		QNH = strtoul(sav, NULL, 10);
 		setWeather(zone, QNH);
 	}
-	printDebug(LL_INFO, "Weather zone: %d\t QNH:%.2f", zone, QNH);
+	printDebug(LL_VERBOSE, "Weather zone: %d\t QNH:%.2f", zone, QNH);
 }
 
 double calcVS(double alt, int ms)
@@ -524,9 +524,9 @@ int umain(void)
 	size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
 	if (bufmain_remain == 0) {
-		printDebug(LL_INFO, "Main socket line exceeded buffer length! Discarding input");
+		printDebug(LL_VERBOSE, "Main socket line exceeded buffer length! Discarding input");
 		bufmain_used = 0;
-		printDebug(LL_ERROR, bufmain);
+		printDebug(LL_VERBOSE, bufmain);
 		return 0;
 	}
 

@@ -69,7 +69,7 @@ void printDebug(int level, const char *debugInfo, ...)
 	va_end(ap);
 
 	strftime(timestamp, 50, "%H:%M:%S", &date);
-	if (level <= flags.LOG_VERBOSITY) {
+	if (level >= flags.LOG_VERBOSITY) {
 		fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000, msg);
 		fprintf(fdebug, "\n");
 		fflush(fdebug);
@@ -111,25 +111,24 @@ void usage()
 
 	exit(EXIT_SUCCESS);
 }
-int write_ini_file()
+void write_ini_file()
 {
 	FILE *f;
 
 	f = fopen("PSXMSFS.ini", "w");
 	if (!f) {
-		printf("Cannot create PSXMSFS.ini file. Aborting...\n");
-		fclose(f);
-		return -1;
+		printDebug(LL_ERROR,"Cannot create PSXMSFS.ini file. Something is seriously wrong!");
+		return ;
 	}
 
 	/*PSX server addresses and port*/
-	fprintf(f, "PSXMainServer=%s\n", flags.PSXMainServer);
-	fprintf(f, "PSXBoostServer=%s\n", flags.PSXBoostServer);
-	fprintf(f, "PSXPort=%d\n", flags.PSXPort);
-	fprintf(f, "PSXBoostPort=%d\n", flags.PSXBoostPort);
+	fprintf(f, "PSXMainServer=%s\n", "127.0.0.1" );
+	fprintf(f, "PSXBoostServer=%s\n","127.0.0.1");
+	fprintf(f, "PSXPort=%d\n", 10747);
+	fprintf(f, "PSXBoostPort=%d\n", 10749);
 
 	/*MSFS address*/
-	fprintf(f, "MSFSServer=%s\n", flags.MSFSServer);
+	fprintf(f, "MSFSServer=%s\n", "127.0.0.1");
 
 	/* Switches */
 	fprintf(f, "LOG_VERBOSITY=%d\n", flags.LOG_VERBOSITY);
@@ -140,7 +139,7 @@ int write_ini_file()
 	fprintf(f, "ONLINE=%d\n", flags.ONLINE);
 
 	fclose(f);
-	return 0;
+	return ;
 }
 
 char *scan_ini(FILE *file, const char *key)
@@ -164,9 +163,9 @@ int init_param()
 	char *stop;
 
 	/* Sensible default values*/
-	strcpy(flags.PSXMainServer, "127.0.0.1");
-	strcpy(flags.PSXBoostServer, "127.0.0.1");
-	strcpy(flags.MSFSServer, "127.0.0.1");
+//	strcpy(flags.PSXMainServer, "127.0.0.1");
+	//strcpy(flags.PSXBoostServer, "127.0.0.1");
+//	strcpy(flags.MSFSServer, "127.0.0.1");
 	flags.PSXPort = 10747;
 	flags.PSXBoostPort = 10749;
 	flags.SLAVE = 0;
@@ -178,9 +177,11 @@ int init_param()
 
 	fini = fopen("PSXMSFS.ini", "r");
 	if (!fini) {
-		printf("Cannot open config file.\nTrying to create one with educated "
-			   "guesses...\n");
+		printDebug(LL_ERROR,"Cannot open config file: trying to create one with educated "
+			   "guesses... Please restart PSXMSFS");
 		write_ini_file();
+		quit=1;
+		return 1;
 	} else {
 		flags.PSXMainServer = scan_ini(fini, "PSXMainServer");
 		flags.PSXBoostServer = scan_ini(fini, "PSXBoostServer");
@@ -191,7 +192,7 @@ int init_param()
 		value = scan_ini(fini, "TCAS_INJECT");
 		flags.TCAS_INJECT = strtol(value, &stop, 10);
 		value = scan_ini(fini, "LOG_VERBOSITY");
-		//	LOG_VERBOSITY= (int)strtol(value, &stop, 10);
+			flags.LOG_VERBOSITY= (int)strtol(value, &stop, 10);
 		value = scan_ini(fini, "ELEV_INJECT");
 		flags.ELEV_INJECT = strtol(value, &stop, 10);
 		value = scan_ini(fini, "INHIB_CRASH_DETECT");
@@ -199,13 +200,13 @@ int init_param()
 		value = scan_ini(fini, "ONLINE");
 		flags.ONLINE = strtol(value, &stop, 10);
 		free(value);
+		fclose(fini);
 	}
 
 	return 0;
 }
 void remove_debug()
 {
-	fclose(fdebug);
 	remove("DEBUG.TXT");
 }
 

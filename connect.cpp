@@ -59,7 +59,7 @@ int open_connections()
 
 	// initialise Win32 socket library
 	if (!init_socket()) {
-		printDebug(LL_ERROR, "Could not initialize Windows sockets. Exiting...\n");
+		printDebug(LL_ERROR, "Could not initialize Windows sockets. Exiting...");
 		return 0;
 	}
 

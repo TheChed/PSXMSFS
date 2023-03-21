@@ -76,7 +76,6 @@ int main(int argc, char **argv)
 	 * used in the program
 	 */
 	if (init_param()) {
-		printDebug(LL_VERBOSE, "Could not initialize default parameters... Quitting");
 		exit(EXIT_FAILURE);
 	}
 
@@ -89,7 +88,6 @@ int main(int argc, char **argv)
 	 * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
 	 */
 	if (!open_connections()) {
-		printDebug(LL_VERBOSE, "Could not initialize all connections. Exiting...");
 		exit(EXIT_FAILURE);
 	}
 
@@ -109,9 +107,9 @@ int main(int argc, char **argv)
 	 * as boost and main threads are not yet available
 	 */
 
-	printDebug(DEBUG, "Initializing position");
+	printDebug(LL_INFO, "Initializing position");
 	init_pos();
-	printDebug(DEBUG, "Initializing done");
+	printDebug(LL_INFO, "Initializing done");
 
 	/*
 	 * Create a thread mutex so that two threads cannot change simulataneously
@@ -128,27 +126,27 @@ int main(int argc, char **argv)
 	 */
 
 	if (pthread_create(&t1, NULL, &ptUmain, NULL) != 0) {
-		printDebug(LL_VERBOSE, "Error creating thread Umain");
+		printDebug(LL_ERROR, "Error creating thread Umain");
 		quit = 1;
 	}
 
 	if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
-		printDebug(LL_VERBOSE, "Error creating thread Umainboost");
+		printDebug(LL_ERROR, "Error creating thread Umainboost");
 		quit = 1;
 	}
 
 	if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
-		printDebug(LL_VERBOSE, "Error creating thread DatafromMSFS");
+		printDebug(LL_ERROR, "Error creating thread DatafromMSFS");
 		quit = 1;
 	}
 	if (pthread_join(t1, NULL) != 0) {
-		printDebug(LL_VERBOSE, "Failed to join Main thread");
+		printDebug(LL_ERROR, "Failed to join Main thread");
 	}
 	if (pthread_join(t2, NULL) != 0) {
-		printDebug(LL_VERBOSE, "Failed to join Boost thread");
+		printDebug(LL_ERROR, "Failed to join Boost thread");
 	}
 	if (pthread_join(t3, NULL) != 0) {
-		printDebug(LL_VERBOSE, "Failed to join MSFS thread");
+		printDebug(LL_ERROR, "Failed to join MSFS thread");
 	}
 	pthread_mutex_destroy(&mutex);
 
