@@ -17,6 +17,10 @@
 TCAS tcas_acft[7];
 static struct Struct_MSFS MSFS_POS;
 static double ground_altitude;
+static double MSL_pressure;
+static double MSL_temperature;
+static double MSFS_baro;
+static double MSFS_indicated_altitude;
 static int MSFS_POS_avail = 0;
 static int key_press = 0;
 static int nb_acft = 0;
@@ -25,6 +29,27 @@ static double min_dist = 999999;
 int getGroundAltitude(void)
 {
 	return ground_altitude;
+}
+double getMSL_pressure(void)
+{
+	return MSL_pressure;
+}
+double getMSL_temperature(void)
+{
+	return MSL_temperature;
+}
+double getMSFS_baro(void)
+{
+	return MSFS_baro;
+}
+double getIndAltitude(void)
+{
+	if(MSFS_POS_avail){
+		return MSFS_indicated_altitude;
+	} else {
+		return -1;
+	}
+
 }
 int isGroundAltitudeAvailable(void)
 {
@@ -260,6 +285,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 			MSFS_POS.ground_altitude = pS->ground_altitude;
 			MSFS_POS.alt_above_ground = pS->alt_above_ground;
 			MSFS_POS.alt_above_ground_minus_CG = pS->alt_above_ground_minus_CG;
+			MSFS_POS.indicated_altitude = pS->indicated_altitude;
 			MSFS_POS.pitch = pS->pitch;
 			MSFS_POS.bank = pS->bank;
 			MSFS_POS.heading_true = pS->heading_true;
@@ -269,10 +295,14 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
 			MSFS_POS.latitude = pS->latitude;
 			MSFS_POS.longitude = pS->longitude;
-			MSFS_POS.mmHg= pS->mmHg;
-			MSFS_POS.MSL= pS->MSL;
-			MSFS_POS.baro= pS->baro;
+			MSFS_POS.mmHg = pS->mmHg;
+			MSFS_POS.MSL = pS->MSL;
+			MSFS_POS.baro = pS->baro;
+			MSFS_baro = pS->baro;
 			ground_altitude = pS->ground_altitude;
+			MSL_pressure = pS->MSL;
+			MSFS_indicated_altitude = MSFS_POS.indicated_altitude;
+			MSL_temperature = pS->temperature;
 			break;
 		}
 
@@ -404,6 +434,7 @@ int init_MS_data(void)
 										"feet");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA,
 										"PLANE ALT ABOVE GROUND MINUS CG", "feet");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "INDICATED ALTITUDE", "feet");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LATITUDE", "radians");
 	hr =
 		SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LONGITUDE", "radians");
@@ -420,6 +451,7 @@ int init_MS_data(void)
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AMBIENT PRESSURE", "mmhg");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "SEA LEVEL PRESSURE", "hectopascal");
 	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "BAROMETER PRESSURE", "hectopascal");
+	hr = SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AMBIENT TEMPERATURE", "celsius");
 
 	/*
 	 * Definition to store various speeds

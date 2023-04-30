@@ -103,6 +103,16 @@ void S121(char *s)
 	SetSpeed(&SU);
 }
 
+void S562(char *s)
+{
+	char *token, *ptr;
+
+	if ((token = strtok_r(s + 7, DELIM, &ptr)) != NULL) {
+	}
+	if ((token = strtok_r(NULL, DELIM, &ptr)) != NULL) {
+	}
+}
+
 void S483(char *s)
 {
 	char *token, *ptr;
@@ -497,6 +507,11 @@ void Decode(char *s)
 	if (strstr(s, "Qs328") || strstr(s, "Qs329") || strstr(s, "Qs330") || strstr(s, "Qs331") ||
 		strstr(s, "Qs332") || strstr(s, "Qs333") || strstr(s, "Qs334") || strstr(s, "Qs335")) {
 		Qsweather(s);
+	}
+
+	// get the pressure altitude
+	if (strstr(s, "Qs562")) {
+		S562(strstr(s, "Qs562"));
 	}
 }
 int sendQPSX(const char *s)

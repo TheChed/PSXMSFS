@@ -43,9 +43,18 @@ double dist(double lat1, double lat2, double long1, double long2)
 				 cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2)));
 }
 
-double pressure_altitude(double mmhg)
+double pressure_altitude(double T0, double P0, double H)
 {
-	return 145366.45 * (1 - pow(mmhg / 100.0 * 33.8638 / 1013.25, 0.190284));
+	return P0 * pow((T0 + 273.15) / (T0 + 273.15 + LMB * H * FTM), ALPHA);
+}
+double altitude_pressure(double T0, double P)
+{
+	return (T0 + 273.15) / LMB * (pow(1013.25 / P, 1 / ALPHA) - 1) / FTM;
+}
+
+double getISAdev(double T, double H)
+{
+	return T - (15 + H * LMB * FTM);
 }
 
 void printDebug(int level, const char *debugInfo, ...)
@@ -117,13 +126,13 @@ void write_ini_file()
 
 	f = fopen("PSXMSFS.ini", "w");
 	if (!f) {
-		printDebug(LL_ERROR,"Cannot create PSXMSFS.ini file. Something is seriously wrong!");
-		return ;
+		printDebug(LL_ERROR, "Cannot create PSXMSFS.ini file. Something is seriously wrong!");
+		return;
 	}
 
 	/*PSX server addresses and port*/
-	fprintf(f, "PSXMainServer=%s\n", "127.0.0.1" );
-	fprintf(f, "PSXBoostServer=%s\n","127.0.0.1");
+	fprintf(f, "PSXMainServer=%s\n", "127.0.0.1");
+	fprintf(f, "PSXBoostServer=%s\n", "127.0.0.1");
 	fprintf(f, "PSXPort=%d\n", 10747);
 	fprintf(f, "PSXBoostPort=%d\n", 10749);
 
@@ -139,7 +148,7 @@ void write_ini_file()
 	fprintf(f, "ONLINE=%d\n", flags.ONLINE);
 
 	fclose(f);
-	return ;
+	return;
 }
 
 char *scan_ini(FILE *file, const char *key)
@@ -163,9 +172,9 @@ int init_param()
 	char *stop;
 
 	/* Sensible default values*/
-//	strcpy(flags.PSXMainServer, "127.0.0.1");
-	//strcpy(flags.PSXBoostServer, "127.0.0.1");
-//	strcpy(flags.MSFSServer, "127.0.0.1");
+	//	strcpy(flags.PSXMainServer, "127.0.0.1");
+	// strcpy(flags.PSXBoostServer, "127.0.0.1");
+	//	strcpy(flags.MSFSServer, "127.0.0.1");
 	flags.PSXPort = 10747;
 	flags.PSXBoostPort = 10749;
 	flags.SLAVE = 0;
@@ -177,10 +186,10 @@ int init_param()
 
 	fini = fopen("PSXMSFS.ini", "r");
 	if (!fini) {
-		printDebug(LL_ERROR,"Cannot open config file: trying to create one with educated "
-			   "guesses... Please restart PSXMSFS");
+		printDebug(LL_ERROR, "Cannot open config file: trying to create one with educated "
+							 "guesses... Please restart PSXMSFS");
 		write_ini_file();
-		quit=1;
+		quit = 1;
 		return 1;
 	} else {
 		flags.PSXMainServer = scan_ini(fini, "PSXMainServer");
@@ -192,7 +201,7 @@ int init_param()
 		value = scan_ini(fini, "TCAS_INJECT");
 		flags.TCAS_INJECT = strtol(value, &stop, 10);
 		value = scan_ini(fini, "LOG_VERBOSITY");
-			flags.LOG_VERBOSITY= (int)strtol(value, &stop, 10);
+		flags.LOG_VERBOSITY = (int)strtol(value, &stop, 10);
 		value = scan_ini(fini, "ELEV_INJECT");
 		flags.ELEV_INJECT = strtol(value, &stop, 10);
 		value = scan_ini(fini, "INHIB_CRASH_DETECT");

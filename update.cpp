@@ -71,9 +71,13 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 {
 
 	double FinalAltitude;
-	double ctrAltitude;	  // altitude of Aircraft centre
-	static double oldctr; // to keep track of last good altitude
+	double ctrAltitude;				// altitude of Aircraft centre
+	static double oldctr;			// to keep track of last good altitude
+	static double oldctrcrz = -1.0; // to keep track of last good altitude
 	static double delta = 0;
+	static double oldmsfsindalt;
+	double offset;
+	double msfsindalt;
 	static double inc = 0;
 	static int initalt = 0;
 	static double incland = 0;
@@ -166,9 +170,28 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 		flightPhase == 1) {
 
 		if (flags.ONLINE) {
-		//	FinalAltitude = pressure_altitude(getlocalQNH()) + ctrAltitude;
-			FinalAltitude = -pressure_altitude(2953) + ctrAltitude;
-			printDebug(LL_INFO,"ctralt: %.2f\tSent Alt: %.2f\tPressure alt: %.2f",ctrAltitude,FinalAltitude,pressure_altitude(2953));
+
+			msfsindalt = getIndAltitude();
+
+			if (abs(msfsindalt - oldmsfsindalt) < 5) {
+				printf("No new ind alt received\n");
+				FinalAltitude = oldctrcrz;
+			} else {
+
+				if (oldctrcrz == -1.0)
+					oldctrcrz = ctrAltitude;
+				offset = oldctrcrz - msfsindalt;
+				oldmsfsindalt=msfsindalt;
+				printf("Offset : %.2f\n", offset);
+				if (abs(offset) > 10) {
+					FinalAltitude = ctrAltitude + offset;
+					oldctrcrz = FinalAltitude;
+				} else {
+					FinalAltitude = oldctrcrz;
+				}
+			}
+			printf("PSXalt: %.2f\tIND:%.2f\t Old Ind: %.2f\tOffset:%.2f\t, Alt sent: %.2f\tOldCrz:%.2f\n", ctrAltitude, msfsindalt, oldmsfsindalt, offset, FinalAltitude, oldctrcrz);
+			//	printDebug(LL_INFO,"ctralt: %.2f\tSent Alt: %.2f\tPressure alt: %.2f",ctrAltitude,FinalAltitude,pressure_altitude(2953));
 		}
 
 		takingoff = 0;

@@ -8,6 +8,10 @@
 #define EARTH_RAD 6371008 // earth radius in meters
 #define FTM 0.3048		  // feet to meters
 #define DEG2RAD (M_PI / 180.0)
+#define LMB (-0.0065)   //temperature gradient per meters
+#define GACCEL 9.80655  //gravitation acceleration at sea level
+#define ALPHA -5.255822518257
+
 
 /*
  *
@@ -49,7 +53,10 @@ extern void CalcCoord(double bearing, double lato, double longo, double *latr, d
  * theirt QNH differently
  * https://en.wikipedia.org/wiki/Pressure_altitude
  */
-double pressure_altitude(double mmhg);
+double pressure_altitude(double T0, double P0, double H);
+double altitude_pressure(double T0, double P);
+
+double getISAdev(double T, double H);
 
 void state(AcftMSFS *T, FILE *fdebug, int console);					  // prints PSX information
 void stateMSFS(struct AcftPosition *APos, FILE *fdebug, int console); // prints MSFS information

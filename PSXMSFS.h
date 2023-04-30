@@ -52,6 +52,7 @@ struct Struct_MSFS {
 	double ground_altitude;			  // ground altitude above MSL
 	double alt_above_ground;		  // altitude of MSFS plane above ground
 	double alt_above_ground_minus_CG; // altitude of MSFS wheels above ground (not settable in MSFS)
+	double indicated_altitude; 
 	double latitude;
 	double longitude;
 	double pitch;
@@ -63,6 +64,7 @@ struct Struct_MSFS {
 	double mmHg; // ambiant pressure
 	double MSL; // ambiant pressure
 	double baro; // ambiant pressure
+	double temperature; // ambiant temperature
 };
 
 /* Definition of the structure used to update MSFS

@@ -101,6 +101,7 @@ int main(int argc, char **argv)
 
 	sendQPSX("demand=Qs483");
 	sendQPSX("demand=Qs480");
+	sendQPSX("demand=Qs562");
 
 	/*
 	 * Initializing position of the plane
