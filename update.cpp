@@ -156,6 +156,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	 */
 
 	FinalAltitude = ctrAltitude;
+	oldctrcrz=FinalAltitude;
 
 	/*
 	 * If we are crusing, return the pressure altitude to have it correcly
@@ -173,15 +174,13 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 			msfsindalt = getIndAltitude();
 
-			if (abs(msfsindalt - oldmsfsindalt) < 5) {
+			if (msfsindalt == -1 || abs(msfsindalt - oldmsfsindalt) < 5) {
 				printf("No new ind alt received\n");
-				FinalAltitude = oldctrcrz;
+				FinalAltitude = (oldctrcrz == -1) ? ctrAltitude : oldctrcrz;
 			} else {
 
-				if (oldctrcrz == -1.0)
-					oldctrcrz = ctrAltitude;
 				offset = oldctrcrz - msfsindalt;
-				oldmsfsindalt=msfsindalt;
+				oldmsfsindalt = msfsindalt;
 				printf("Offset : %.2f\n", offset);
 				if (abs(offset) > 10) {
 					FinalAltitude = ctrAltitude + offset;

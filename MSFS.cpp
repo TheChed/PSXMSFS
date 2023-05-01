@@ -44,12 +44,11 @@ double getMSFS_baro(void)
 }
 double getIndAltitude(void)
 {
-	if(MSFS_POS_avail){
+	if (MSFS_POS_avail) {
 		return MSFS_indicated_altitude;
 	} else {
 		return -1;
 	}
-
 }
 int isGroundAltitudeAvailable(void)
 {
