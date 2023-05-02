@@ -75,7 +75,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	static double oldctr;			// to keep track of last good altitude
 	static double oldctrcrz = -1.0; // to keep track of last good altitude
 	static double delta = 0;
-	static double oldmsfsindalt;
 	double offset;
 	double msfsindalt;
 	static double inc = 0;
@@ -168,6 +167,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	 */
 
 	flightPhase = getFlightPhase();
+			msfsindalt = getIndAltitude();
 
 	getTATL(&TA, &TL);
 
@@ -176,44 +176,16 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		if (flags.ONLINE) {
 
-			msfsindalt = getIndAltitude();
 
-			if (msfsindalt == -1 || abs(msfsindalt-oldmsfsindalt)<5) {
-				printf("No new INDICATED ALTITUDE received\n");
-				FinalAltitude = oldctrcrz;
-			} else {
-
-				offset = oldctrcrz - msfsindalt;
-							oldmsfsindalt = msfsindalt;
-				if (abs(offset) > 5) {
-					oldctrcrz += offset;
-				}
-			}
-
+			offset = ctrAltitude - msfsindalt;
+			oldctrcrz += offset / 100;
 			FinalAltitude = oldctrcrz;
-			/*
-						if (msfsindalt == -1 || abs(msfsindalt - oldmsfsindalt) < 5) {
-							printf("No new ind alt received\n");
-							FinalAltitude = (oldctrcrz == -1) ? ctrAltitude : oldctrcrz;
-						} else {
-
-							offset = oldctrcrz - msfsindalt;
-							oldmsfsindalt = msfsindalt;
-							printf("Offset : %.2f\n", offset);
-							if (abs(offset) > 10) {
-								FinalAltitude = ctrAltitude + offset;
-								oldctrcrz = FinalAltitude;
-							} else {
-								FinalAltitude = oldctrcrz;
-							}
-						}*/
-			printf("PSXalt: %.2f\tIND:%.2f\t Old Ind: %.2f\tOffset:%.2f\t, Alt sent: %.2f\tOldCrz:%.2f\n", ctrAltitude, msfsindalt, oldmsfsindalt, offset, FinalAltitude, oldctrcrz);
+			//	printf("PSXalt: %.2f\tIND:%.2f\t Old Ind: %.2f\tOffset:%.2f\t, Alt sent: %.2f\tOldCrz:%.2f\n", ctrAltitude, msfsindalt, oldmsfsindalt, offset, FinalAltitude, oldctrcrz);
 			//	printDebug(LL_INFO,"ctralt: %.2f\tSent Alt: %.2f\tPressure alt: %.2f",ctrAltitude,FinalAltitude,pressure_altitude(2953));
 		}
 
 		takingoff = 0;
 		landing = 1; // only choice now is to land !
-		//	FinalAltitude = ctrAltitude;
 		return FinalAltitude;
 	}
 

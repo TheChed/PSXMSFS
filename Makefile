@@ -1,6 +1,6 @@
 CC = x86_64-w64-mingw32-gcc  
 #CFLAGS = -g -IInclude -Wall -Wextra -pedantic -Werror
-CFLAGS = -std=c++20 -g -IInclude -Wall -Wextra -pedantic
+CFLAGS = -std=c++20 -g -IInclude -Werror -Wall -Wextra -pedantic
 
 DEPS = PSXMSFS.h
 OBJ = PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o
