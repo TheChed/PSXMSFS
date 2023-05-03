@@ -73,7 +73,6 @@ void printDebug(int level, const char *debugInfo, ...)
 		return;
 
 	va_start(ap, debugInfo);
-
 	vsnprintf(msg, sizeof(msg), debugInfo, ap);
 	va_end(ap);
 

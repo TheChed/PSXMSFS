@@ -294,8 +294,6 @@ void I257(const char *s)
 {
 
 	int onGround = (int)(s[6] - '0');
-	// PSX_on_ground = PSX_on_ground || (int)(s[6] - '0');
-
 	SetOnGround(onGround);
 }
 
@@ -522,12 +520,11 @@ int sendQPSX(const char *s)
 
 	strncpy(dem, s, strlen(s));
 	dem[strlen(s)] = 10;
-	// dem[strlen(s)+1] = 0;
 
 	int nbsend = send(flags.sPSX, dem, strlen(s) + 1, 0);
 
 	if (nbsend == 0) {
-		printf("Error sending variable %s to PSX\n", s);
+		printDebug(LL_VERBOSE, "Error sending variable %s to PSX\n", s);
 	}
 
 	free(dem);

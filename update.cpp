@@ -73,7 +73,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	double FinalAltitude;
 	double ctrAltitude;				// altitude of Aircraft centre
 	static double oldctr;			// to keep track of last good altitude
-	static double oldctrcrz = -1.0; // to keep track of last good altitude
+	static double oldctrcrz = -1.0; // to keep track of last good indicated altitude
 	static double delta = 0;
 	double offset;
 	double msfsindalt;
@@ -164,10 +164,12 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	/*
 	 * If we are crusing, return the pressure altitude to have it correcly
 	 * displayed in VATSIM or IVAO
+	 * subject to flag set in ini file
 	 */
 
 	flightPhase = getFlightPhase();
-			msfsindalt = getIndAltitude();
+	msfsindalt = getIndAltitude();
+	offset = ctrAltitude - msfsindalt;
 
 	getTATL(&TA, &TL);
 
@@ -175,13 +177,9 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 		flightPhase == 1) {
 
 		if (flags.ONLINE) {
-
-
-			offset = ctrAltitude - msfsindalt;
 			oldctrcrz += offset / 100;
 			FinalAltitude = oldctrcrz;
-			//	printf("PSXalt: %.2f\tIND:%.2f\t Old Ind: %.2f\tOffset:%.2f\t, Alt sent: %.2f\tOldCrz:%.2f\n", ctrAltitude, msfsindalt, oldmsfsindalt, offset, FinalAltitude, oldctrcrz);
-			//	printDebug(LL_INFO,"ctralt: %.2f\tSent Alt: %.2f\tPressure alt: %.2f",ctrAltitude,FinalAltitude,pressure_altitude(2953));
+			printDebug(LL_INFO, "PSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f", ctrAltitude, FinalAltitude,msfsindalt); 
 		}
 
 		takingoff = 0;
@@ -220,7 +218,7 @@ void SetMSFSPos()
 	PSX = getPSXBoost();
 
 	/*
-	 * Calculate the coordinates from cetre aircraft
+	 * Calculate the coordinates from centre aircraft
 	 * derived from those of the flightDeckAlt
 	 */
 	CalcCoord(PSX.heading_true, PSX.latitude, PSX.longitude, &latc, &longc);
@@ -268,7 +266,6 @@ void SetMovingSurfaces(struct SurfaceUpdate *S)
 	case SPEED:
 		APos.SpeedBrake = S->UN.SpeedBrake;
 		break;
-
 	case MOVING:
 		APos.rudder = S->UN.movingElements.rudder;
 		APos.ailerons = S->UN.movingElements.ailerons;
