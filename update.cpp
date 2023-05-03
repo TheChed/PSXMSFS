@@ -87,6 +87,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	int flightPhase;
 	int TA, TL;
 	int elevation;
+	double deltaPressure;
 
 	char sQi198[128];
 
@@ -169,7 +170,11 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 	flightPhase = getFlightPhase();
 	msfsindalt = getIndAltitude();
-	offset = ctrAltitude - msfsindalt;
+			/* apply a correction for PSX QNH
+			 * 27.3 feet per hPa (at sea level
+			 */ 
+	deltaPressure=(getlocalQNH()-2992)*1013.25/2992 * 27.3;
+	offset = ctrAltitude - msfsindalt-deltaPressure;
 
 	getTATL(&TA, &TL);
 
@@ -178,8 +183,12 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		if (flags.ONLINE) {
 			oldctrcrz += offset / 100;
+			
+			
+			
 			FinalAltitude = oldctrcrz;
-			printDebug(LL_INFO, "PSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f", ctrAltitude, FinalAltitude,msfsindalt); 
+
+			printDebug(LL_VERBOSE, "PSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f\t PSX QNH: %.1f(%.1f)", ctrAltitude, FinalAltitude,msfsindalt,getlocalQNH(),deltaPressure); 
 		}
 
 		takingoff = 0;
