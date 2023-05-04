@@ -73,3 +73,8 @@ void SetMSFSPos(void);
 void err_n_die(const char *fmt, ...);
 
 void parse_arguments(int argc, char **argv);
+
+/* 
+ * function used to send variables to PSX
+ */
+int sendQPSX(const char *s);

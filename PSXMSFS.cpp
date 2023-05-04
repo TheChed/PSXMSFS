@@ -108,9 +108,7 @@ int main(int argc, char **argv)
 	 * as boost and main threads are not yet available
 	 */
 
-	printDebug(LL_INFO, "Initializing position");
 	init_pos();
-	printDebug(LL_INFO, "Initializing done");
 
 	/*
 	 * Create a thread mutex so that two threads cannot change simulataneously
@@ -126,17 +124,17 @@ int main(int argc, char **argv)
 	 * Thread 3: callback function in MSFS
 	 */
 
-	if (pthread_create(&t1, NULL, &ptUmain, NULL) != 0) {
+	if (pthread_create(&t1, NULL, ptUmain, NULL) != 0) {
 		printDebug(LL_ERROR, "Error creating thread Umain");
 		quit = 1;
 	}
 
-	if (pthread_create(&t2, NULL, &ptUmainboost, NULL) != 0) {
+	if (pthread_create(&t2, NULL, ptUmainboost, NULL) != 0) {
 		printDebug(LL_ERROR, "Error creating thread Umainboost");
 		quit = 1;
 	}
 
-	if (pthread_create(&t3, NULL, &ptDatafromMSFS, NULL) != 0) {
+	if (pthread_create(&t3, NULL, ptDatafromMSFS, NULL) != 0) {
 		printDebug(LL_ERROR, "Error creating thread DatafromMSFS");
 		quit = 1;
 	}
@@ -160,11 +158,11 @@ int main(int argc, char **argv)
 	// and gracefully close main + boost sockets
 	printf("Closing PSX boost connection...\n");
 	if (close_PSX_socket(flags.sPSXBOOST)) {
-		printf("Could not close boost PSX socket...\n");
+		printDebug(LL_ERROR,"Could not close boost PSX socket... You might want to check PSX");
 	}
 	printf("Closing PSX main connection...\n");
 	if (close_PSX_socket(flags.sPSX)) {
-		printf("Could not close main PSX socket...\n");
+		printDebug(LL_ERROR,"Could not close main PSX socket...But does it matter now?...");
 	}
 
 	// Finally clean up the Win32 sockets

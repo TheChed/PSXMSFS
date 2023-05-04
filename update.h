@@ -140,11 +140,18 @@ void SetMovingSurfaces(struct SurfaceUpdate *S);
  * Function used to update the lights in MSFS once we got a change in PSX
  */
 void updateLights(int *L);
+
 /*
  * Function used to update the flight phase (landing, cruise, takingoff)
  * as well as the TL and TA as set up in PSX
  */
 void updateFlightPhase(int phase, int TA, int TL);
+
+/*
+ * Updates steering wheel position
+ */
+ 
+void updateSteeringWheel(double wheelangle);
 
 /*
  * Functions used to set the weather zones

@@ -227,6 +227,5 @@ int open_connections();
 int umain(void);
 int umainBoost(void);
 double SetAltitude(int onGround);
-int sendQPSX(const char *s);
 int init_connect_MSFS(HANDLE *p);
 #endif

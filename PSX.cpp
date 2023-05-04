@@ -7,7 +7,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
-#include <pthread.h>
 #include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
@@ -37,7 +36,7 @@ void H170(char *s)
 }
 
 // Flap lever variable Qh389
-void H389(char *s)
+void H389(const char *s)
 {
 	struct SurfaceUpdate S;
 	int position;
@@ -50,7 +49,7 @@ void H389(char *s)
 }
 
 // Parking break
-void H397(char *s)
+void H397(const char *s)
 {
 	int position;
 	position = (int)(s[6] - '0');
@@ -58,7 +57,7 @@ void H397(char *s)
 }
 
 // Steering wheel
-void H426(char *s)
+void H426(const char *s)
 {
 	double pos;
 
@@ -67,9 +66,8 @@ void H426(char *s)
 		pos = 0;
 	}
 
-	SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, -pos,
-								   SIMCONNECT_GROUP_PRIORITY_HIGHEST,
-								   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+	updateSteeringWheel(pos);
+
 }
 
 // Speedbrake lever variable Qh389
@@ -101,16 +99,6 @@ void S121(char *s)
 	}
 	SU.Type = TAS;
 	SetSpeed(&SU);
-}
-
-void S562(char *s)
-{
-	char *token, *ptr;
-
-	if ((token = strtok_r(s + 7, DELIM, &ptr)) != NULL) {
-	}
-	if ((token = strtok_r(NULL, DELIM, &ptr)) != NULL) {
-	}
 }
 
 void S483(char *s)
@@ -235,16 +223,17 @@ void S480(char *s)
 	SetMovingSurfaces(&S);
 }
 
-void S124(char *s)
+void S124(const char *s)
 {
 
 	int hour, minute, day, year;
 	struct tm *time_PSX;
 	time_t timeUTC;
+
 	timeUTC = strtoll(s + 6, NULL, 10) / 1000;
 
 	if ((time_PSX = gmtime(&timeUTC)) == NULL) {
-		printf("Error creating timePSX\n");
+		printDebug(LL_ERROR, "Error creating timePSX");
 		return;
 	}
 
@@ -268,7 +257,7 @@ void S443(const char *s)
 	free(light);
 }
 
-void I240(char *s)
+void I240(const char *s)
 {
 
 	int zone;
@@ -282,10 +271,14 @@ void I240(char *s)
 }
 void I204(const char *s)
 {
-	int XPDR, IDENT;
+	int XPDR=2000, IDENT=0;
 
 	XPDR = strtol(s + 8, NULL, 16);
-	IDENT = (int)(s[7] - '0');
+	if (isdigit(s[7])) {
+		IDENT = (int)(s[7] - '0');
+	} else {
+		IDENT = 0;
+	}
 
 	SetXPDR(XPDR, IDENT);
 }
@@ -297,7 +290,7 @@ void I257(const char *s)
 	SetOnGround(onGround);
 }
 
-void I219(char *s)
+void I219(const char *s)
 {
 	double acftelev;
 	acftelev = strtol(s + 6, NULL, 10);
@@ -506,29 +499,6 @@ void Decode(char *s)
 		strstr(s, "Qs332") || strstr(s, "Qs333") || strstr(s, "Qs334") || strstr(s, "Qs335")) {
 		Qsweather(s);
 	}
-
-	// get the pressure altitude
-	if (strstr(s, "Qs562")) {
-		S562(strstr(s, "Qs562"));
-	}
-}
-int sendQPSX(const char *s)
-{
-
-	char *dem;
-	dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
-
-	strncpy(dem, s, strlen(s));
-	dem[strlen(s)] = 10;
-
-	int nbsend = send(flags.sPSX, dem, strlen(s) + 1, 0);
-
-	if (nbsend == 0) {
-		printDebug(LL_VERBOSE, "Error sending variable %s to PSX\n", s);
-	}
-
-	free(dem);
-	return nbsend;
 }
 
 int umain(void)
@@ -612,7 +582,7 @@ int umainBoost(void)
 		return 0;
 	}
 	if (nbread < 0 && errno == EAGAIN) {
-		printDebug(LL_ERROR, "no data for now, call back when the socket is readable");
+		printDebug(LL_ERROR, "No data for now, call back when the socket is readable");
 		return 0;
 	}
 	if (nbread < 0) {

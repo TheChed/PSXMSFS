@@ -15,6 +15,27 @@
 monotime TimeStart;
 FILE *fdebug;
 
+int sendQPSX(const char *s)
+{
+
+	char *dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
+	if (dem == NULL) {
+		printDebug(LL_ERROR, "Could not create PSX variable. I have to exit now.");
+		exit(EXIT_FAILURE);
+	}
+
+	strncpy(dem, s, strlen(s));
+	dem[strlen(s)] = 10;
+
+	int nbsend = send(flags.sPSX, dem, strlen(s) + 1, 0);
+
+	if (nbsend == 0) {
+		printDebug(LL_VERBOSE, "Error sending variable %s to PSX\n", s);
+	}
+
+	free(dem);
+	return nbsend;
+}
 monotime getMonotonicTime(void)
 {
 	struct timespec ts;

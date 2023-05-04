@@ -170,11 +170,11 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 	flightPhase = getFlightPhase();
 	msfsindalt = getIndAltitude();
-			/* apply a correction for PSX QNH
-			 * 27.3 feet per hPa (at sea level
-			 */ 
-	deltaPressure=(getlocalQNH()-2992)*1013.25/2992 * 27.3;
-	offset = ctrAltitude - msfsindalt-deltaPressure;
+	/* apply a correction for PSX QNH
+	 * 27.3 feet per hPa (at sea level
+	 */
+	deltaPressure = (getlocalQNH() - 2992) * 1013.25 / 2992 * 27.3;
+	offset = ctrAltitude - msfsindalt - deltaPressure;
 
 	getTATL(&TA, &TL);
 
@@ -183,12 +183,10 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		if (flags.ONLINE) {
 			oldctrcrz += offset / 100;
-			
-			
-			
+
 			FinalAltitude = oldctrcrz;
 
-			printDebug(LL_VERBOSE, "PSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f\t PSX QNH: %.1f(%.1f)", ctrAltitude, FinalAltitude,msfsindalt,getlocalQNH(),deltaPressure); 
+			printDebug(LL_VERBOSE, "PSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f\t PSX QNH: %.1f(%.1f)", ctrAltitude, FinalAltitude, msfsindalt, getlocalQNH(), deltaPressure);
 		}
 
 		takingoff = 0;
@@ -383,6 +381,13 @@ void init_pos()
 			   .flightPhase = 0, // onground by default
 			   .TA = 18000,
 			   .TL = 18000};
+}
+
+void updateSteeringWheel(double wheelangle){
+
+	SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, -wheelangle,
+								   SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+								   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
 void updateParkingBreak(int position)
