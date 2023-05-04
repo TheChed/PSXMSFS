@@ -17,7 +17,7 @@ static struct SpeedStruct PSXSPEED;
 
 double getlocalQNH(void)
 {
-	return PSXDATA.QNH[PSXDATA.weatherZone];
+	return PSXDATA.QNH[PSXDATA.weatherZone]/2992*1013.25;
 }
 
 void SetOnGround(int onGround)
@@ -87,7 +87,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	int flightPhase;
 	int TA, TL;
 	int elevation;
-	double deltaPressure;
+	double deltaPressure, deltaPresureMSFS;
 
 	char sQi198[128];
 
@@ -173,8 +173,16 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	/* apply a correction for PSX QNH
 	 * 27.3 feet per hPa (at sea level
 	 */
-	deltaPressure = (getlocalQNH() - 2992) * 1013.25 / 2992 * 27.3;
-	offset = ctrAltitude - msfsindalt - deltaPressure;
+	deltaPressure = (getlocalQNH() - 1013.25) * 27.3;
+
+	/*
+	 * And now correct the pressure in the pilot connection for IVAO and VATSIM
+	 */
+
+	deltaPresureMSFS = (getMSL_pressure()-1013.25)*27.3;
+
+	offset = ctrAltitude - msfsindalt - (deltaPressure+deltaPresureMSFS);
+
 
 	getTATL(&TA, &TL);
 
@@ -186,7 +194,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 			FinalAltitude = oldctrcrz;
 
-			printDebug(LL_VERBOSE, "PSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f\t PSX QNH: %.1f(%.1f)", ctrAltitude, FinalAltitude, msfsindalt, getlocalQNH(), deltaPressure);
+			printDebug(LL_VERBOSE, "TA: %d\tTL%d\tPSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f\t PSX QNH: %.1f(%.1f)\t PMSFS: %.2f\tDelta Press:%.2f", TA,TL,ctrAltitude, FinalAltitude, msfsindalt, getlocalQNH(), deltaPressure,getMSL_pressure(),deltaPresureMSFS);
 		}
 
 		takingoff = 0;
