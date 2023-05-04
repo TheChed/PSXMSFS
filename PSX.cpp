@@ -217,7 +217,6 @@ void S480(char *s)
 														  //
 	S.Type = MOVING;
 	S.UN.movingElements.rudder = rudder;
-
 	S.UN.movingElements.ailerons = aileron;
 	S.UN.movingElements.elevator = elevator;
 	SetMovingSurfaces(&S);
