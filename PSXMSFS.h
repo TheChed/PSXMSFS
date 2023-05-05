@@ -5,7 +5,6 @@
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #include <pthread.h>
 #define MAXLEN 8192
-#define PRINT 1
 #define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
 #define MAXBUFF 165536
 #define DELIM ";"
@@ -117,18 +116,13 @@ struct AI_TCAS {
 	double heading;
 };
 
+
 /*
- * Structure to store the date+time from PSX
+ * Storage for Transation Altitude
+ * and tranition level
  */
-struct PSXTIME {
-	int year;
-	int day;
-	int hour;
-	int minute;
-};
 
 struct TATL {
-	// TA & TL
 	int TA;
 	int TL;
 
@@ -195,27 +189,6 @@ enum DATA_REQUEST_ID {
 	DATA_REQUEST_FREEZE,
 	DATA_REQUEST_TCAS,
 };
-
-typedef struct {
-	double pitch;
-	double bank;
-	double heading_true;
-	float altitude;
-	double latitude, longitude;
-
-	double TAS;
-	double IAS;
-	int onGround;	 // 1 if PSX is on groud, 0 otherwise
-	double GearDown; // Gear down =1, gear up =0;
-	int GearLever;	 // 1=up, 2=off, 3=down
-	int FlapLever;	 // 0 (up) to 6 (30)
-	int SpdBrkLever; // 0 (up) to 800 max deployed
-	// Moving surfaces
-	double elevator, aileron, rudder;
-	double parkbreak;
-	double steering;
-
-} Target;
 
 // Function definitions
 int init_param(void);

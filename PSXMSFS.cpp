@@ -16,29 +16,22 @@
 #include "MSFS.h"
 #include "update.h"
 
-struct PSXTIME PSXtime;
+//struct PSXTIME PSXtime;
 
 struct PSXMSFSFLAGS flags;
 
 pthread_mutex_t mutex;
-int DEBUG = 1;
 int quit = 0;
-int TCAS_INJECT = 1; /*TCAS injection on by default*/
-int ELEV_INJECT = 1; /*elevation injection on by default below 300 ft AGL */
-int ONLINE = 1;		 /* injecting pressure altitude for online networks like VATSIM and IVAO */
-int INHIB_CRASH_DETECT = 0;
-int SLAVE = 0; // 0=PSX is master, 1=MSFS is master
-char debugInfo[256] = {0};
 
-char PSXMainServer[] = "999.999.999.999";
-char MSFSServer[] = "999.999.999.999";
-char PSXBoostServer[] = "999.999.999.999";
-int PSXPort = 10747;
-int PSXBoostPort = 10749;
+//char PSXMainServer[] = "999.999.999.999";
+//char MSFSServer[] = "999.999.999.999";
+//char PSXBoostServer[] = "999.999.999.999";
+//int PSXPort = 10747;
+//int PSXBoostPort = 10749;
 
 void *ptDatafromMSFS(void *thread_param)
 {
-	(void)(&thread_param);
+	(void)(thread_param);
 	while (!quit) {
 		SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
 

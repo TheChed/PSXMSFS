@@ -192,9 +192,6 @@ int init_param()
 	char *stop;
 
 	/* Sensible default values*/
-	//	strcpy(flags.PSXMainServer, "127.0.0.1");
-	// strcpy(flags.PSXBoostServer, "127.0.0.1");
-	//	strcpy(flags.MSFSServer, "127.0.0.1");
 	flags.PSXPort = 10747;
 	flags.PSXBoostPort = 10749;
 	flags.SLAVE = 0;
