@@ -122,7 +122,8 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 	/*
 	 * we received a new elevation from PSX
-	 * therefore we can reset the decrement (incland)
+	 * therefore we can reset the decrement 
+	 * used during landing (incland)
 	 */
 
 	elevation = getElevation();
@@ -157,6 +158,10 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	 */
 
 	FinalAltitude = ctrAltitude;
+
+	/*
+	 * Initialise once a static variable holding the current cruize altitude
+	 */
 	if (!crzinit) {
 		oldctrcrz = ctrAltitude;
 		crzinit = 1;
@@ -172,13 +177,9 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	msfsindalt = getIndAltitude();
 	/* apply a correction for PSX QNH
 	 * 27.3 feet per hPa (at sea level
-	 */
+	 * as well as for the MSFS QNH pressure, as those might differ
+*/
 	deltaPressure = (getlocalQNH() - 1013.25) * 27.3;
-
-	/*
-	 * And now correct the pressure in the pilot connection for IVAO and VATSIM
-	 */
-
 	deltaPresureMSFS = (getMSL_pressure()-1013.25)*27.3;
 
 	offset = ctrAltitude - msfsindalt - (deltaPressure+deltaPresureMSFS);
@@ -187,14 +188,11 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	getTATL(&TA, &TL);
 
 	if ((flightPhase == 0 && ctrAltitude > TA) || (flightPhase == 2 && ctrAltitude > TL) ||
-		flightPhase == 1) {
+	flightPhase == 1) {
 
 		if (flags.ONLINE) {
 			oldctrcrz += offset / 100;
-
 			FinalAltitude = oldctrcrz;
-
-			printDebug(LL_VERBOSE, "TA: %d\tTL%d\tPSX ALT: %.2f\tSent Alt: %.2f\tMSFS IND ALT: %.2f\t PSX QNH: %.1f(%.1f)\t PMSFS: %.2f\tDelta Press:%.2f", TA,TL,ctrAltitude, FinalAltitude, msfsindalt, getlocalQNH(), deltaPressure,getMSL_pressure(),deltaPresureMSFS);
 		}
 
 		takingoff = 0;

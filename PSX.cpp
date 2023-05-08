@@ -172,6 +172,7 @@ void S448(char *s)
 		stdbar = ((abs(strtod(token, NULL)) == 1) ? 0 : 1);
 	}
 	SetBARO(altimeter, stdbar);
+	printDebug(LL_VERBOSE,"Alt: %d\t STD:%d",altimeter,stdbar);
 }
 
 void S458(char *s)
@@ -201,6 +202,7 @@ void S458(char *s)
 		C2 = 122800000;
 	}
 	SetCOMM(C1, C2);
+	printDebug(LL_VERBOSE,"COM1: %d\t COM2:%d",COM1,COM2);
 }
 void S480(char *s)
 {
