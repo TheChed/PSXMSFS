@@ -9,85 +9,90 @@
 
 HANDLE hSimConnect = NULL;
 
-int sPSX, sPSXBOOST;
-int close_PSX_socket(int sockid) { return closesocket(sockid); }
-
-int init_socket() {
-
-    WSADATA wsa;
-
-    /* WSAStartup returns 0 in case of success*/
-    return !WSAStartup(MAKEWORD(2, 2), &wsa);
+int close_PSX_socket(int sockid)
+{
+	return closesocket(sockid);
 }
 
-int init_connect_PSX(const char *hostname, int portno) {
+int init_socket()
+{
 
-    struct sockaddr_in PSXmainserver;
-    int socketID;
+	WSADATA wsa;
 
-    // Create a socket
-    if ((socketID = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        printDebug("Error while creating the main PSX socket", 1);
-        return -1;
-    }
-
-    // Connect to PSX
-    bzero(&PSXmainserver, sizeof(PSXmainserver));
-
-    PSXmainserver.sin_family = AF_INET;
-    PSXmainserver.sin_port = htons(portno);
-    PSXmainserver.sin_addr.s_addr = inet_addr(hostname);
-
-    if (connect(socketID, (struct sockaddr *)&PSXmainserver, sizeof(PSXmainserver)) < 0) {
-        return -1;
-    } else {
-        return socketID;
-    }
+	/* WSAStartup returns 0 in case of success*/
+	return !WSAStartup(MAKEWORD(2, 2), &wsa);
 }
 
-int init_connect_MSFS(HANDLE *p) { return (SimConnect_Open(p, "PSX", NULL, 0, 0, 0) == S_OK); }
+int init_connect_PSX(const char *hostname, int portno)
+{
 
-int open_connections() {
-    char debugInfo[256];
+	struct sockaddr_in PSXmainserver;
+	int socketID;
 
-    // initialise Win32 socket library
-    if (!init_socket()) {
-        printDebug("Could not initialize Windows sockets. Exiting...\n", 1);
-        return 0;
-    }
+	// Create a socket
+	if ((socketID = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		printDebug(LL_ERROR, "Error while creating the main PSX socket");
+		return -1;
+	}
 
-    // connect to PSX main socket
-    sprintf(debugInfo, "Connecting to PSX main server on: %s:%d", PSXMainServer, PSXPort);
-    printDebug(debugInfo, 1);
+	// Connect to PSX
+	bzero(&PSXmainserver, sizeof(PSXmainserver));
 
-    sPSX = init_connect_PSX(PSXMainServer, PSXPort);
-    if (sPSX < 0) {
-        printDebug("Error connecting to the PSX socket. Exiting...", 1);
-        return 0;
-    } else {
-        printDebug("Connected to PSX main server.", 1);
-    }
+	PSXmainserver.sin_family = AF_INET;
+	PSXmainserver.sin_port = htons(portno);
+	PSXmainserver.sin_addr.s_addr = inet_addr(hostname);
 
-    // connect to boost socket
-    sprintf(debugInfo, "Connecting to PSX boost server on: %s:%d", PSXBoostServer, PSXBoostPort);
-    printDebug(debugInfo, 1);
+	if (connect(socketID, (struct sockaddr *)&PSXmainserver, sizeof(PSXmainserver)) < 0) {
+		return -1;
+	} else {
+		return socketID;
+	}
+}
 
-    sPSXBOOST = init_connect_PSX(PSXBoostServer, PSXBoostPort);
-    if (sPSXBOOST < 0) {
-        printDebug("Error connecting to the PSX boost socket. Are you sure it is "
-                   "running? Exiting...",
-                   1);
-        return 0;
-    } else {
-        printDebug("Connected to PSX boost server.", 1);
-    }
+int init_connect_MSFS(HANDLE *p)
+{
+	return (SimConnect_Open(p, "PSX", NULL, 0, 0, 0) == S_OK);
+}
 
-    // finally connect to MSFS socket via SimConnect
-    if (!init_connect_MSFS(&hSimConnect)) {
-        printDebug("Could not connect to Simconnect.dll. Is MSFS running?", 1);
-        return 0;
-    } else {
-        printDebug("Connected to MSFS.", 1);
-        return 1;
-    }
+int open_connections()
+{
+
+	// initialise Win32 socket library
+	if (!init_socket()) {
+		printDebug(LL_ERROR, "Could not initialize Windows sockets. Exiting...");
+		return 0;
+	}
+
+	// connect to PSX main socket
+
+	printDebug(LL_INFO, "Connecting to PSX main server on: %s:%d", flags.PSXMainServer, flags.PSXPort);
+
+	flags.sPSX = init_connect_PSX(flags.PSXMainServer, flags.PSXPort);
+	if (flags.sPSX < 0) {
+		printDebug(LL_ERROR, "Error connecting to the PSX socket. Exiting...");
+		return 0;
+	} else {
+		printDebug(LL_INFO, "Connected to PSX main server.");
+	}
+
+	// connect to boost socket
+	printDebug(LL_INFO, "Connecting to PSX boost server on: %s:%d", flags.PSXBoostServer, flags.PSXBoostPort);
+
+	flags.sPSXBOOST = init_connect_PSX(flags.PSXBoostServer, flags.PSXBoostPort);
+	if (flags.sPSXBOOST < 0) {
+		printDebug(LL_ERROR, "Error connecting to the PSX boost socket. Are you sure it is "
+							 "running? Exiting...");
+		return 0;
+	} else {
+		printDebug(LL_INFO, "Connected to PSX boost server.");
+	}
+
+	// finally connect to MSFS socket via SimConnect
+	if (!init_connect_MSFS(&hSimConnect)) {
+		printDebug(LL_ERROR, "Could not connect to Simconnect.dll. Is MSFS running?");
+		return 0;
+	} else {
+		printDebug(LL_INFO, "Connected to MSFS.");
+		return 1;
+	}
 }
