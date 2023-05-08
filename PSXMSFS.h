@@ -8,6 +8,7 @@
 #define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
 #define MAXBUFF 165536
 #define DELIM ";"
+#define PSXMSFS_VERSION 2
 
 extern pthread_mutex_t mutex;
 extern int quit;
