@@ -1,45 +1,20 @@
 CC = x86_64-w64-mingw32-gcc  
-#CFLAGS = -g -IInclude -Wall -Wextra -pedantic -Werror
-CFLAGS = -std=c++20 -g -IInclude -Werror -Wall -Wextra -pedantic
+CFLAGS = -std=c++20 -IInclude -Werror -Wall -Wextra -pedantic
 
-DEPS = PSXMSFS.h
+DEPS = PSXMSFS.h util.h update.h MSFS.h
 OBJ = PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o
-OBJSIM = sim.o
-OBJDEBUG = debug.o
-OBJERR = err.o
 
-all: PSXMSFS hash move win
-
-simu: sim move win
-
-deb: debug move win
-
-error: err win
+all: PSXMSFS move win
+rel: all hash
 
 comp: PSXMSFS
 
-PSXMSFS: $(OBJ) $(DEPS)
-	$(CC) -static $(OBJ) -g -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthread 
+PSXMSFS: $(OBJ) 
+	$(CC) -static $(OBJ) -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthread 
 
-sim: $(OBJSIM) 
-	$(CC)  $(OBJSIM) -o sim.exe -LInclude -lSimConnect 
-
-debug: $(OBJDEBUG) 
-	$(CC)  $(OBJDEBUG) -o debug.exe -LInclude -lSimConnect -lpthread
-err: $(OBJERR) 
-	$(CC)  $(OBJERR) -g -o err.exe -limagehlp
-
-%.o : %.cpp
+.PHONY: PSXMSFS
+%.o : %.cpp $(DEPS)
 	$(CC) $(CFLAGS) -c $<
-
-sim.o : sim.cpp
-	$(CC) -IInclude -c $<
-
-debug.o : debug.cpp
-	$(CC) -IInclude -c $<
-
-err.o : err.cpp
-	$(CC) -g -IInclude -c $<
 
 clean:
 	rm -rf bin/PSXMSFS.* *.o *.exe

@@ -6,6 +6,7 @@
 /*
  * Structure storing information send by
  * the boost server and later used to update MSFS
+ *
  */
 
 struct BOOST {

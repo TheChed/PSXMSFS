@@ -16,18 +16,19 @@
 #include "MSFS.h"
 #include "update.h"
 
-//struct PSXTIME PSXtime;
+// struct PSXTIME PSXtime;
 
 struct PSXMSFSFLAGS flags;
+struct INTERNALFLAGS intflags;
 
 pthread_mutex_t mutex;
 int quit = 0;
 
-//char PSXMainServer[] = "999.999.999.999";
-//char MSFSServer[] = "999.999.999.999";
-//char PSXBoostServer[] = "999.999.999.999";
-//int PSXPort = 10747;
-//int PSXBoostPort = 10749;
+// char PSXMainServer[] = "999.999.999.999";
+// char MSFSServer[] = "999.999.999.999";
+// char PSXBoostServer[] = "999.999.999.999";
+// int PSXPort = 10747;
+// int PSXBoostPort = 10749;
 
 void *ptDatafromMSFS(void *thread_param)
 {
@@ -151,11 +152,11 @@ int main(int argc, char **argv)
 	// and gracefully close main + boost sockets
 	printf("Closing PSX boost connection...\n");
 	if (close_PSX_socket(flags.sPSXBOOST)) {
-		printDebug(LL_ERROR,"Could not close boost PSX socket... You might want to check PSX");
+		printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
 	}
 	printf("Closing PSX main connection...\n");
 	if (close_PSX_socket(flags.sPSX)) {
-		printDebug(LL_ERROR,"Could not close main PSX socket...But does it matter now?...");
+		printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
 	}
 
 	// Finally clean up the Win32 sockets

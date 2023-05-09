@@ -17,7 +17,7 @@ static struct SpeedStruct PSXSPEED;
 
 double getlocalQNH(void)
 {
-	return PSXDATA.QNH[PSXDATA.weatherZone]/2992*1013.25;
+	return PSXDATA.QNH[PSXDATA.weatherZone] / 2992 * 1013.25;
 }
 
 void SetOnGround(int onGround)
@@ -82,7 +82,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	static double incland = 0;
 	static int Qi198SentLand, Qi198SentAirborne;
 	static int oldElevation = 0;
-	static int crzinit = 0;
 	static int takingoff, landing;
 	int flightPhase;
 	int TA, TL;
@@ -122,7 +121,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 	/*
 	 * we received a new elevation from PSX
-	 * therefore we can reset the decrement 
+	 * therefore we can reset the decrement
 	 * used during landing (incland)
 	 */
 
@@ -162,10 +161,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	/*
 	 * Initialise once a static variable holding the current cruize altitude
 	 */
-	if (!crzinit) {
-		oldctrcrz = ctrAltitude;
-		crzinit = 1;
-	}
 
 	/*
 	 * If we are crusing, return the pressure altitude to have it correcly
@@ -178,18 +173,24 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	/* apply a correction for PSX QNH
 	 * 27.3 feet per hPa (at sea level
 	 * as well as for the MSFS QNH pressure, as those might differ
-*/
+	 */
 	deltaPressure = (getlocalQNH() - 1013.25) * 27.3;
-	deltaPresureMSFS = (getMSL_pressure()-1013.25)*27.3;
+	deltaPresureMSFS = (getMSL_pressure() - 1013.25) * 27.3;
 
-	offset = ctrAltitude - msfsindalt - (deltaPressure+deltaPresureMSFS);
+	offset = ctrAltitude - msfsindalt - (deltaPressure + deltaPresureMSFS);
 
-
+	//	oldctrcrz = ctrAltitude;
 	getTATL(&TA, &TL);
 
-	if ((flightPhase == 0 && ctrAltitude > TA) || (flightPhase == 2 && ctrAltitude > TL) ||
-	flightPhase == 1) {
+	 printDebug(LL_VERBOSE,"Climb:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t",FinalAltitude,oldctrcrz );
 
+	if ((flightPhase == 0 && ctrAltitude > TA) || (flightPhase == 2 && ctrAltitude > TL) ||
+		flightPhase == 1) {
+
+		if (!intflags.oldcrz) {
+			oldctrcrz = ctrAltitude;
+			intflags.oldcrz = 1;
+		}
 		if (flags.ONLINE) {
 			oldctrcrz += offset / 100;
 			FinalAltitude = oldctrcrz;
@@ -197,6 +198,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		takingoff = 0;
 		landing = 1; // only choice now is to land !
+	 		printDebug(LL_INFO,"Cruise:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t offset:%.2f",FinalAltitude,oldctrcrz,offset );
 		return FinalAltitude;
 	}
 
@@ -218,6 +220,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 		}
 	}
 
+	 		printDebug(LL_INFO,"EOF:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t",FinalAltitude,oldctrcrz );
 	return FinalAltitude;
 }
 
@@ -389,7 +392,8 @@ void init_pos()
 			   .TL = 18000};
 }
 
-void updateSteeringWheel(double wheelangle){
+void updateSteeringWheel(double wheelangle)
+{
 
 	SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, -wheelangle,
 								   SIMCONNECT_GROUP_PRIORITY_HIGHEST,
