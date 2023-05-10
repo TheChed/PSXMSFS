@@ -3,5 +3,6 @@ Makefile
 algo.txt
 bin/
 err.cpp
+PSXMSFS
 *.exe
 .gitattributes
