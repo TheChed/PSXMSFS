@@ -18,7 +18,9 @@
 
 
 
-extern pthread_mutex_t mutex;
+extern pthread_mutex_t mutex, mutexsitu;
+extern pthread_cond_t condNewSitu;
+
 extern int quit;
 extern HANDLE hSimConnect;
 
@@ -50,6 +52,7 @@ struct PSXMSFSFLAGS{
 
 struct INTERNALFLAGS {
 	int oldcrz;
+	int updateNewSitu;
 };
 
 

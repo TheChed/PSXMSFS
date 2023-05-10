@@ -185,13 +185,12 @@ char *scan_ini(FILE *file, const char *key)
 	return NULL;
 }
 
-
 void resetInternalFlags(void)
 {
 	/* same for internal flags */
-	intflags.oldcrz=0;
+	intflags.oldcrz = 0;
+	intflags.updateNewSitu = 1;
 }
-
 
 int init_param()
 {
@@ -208,7 +207,6 @@ int init_param()
 	flags.ELEV_INJECT = 1;
 	flags.INHIB_CRASH_DETECT = 0;
 	flags.ONLINE = 0;
-
 
 	resetInternalFlags();
 

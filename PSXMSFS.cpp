@@ -21,7 +21,8 @@
 struct PSXMSFSFLAGS flags;
 struct INTERNALFLAGS intflags;
 
-pthread_mutex_t mutex;
+pthread_mutex_t mutex, mutexsitu;
+pthread_cond_t condNewSitu;
 int quit = 0;
 
 // char PSXMainServer[] = "999.999.999.999";
@@ -110,6 +111,8 @@ int main(int argc, char **argv)
 	 */
 
 	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&mutexsitu, NULL);
+	pthread_cond_init(&condNewSitu, NULL);
 
 	/*
 	 * Creating the 3 threads:
@@ -141,7 +144,13 @@ int main(int argc, char **argv)
 	if (pthread_join(t3, NULL) != 0) {
 		printDebug(LL_ERROR, "Failed to join MSFS thread");
 	}
+
+	/*
+	 * Cleaning thread related tools
+	 */
 	pthread_mutex_destroy(&mutex);
+	pthread_mutex_destroy(&mutexsitu);
+	pthread_cond_destroy(&condNewSitu);
 
 	printf("Closing MSFS connection...\n");
 	SimConnect_Close(hSimConnect);

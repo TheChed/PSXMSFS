@@ -182,7 +182,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	//	oldctrcrz = ctrAltitude;
 	getTATL(&TA, &TL);
 
-	 printDebug(LL_VERBOSE,"Climb:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t",FinalAltitude,oldctrcrz );
+	//	printDebug(LL_VERBOSE, "Climb:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t", FinalAltitude, oldctrcrz);
 
 	if ((flightPhase == 0 && ctrAltitude > TA) || (flightPhase == 2 && ctrAltitude > TL) ||
 		flightPhase == 1) {
@@ -198,7 +198,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		takingoff = 0;
 		landing = 1; // only choice now is to land !
-	 		printDebug(LL_INFO,"Cruise:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t offset:%.2f",FinalAltitude,oldctrcrz,offset );
+					 //	printDebug(LL_INFO, "Cruise:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t offset:%.2f", FinalAltitude, oldctrcrz, offset);
 		return FinalAltitude;
 	}
 
@@ -220,7 +220,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 		}
 	}
 
-	 		printDebug(LL_INFO,"EOF:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t",FinalAltitude,oldctrcrz );
+	//	printDebug(LL_INFO, "EOF:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t", FinalAltitude, oldctrcrz);
 	return FinalAltitude;
 }
 

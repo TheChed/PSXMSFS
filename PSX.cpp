@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -265,7 +266,7 @@ void I240(const char *s)
 		zone = 0;
 	}
 	setWeatherZone(zone);
-	printDebug(LL_VERBOSE, "Active weather zone: %d\t", zone);
+	printDebug(LL_DEBUG, "Active weather zone: %d\t", zone);
 }
 void I204(const char *s)
 {
@@ -320,7 +321,7 @@ void Qsweather(char *s)
 		QNH = strtoul(sav, NULL, 10);
 		setWeather(zone, QNH);
 	}
-	printDebug(LL_VERBOSE, "Weather zone: %d\t QNH:%.2f", zone, QNH);
+	printDebug(LL_DEBUG, "Weather zone: %d\t QNH:%.2f", zone, QNH);
 }
 
 double calcVS(double alt, int ms)
@@ -404,6 +405,34 @@ void Decodeboost(char *s)
 	SetSpeed(&SU);
 
 	updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
+}
+
+void newSituLoaded(void){
+
+			resetInternalFlags();
+			
+      printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
+			printDebug(LL_INFO, "Let's wait a few seconds to get everyone ready, shall we?");
+
+			freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
+			init_variables();
+
+      /*
+       * Now we wait and lock the update thread in order to get variables
+       * to reset themselves, especially those in MSFS
+       * we do this with conditional waits for threads
+       */
+
+			pthread_mutex_lock(&mutexsitu);
+			if (flags.INHIB_CRASH_DETECT) {
+				printDebug(LL_INFO, "No crash detection for 10 seconds");
+				sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
+			}
+			sleep(5);
+			intflags.updateNewSitu = 0;
+			printDebug(LL_INFO, "Resuming normal operations.");
+			pthread_mutex_unlock(&mutexsitu);
+			pthread_cond_signal(&condNewSitu);
 }
 
 void Decode(char *s)
@@ -537,28 +566,18 @@ int umain(void)
 				(char *)memchr((void *)line_start, '\n', bufmain_used - (line_start - bufmain)))) {
 		*line_end = 0;
 
-		//    printf("%ld\n", (long)elapsedMs(TimeStart) / 10);
 		// New situ loaded
-		if (strstr(line_start, "load3")) {
-			printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
-        resetInternalFlags();
+		if (strstr(line_start, "load3")){
+        newSituLoaded();
+    }
 
-			if (flags.INHIB_CRASH_DETECT) {
-				printDebug(LL_INFO, "No crash detection for 10 seconds");
-				sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
-				printDebug(LL_INFO, "Let's wait a few seconds to get everyone ready.");
-				sleep(5);
-				printDebug(LL_INFO, "Resuming normal operations.");
-			}
-			freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
-			init_variables();
-		}
 		if (line_start[0] == 'Q') {
 			pthread_mutex_lock(&mutex);
 			Decode(line_start);
 			pthread_mutex_unlock(&mutex);
 		}
-		line_start = line_end + 1;
+		
+    line_start = line_end + 1;
 	}
 	/* Shift buffer down so the unprocessed data is at the start */
 	bufmain_used -= (line_start - bufmain);
