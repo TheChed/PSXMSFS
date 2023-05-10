@@ -367,7 +367,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
 	break;
 	default:
-		printDebug(LL_VERBOSE, "In Callbackfunction default case: nothing was done. Event: %ld",
+		printDebug(LL_VERBOSE, "In Callback function default case: nothing was done. Event: %ld",
 				   pData->dwID);
 		break;
 	}
