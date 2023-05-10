@@ -1,59 +1,28 @@
 CC = x86_64-w64-mingw32-gcc  
-#CFLAGS = -g -IInclude -Wall -Wextra -pedantic -Werror
-CFLAGS = -std=c++20 -g -IInclude -Werror -Wall -Wextra -pedantic
+CFLAGS = -std=c++20 -IInclude -Werror -Wall -Wextra -pedantic
 
-DEPS = PSXMSFS.h
+DEPS = PSXMSFS.h util.h update.h MSFS.h
 OBJ = PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o
-OBJSIM = sim.o
-OBJDEBUG = debug.o
-OBJERR = err.o
 
-all: PSXMSFS hash move win
-
-simu: sim move win
-
-deb: debug move win
-
-error: err win
+all: PSXMSFS win
+rel: all hash
 
 comp: PSXMSFS
 
-PSXMSFS: $(OBJ) $(DEPS)
-	$(CC) -static $(OBJ) -g -o PSXMSFS.exe -LInclude -lSimConnect -lwsock32 -lpthread 
+PSXMSFS: $(OBJ) 
+	$(CC) -static $(OBJ) -o PSXMSFS -LInclude -lSimConnect -lwsock32 -lpthread 
+	cp PSXMSFS.exe PSXMSFS
 
-sim: $(OBJSIM) 
-	$(CC)  $(OBJSIM) -o sim.exe -LInclude -lSimConnect 
-
-debug: $(OBJDEBUG) 
-	$(CC)  $(OBJDEBUG) -o debug.exe -LInclude -lSimConnect -lpthread
-err: $(OBJERR) 
-	$(CC)  $(OBJERR) -g -o err.exe -limagehlp
-
-%.o : %.cpp
+%.o : %.cpp $(DEPS)
 	$(CC) $(CFLAGS) -c $<
 
-sim.o : sim.cpp
-	$(CC) -IInclude -c $<
-
-debug.o : debug.cpp
-	$(CC) -IInclude -c $<
-
-err.o : err.cpp
-	$(CC) -g -IInclude -c $<
-
 clean:
-	rm -rf bin/PSXMSFS.* *.o *.exe
+	rm -rf PSXMSFS *.o *.exe
 
 hash:
 	md5sum PSXMSFS.exe > bin/PSXMSFS.MD5
 
-move:
-	mv *.exe /home/stephan/Documents/C/src/PSX/bin
-
 win:
 	cp *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
 	cp *.h /home/stephan/NAS/TRANSFERT/pfpx/src
-	cp bin/*.exe /home/stephan/NAS/TRANSFERT/pfpx
-
-src:
-	cp *.h *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
+	cp PSXMSFS.exe /home/stephan/NAS/TRANSFERT/pfpx

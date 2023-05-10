@@ -353,7 +353,12 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
 	case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
-		//  * Only update the position if we have enough info
+		pthread_mutex_lock(&mutexsitu);
+		while (intflags.updateNewSitu) {
+			pthread_cond_wait(&condNewSitu, &mutexsitu);
+		}
+		pthread_mutex_unlock(&mutexsitu);
+
 		pthread_mutex_lock(&mutex);
 		SetMSFSPos();
 		pthread_mutex_unlock(&mutex);
@@ -362,7 +367,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
 	break;
 	default:
-		printDebug(LL_VERBOSE, "In Callbackfunction default case: nothing was done. Event: %ld",
+		printDebug(LL_VERBOSE, "In Callback function default case: nothing was done. Event: %ld",
 				   pData->dwID);
 		break;
 	}

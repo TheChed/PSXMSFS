@@ -16,18 +16,20 @@
 #include "MSFS.h"
 #include "update.h"
 
-//struct PSXTIME PSXtime;
+// struct PSXTIME PSXtime;
 
 struct PSXMSFSFLAGS flags;
+struct INTERNALFLAGS intflags;
 
-pthread_mutex_t mutex;
+pthread_mutex_t mutex, mutexsitu;
+pthread_cond_t condNewSitu;
 int quit = 0;
 
-//char PSXMainServer[] = "999.999.999.999";
-//char MSFSServer[] = "999.999.999.999";
-//char PSXBoostServer[] = "999.999.999.999";
-//int PSXPort = 10747;
-//int PSXBoostPort = 10749;
+// char PSXMainServer[] = "999.999.999.999";
+// char MSFSServer[] = "999.999.999.999";
+// char PSXBoostServer[] = "999.999.999.999";
+// int PSXPort = 10747;
+// int PSXBoostPort = 10749;
 
 void *ptDatafromMSFS(void *thread_param)
 {
@@ -109,6 +111,8 @@ int main(int argc, char **argv)
 	 */
 
 	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_init(&mutexsitu, NULL);
+	pthread_cond_init(&condNewSitu, NULL);
 
 	/*
 	 * Creating the 3 threads:
@@ -140,7 +144,13 @@ int main(int argc, char **argv)
 	if (pthread_join(t3, NULL) != 0) {
 		printDebug(LL_ERROR, "Failed to join MSFS thread");
 	}
+
+	/*
+	 * Cleaning thread related tools
+	 */
 	pthread_mutex_destroy(&mutex);
+	pthread_mutex_destroy(&mutexsitu);
+	pthread_cond_destroy(&condNewSitu);
 
 	printf("Closing MSFS connection...\n");
 	SimConnect_Close(hSimConnect);
@@ -151,11 +161,11 @@ int main(int argc, char **argv)
 	// and gracefully close main + boost sockets
 	printf("Closing PSX boost connection...\n");
 	if (close_PSX_socket(flags.sPSXBOOST)) {
-		printDebug(LL_ERROR,"Could not close boost PSX socket... You might want to check PSX");
+		printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
 	}
 	printf("Closing PSX main connection...\n");
 	if (close_PSX_socket(flags.sPSX)) {
-		printDebug(LL_ERROR,"Could not close main PSX socket...But does it matter now?...");
+		printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
 	}
 
 	// Finally clean up the Win32 sockets

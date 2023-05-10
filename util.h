@@ -78,3 +78,9 @@ void parse_arguments(int argc, char **argv);
  * function used to send variables to PSX
  */
 int sendQPSX(const char *s);
+
+/*
+ * used to reset internal flags 
+ * when a situ is reloaded for example
+ */
+void resetInternalFlags(void);

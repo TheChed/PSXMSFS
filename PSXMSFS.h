@@ -1,20 +1,32 @@
 #ifndef __PSXMSFS_H_
 #define __PSXMSFS_H_
 
+#include <pthread.h>
+
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
-#include <pthread.h>
 #define MAXLEN 8192
 #define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
 #define MAXBUFF 165536
 #define DELIM ";"
 #define PSXMSFS_VERSION 2
 
-extern pthread_mutex_t mutex;
+/*Log levels*/
+#define LL_DEBUG 1
+#define LL_VERBOSE 2
+#define LL_INFO 3
+#define LL_ERROR 4
+
+
+
+extern pthread_mutex_t mutex, mutexsitu;
+extern pthread_cond_t condNewSitu;
+
 extern int quit;
 extern HANDLE hSimConnect;
 
 extern struct PSXMSFSFLAGS flags;
+extern struct INTERNALFLAGS intflags;
 
 
 struct PSXMSFSFLAGS{
@@ -39,11 +51,11 @@ struct PSXMSFSFLAGS{
 	int sPSXBOOST; //PSX boost socket id
 };
 
+struct INTERNALFLAGS {
+	int oldcrz;
+	int updateNewSitu;
+};
 
-/*Log levels*/
-#define LL_ERROR 0
-#define LL_VERBOSE 1
-#define LL_INFO 2
 
 /*Anti-warning macro*/
 #define UNUSED(V) ((void) V)
