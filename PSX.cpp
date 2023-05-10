@@ -533,7 +533,7 @@ int umain(void)
 	size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
 	if (bufmain_remain == 0) {
-		printDebug(LL_VERBOSE, "Main socket line exceeded buffer length! Discarding input");
+		printDebug(LL_DEBUG, "Main socket line exceeded buffer length! Discarding input");
 		bufmain_used = 0;
 		printDebug(LL_DEBUG, bufmain);
 		return 0;
