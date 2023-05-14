@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"
@@ -67,6 +68,42 @@ void getTATL(int *TA, int *TL)
 	*TA = PSXDATA.TA;
 	*TL = PSXDATA.TL;
 }
+
+void Qi198Update(int onGround, double elevation)
+{
+
+	int QSentGround, QSentFlight;
+	char sQi198[128];
+
+	QSentGround = intflags.Qi198Sentground;
+	QSentFlight = intflags.Qi198SentFlight;
+
+	if (flags.ELEV_INJECT) {
+		if (onGround || (elevation < 300)) {
+			if (!QSentGround) {
+				printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation.");
+				QSentGround = 1;
+				QSentFlight = 0;
+			}
+			sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
+			sendQPSX(sQi198);
+		} else {
+
+			if (!QSentFlight) {
+
+				printDebug(LL_INFO, "Above 300 ft AGL => using PSX elevation.");
+				sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
+			QSentFlight = 1;
+			QSentGround = 0;
+			}
+		}
+	}
+	
+	intflags.Qi198Sentground=QSentGround;
+	intflags.Qi198SentFlight=QSentFlight;
+
+}
+
 double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt)
 {
 
@@ -80,15 +117,12 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	static double inc = 0;
 	static int initalt = 0;
 	static double incland = 0;
-	static int Qi198SentLand, Qi198SentAirborne;
 	static int oldElevation = 0;
 	static int takingoff, landing;
 	int flightPhase;
 	int TA, TL;
 	int elevation;
 	double deltaPressure, deltaPresureMSFS;
-
-	char sQi198[128];
 
 	/*
 	 * PSXELEV = -999 when we just launched PSXMSFS
@@ -112,6 +146,13 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	 */
 	landing = (PSXELEV < 50);
 
+	/*
+	 * Check whether we have to send the Qi198
+	 * variable or not to PSX
+	 */
+
+	Qi198Update(onGround, PSXELEV);
+
 	if (initalt) {
 		delta = ctrAltitude - oldctr;
 	}
@@ -128,27 +169,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 	elevation = getElevation();
 	incland = ((oldElevation != elevation) ? 0 : +delta);
 	oldElevation = elevation;
-
-	if (flags.ELEV_INJECT) {
-		if (onGround || (PSXELEV < 300)) {
-			if (!Qi198SentLand) {
-				printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation");
-				Qi198SentLand = 1;
-			}
-			Qi198SentAirborne = 0;
-			sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
-			sendQPSX(sQi198);
-		} else {
-
-			if (!Qi198SentAirborne) {
-
-				printDebug(LL_INFO, "Above 300 ft AGL => using PSX elevation.");
-				sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
-				Qi198SentAirborne = 1;
-			}
-			Qi198SentLand = 0;
-		}
-	}
 
 	/*
 	 * by default the altitude is the ctrAltitude given by boost
@@ -170,6 +190,10 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 	flightPhase = getFlightPhase();
 	msfsindalt = getIndAltitude();
+	if(abs(msfsindalt-ctrAltitude)>3500){
+		msfsindalt=ctrAltitude;
+	}
+
 	/* apply a correction for PSX QNH
 	 * 27.3 feet per hPa (at sea level
 	 * as well as for the MSFS QNH pressure, as those might differ
@@ -179,10 +203,8 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 	offset = ctrAltitude - msfsindalt - (deltaPressure + deltaPresureMSFS);
 
-	//	oldctrcrz = ctrAltitude;
 	getTATL(&TA, &TL);
 
-	//	printDebug(LL_VERBOSE, "Climb:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t", FinalAltitude, oldctrcrz);
 
 	if ((flightPhase == 0 && ctrAltitude > TA) || (flightPhase == 2 && ctrAltitude > TL) ||
 		flightPhase == 1) {
@@ -198,11 +220,14 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		takingoff = 0;
 		landing = 1; // only choice now is to land !
-					 //	printDebug(LL_INFO, "Cruise:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t offset:%.2f", FinalAltitude, oldctrcrz, offset);
 		return FinalAltitude;
 	}
 
 	if (onGround || (PSXELEV + incland < MSFSHEIGHT)) {
+
+		if(abs(groundalt-ctrAltitude)>100){
+			groundalt=ctrAltitude;
+		}
 		FinalAltitude = groundalt + MSFSHEIGHT;
 		inc = 0;
 		landing = 0;
@@ -220,7 +245,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 		}
 	}
 
-	//	printDebug(LL_INFO, "EOF:\tFinalAltitude: %.2f\t oldctrcrz:%.2f\t", FinalAltitude, oldctrcrz);
 	return FinalAltitude;
 }
 
@@ -449,4 +473,27 @@ void SetBARO(long altimeter, int standard)
 									   1013.25 * 16.0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
 									   SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 	}
+}
+time_t newSituLoaded(void)
+{
+
+	resetInternalFlags();
+
+	printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
+	printDebug(LL_INFO, "Let's wait a five seconds to get everyone ready, shall we?");
+
+	freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
+	init_variables();
+
+	/*
+	 * Now we wait and lock the update thread in order to get variables
+	 * to reset themselves, especially those in MSFS
+	 * we do this with conditional waits for threads
+	 */
+
+	if (flags.INHIB_CRASH_DETECT) {
+		printDebug(LL_INFO, "No crash detection for 10 seconds");
+		sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
+	}
+	return time(NULL);
 }

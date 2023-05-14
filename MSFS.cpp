@@ -202,7 +202,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 		 * engines.
 		 */
 
-		printDebug(LL_ERROR, "Freezing Altitude, Attitude and Coordinates in MSFS.");
+		printDebug(LL_VERBOSE, "Freezing Altitude, Attitude and Coordinates in MSFS.");
 		freezeMSFS();
 	} break;
 
@@ -348,7 +348,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 	} break;
 	case SIMCONNECT_RECV_ID_QUIT: {
 		quit = 1;
-		printDebug(LL_VERBOSE, "MSFS was exited. I guess I should do the same...");
+		printDebug(LL_VERBOSE, "MSFS closed. I guess I should do the same...");
 	} break;
 
 	case SIMCONNECT_RECV_ID_EVENT_FRAME: {
@@ -358,7 +358,6 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 			pthread_cond_wait(&condNewSitu, &mutexsitu);
 		}
 		pthread_mutex_unlock(&mutexsitu);
-
 		pthread_mutex_lock(&mutex);
 		SetMSFSPos();
 		pthread_mutex_unlock(&mutex);

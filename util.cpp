@@ -208,8 +208,6 @@ int init_param()
 	flags.INHIB_CRASH_DETECT = 0;
 	flags.ONLINE = 0;
 
-	resetInternalFlags();
-
 	fini = fopen("PSXMSFS.ini", "r");
 	if (!fini) {
 		printDebug(LL_ERROR, "Cannot open config file: trying to create one with educated "

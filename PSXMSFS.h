@@ -54,6 +54,8 @@ struct PSXMSFSFLAGS{
 struct INTERNALFLAGS {
 	int oldcrz;
 	int updateNewSitu;
+	int Qi198Sentground;
+	int Qi198SentFlight;
 };
 
 

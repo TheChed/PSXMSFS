@@ -407,34 +407,6 @@ void Decodeboost(char *s)
 	updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
 }
 
-void newSituLoaded(void){
-
-			resetInternalFlags();
-			
-      printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
-			printDebug(LL_INFO, "Let's wait a few seconds to get everyone ready, shall we?");
-
-			freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
-			init_variables();
-
-      /*
-       * Now we wait and lock the update thread in order to get variables
-       * to reset themselves, especially those in MSFS
-       * we do this with conditional waits for threads
-       */
-
-			pthread_mutex_lock(&mutexsitu);
-			if (flags.INHIB_CRASH_DETECT) {
-				printDebug(LL_INFO, "No crash detection for 10 seconds");
-				sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
-			}
-			sleep(5);
-			intflags.updateNewSitu = 0;
-			printDebug(LL_INFO, "Resuming normal operations.");
-			pthread_mutex_unlock(&mutexsitu);
-			pthread_cond_signal(&condNewSitu);
-}
-
 void Decode(char *s)
 {
 
@@ -530,7 +502,10 @@ void Decode(char *s)
 
 int umain(void)
 {
+	char *line_start = bufmain;
+	char *line_end;
 	size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
+	time_t newSitutime;
 
 	if (bufmain_remain == 0) {
 		printDebug(LL_DEBUG, "Main socket line exceeded buffer length! Discarding input");
@@ -560,24 +535,34 @@ int umain(void)
 	 * embedded \0s an evil server may send, as well as only processing lines
 	 * that are complete.
 	 */
-	char *line_start = bufmain;
-	char *line_end;
 	while ((line_end =
 				(char *)memchr((void *)line_start, '\n', bufmain_used - (line_start - bufmain)))) {
 		*line_end = 0;
 
 		// New situ loaded
-		if (strstr(line_start, "load3")){
-        newSituLoaded();
-    }
+		if (strstr(line_start, "load3")) {
+			pthread_mutex_lock(&mutexsitu);
+			newSitutime = newSituLoaded();
+		}
+
+		// we are still loading a new situ
+		if (intflags.updateNewSitu) {
+
+			if (time(NULL) > newSitutime + 5) {
+				intflags.updateNewSitu = 0;
+				pthread_mutex_unlock(&mutexsitu);
+				pthread_cond_signal(&condNewSitu);
+				printDebug(LL_INFO, "Resuming normal operations.");
+			}
+		}
 
 		if (line_start[0] == 'Q') {
 			pthread_mutex_lock(&mutex);
 			Decode(line_start);
 			pthread_mutex_unlock(&mutex);
 		}
-		
-    line_start = line_end + 1;
+
+		line_start = line_end + 1;
 	}
 	/* Shift buffer down so the unprocessed data is at the start */
 	bufmain_used -= (line_start - bufmain);
@@ -598,6 +583,7 @@ int umainBoost(void)
 	int nbread = recv(flags.sPSXBOOST, (char *)&bufboost[bufboost_used], bufboost_remain, 0);
 	if (nbread == 0) {
 		printDebug(LL_ERROR, "Boost connection closed.");
+		quit=1;
 		return 0;
 	}
 	if (nbread < 0 && errno == EAGAIN) {
@@ -606,6 +592,7 @@ int umainBoost(void)
 	}
 	if (nbread < 0) {
 		printDebug(LL_ERROR, "Boost Connection error");
+		quit=1;
 		return 0;
 	}
 	bufboost_used += nbread;
