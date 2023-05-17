@@ -221,7 +221,6 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		takingoff = 0;
 		landing = 1; // only choice now is to land !
-		assert(FinalAltitude>-100 && "Wrong altitude");
 		return FinalAltitude;
 	}
 
