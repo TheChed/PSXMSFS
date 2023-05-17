@@ -505,7 +505,7 @@ int umain(void)
 	char *line_start = bufmain;
 	char *line_end;
 	size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
-	time_t newSitutime;
+	static time_t newSitutime;
 
 	if (bufmain_remain == 0) {
 		printDebug(LL_DEBUG, "Main socket line exceeded buffer length! Discarding input");
@@ -547,7 +547,6 @@ int umain(void)
 
 		// we are still loading a new situ
 		if (intflags.updateNewSitu) {
-
 			if (time(NULL) > newSitutime + 5) {
 				intflags.updateNewSitu = 0;
 				pthread_mutex_unlock(&mutexsitu);

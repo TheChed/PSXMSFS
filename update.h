@@ -94,7 +94,7 @@ struct PSX {
 
 	// local QNH on the weather zone
 	int weatherZone;
-	double QNH[7];
+	double QNH[8];
 
 	/*
 	 * Acft elevation and indicator whether it has been

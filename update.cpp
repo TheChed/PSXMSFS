@@ -1,4 +1,5 @@
 #include <math.h>
+#include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -220,6 +221,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
 		takingoff = 0;
 		landing = 1; // only choice now is to land !
+		assert(FinalAltitude>-100 && "Wrong altitude");
 		return FinalAltitude;
 	}
 
@@ -480,7 +482,7 @@ time_t newSituLoaded(void)
 	resetInternalFlags();
 
 	printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
-	printDebug(LL_INFO, "Let's wait a five seconds to get everyone ready, shall we?");
+	printDebug(LL_INFO, "Let's wait five seconds to get everyone ready, shall we?");
 
 	freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
 	init_variables();
