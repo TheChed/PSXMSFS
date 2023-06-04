@@ -79,6 +79,9 @@ int main(int argc, char **argv)
 	 */
 	parse_arguments(argc, argv);
 
+    /* version of program */
+    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+    printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 	/*
 	 * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
 	 */

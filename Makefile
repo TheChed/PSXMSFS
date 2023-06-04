@@ -18,7 +18,7 @@ PSXMSFS: $(OBJ)
 	cp PSXMSFS.exe PSXMSFS
 
 %.o : %.cpp $(DEPS)
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -DVER=$(VER) -c $<
 
 clean:
 	rm -rf PSXMSFS *.o *.exe
