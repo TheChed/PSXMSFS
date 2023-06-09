@@ -33,158 +33,158 @@ int quit = 0;
 
 void *ptDatafromMSFS(void *thread_param)
 {
-	(void)(thread_param);
-	while (!quit) {
-		SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
+    (void)(thread_param);
+    while (!quit) {
+        SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
 
-		Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
-				  // to avoid heavy polling
-	}
-	return NULL;
+        Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
+                  // to avoid heavy polling
+    }
+    return NULL;
 }
 
 void *ptUmainboost(void *)
 {
-	while (!quit) {
-		umainBoost();
-	}
-	return NULL;
+    while (!quit) {
+        umainBoost();
+    }
+    return NULL;
 }
 
 void *ptUmain(void *)
 {
 
-	while (!quit) {
-		umain();
-	}
-	return NULL;
+    while (!quit) {
+        umain();
+    }
+    return NULL;
 }
 
 int main(int argc, char **argv)
 {
-	pthread_t t1, t2, t3;
+    pthread_t t1, t2, t3;
 
-	/* Initialise the timer */
-	elapsedStart(&TimeStart);
+    /* Initialise the timer */
+    elapsedStart(&TimeStart);
 
-	/* Read from .ini file the various values
-	 * used in the program
-	 */
-	if (init_param()) {
-		exit(EXIT_FAILURE);
-	}
+    /* Read from .ini file the various values
+     * used in the program
+     */
+    if (init_param()) {
+        exit(EXIT_FAILURE);
+    }
 
-	/*
-	 * check command line arguments
-	 */
-	parse_arguments(argc, argv);
+    /*
+     * check command line arguments
+     */
+    parse_arguments(argc, argv);
 
-    /* 
-	 * version of program 
-	 * And Compiler options used
-	 */
-    
-	printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
-	printDebug(LL_DEBUG, "Compiler options: %s", COMP);
+    /*
+     * version of program
+     * And Compiler options used
+     */
+
+    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+    printDebug(LL_DEBUG, "Compiler options: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
-	
-	/*
-	 * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
-	 */
-	if (!open_connections()) {
-		exit(EXIT_FAILURE);
-	}
 
-	// initialize the data to be received as well as all EVENTS
-	init_MS_data();
+    /*
+     * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
+     */
+    if (!open_connections()) {
+        exit(EXIT_FAILURE);
+    }
 
-	/*
-	 * Sending Q423 DEMAND variable to PSX for the winds
-	 * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
-	 */
+    // initialize the data to be received as well as all EVENTS
+    init_MS_data();
 
-	sendQPSX("demand=Qs483");
-	sendQPSX("demand=Qs480");
-	sendQPSX("demand=Qs562");
+    /*
+     * Sending Q423 DEMAND variable to PSX for the winds
+     * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
+     */
 
-	/*
-	 * Initializing position of the plane
-	 * as boost and main threads are not yet available
-	 */
+    sendQPSX("demand=Qs483");
+    sendQPSX("demand=Qs480");
+    sendQPSX("demand=Qs562");
 
-	init_pos();
+    /*
+     * Initializing position of the plane
+     * as boost and main threads are not yet available
+     */
 
-	/*
-	 * Create a thread mutex so that two threads cannot change simulataneously
-	 * the position of the aircraft
-	 */
+    init_pos();
 
-	pthread_mutex_init(&mutex, NULL);
-	pthread_mutex_init(&mutexsitu, NULL);
-	pthread_cond_init(&condNewSitu, NULL);
+    /*
+     * Create a thread mutex so that two threads cannot change simulataneously
+     * the position of the aircraft
+     */
 
-	/*
-	 * Creating the 3 threads:
-	 * Thread 1: main server PSX
-	 * Thread 2: boost server
-	 * Thread 3: callback function in MSFS
-	 */
+    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&mutexsitu, NULL);
+    pthread_cond_init(&condNewSitu, NULL);
 
-	if (pthread_create(&t1, NULL, ptUmain, NULL) != 0) {
-		printDebug(LL_ERROR, "Error creating thread Umain");
-		quit = 1;
-	}
+    /*
+     * Creating the 3 threads:
+     * Thread 1: main server PSX
+     * Thread 2: boost server
+     * Thread 3: callback function in MSFS
+     */
 
-	if (pthread_create(&t2, NULL, ptUmainboost, NULL) != 0) {
-		printDebug(LL_ERROR, "Error creating thread Umainboost");
-		quit = 1;
-	}
+    if (pthread_create(&t1, NULL, ptUmain, NULL) != 0) {
+        printDebug(LL_ERROR, "Error creating thread Umain");
+        quit = 1;
+    }
 
-	if (pthread_create(&t3, NULL, ptDatafromMSFS, NULL) != 0) {
-		printDebug(LL_ERROR, "Error creating thread DatafromMSFS");
-		quit = 1;
-	}
-	if (pthread_join(t1, NULL) != 0) {
-		printDebug(LL_ERROR, "Failed to join Main thread");
-	}
-	if (pthread_join(t2, NULL) != 0) {
-		printDebug(LL_ERROR, "Failed to join Boost thread");
-	}
-	if (pthread_join(t3, NULL) != 0) {
-		printDebug(LL_ERROR, "Failed to join MSFS thread");
-	}
+    if (pthread_create(&t2, NULL, ptUmainboost, NULL) != 0) {
+        printDebug(LL_ERROR, "Error creating thread Umainboost");
+        quit = 1;
+    }
 
-	/*
-	 * Cleaning thread related tools
-	 */
-	pthread_mutex_destroy(&mutex);
-	pthread_mutex_destroy(&mutexsitu);
-	pthread_cond_destroy(&condNewSitu);
+    if (pthread_create(&t3, NULL, ptDatafromMSFS, NULL) != 0) {
+        printDebug(LL_ERROR, "Error creating thread DatafromMSFS");
+        quit = 1;
+    }
+    if (pthread_join(t1, NULL) != 0) {
+        printDebug(LL_ERROR, "Failed to join Main thread");
+    }
+    if (pthread_join(t2, NULL) != 0) {
+        printDebug(LL_ERROR, "Failed to join Boost thread");
+    }
+    if (pthread_join(t3, NULL) != 0) {
+        printDebug(LL_ERROR, "Failed to join MSFS thread");
+    }
 
-	printDebug(LL_INFO, "Closing MSFS connection...");
-	SimConnect_Close(hSimConnect);
+    /*
+     * Cleaning thread related tools
+     */
+    pthread_mutex_destroy(&mutex);
+    pthread_mutex_destroy(&mutexsitu);
+    pthread_cond_destroy(&condNewSitu);
 
-	// Signaling PSX that we are quitting
-	sendQPSX("exit");
+    printDebug(LL_INFO, "Closing MSFS connection...");
+    SimConnect_Close(hSimConnect);
 
-	// and gracefully close main + boost sockets
-	printDebug(LL_INFO, "Closing PSX boost connection...");
-	if (close_PSX_socket(flags.sPSXBOOST)) {
-		printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
-	}
-	printDebug(LL_INFO, "Closing PSX main connection...\n");
-	if (close_PSX_socket(flags.sPSX)) {
-		printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
-	}
+    // Signaling PSX that we are quitting
+    sendQPSX("exit");
 
-	// Finally clean up the Win32 sockets
-	WSACleanup();
+    // and gracefully close main + boost sockets
+    printDebug(LL_INFO, "Closing PSX boost connection...");
+    if (close_PSX_socket(flags.sPSXBOOST)) {
+        printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
+    }
+    printDebug(LL_INFO, "Closing PSX main connection...\n");
+    if (close_PSX_socket(flags.sPSX)) {
+        printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
+    }
 
-	/* and clean up the debug file
-	 * deleting it if not in DEBUG mode
-	 */
-	remove_debug();
+    // Finally clean up the Win32 sockets
+    WSACleanup();
 
-	printf("Normal exit. See you soon...\n");
-	return 0;
+    /* and clean up the debug file
+     * deleting it if not in DEBUG mode
+     */
+    remove_debug();
+
+    printf("Normal exit. See you soon...\n");
+    return 0;
 }
