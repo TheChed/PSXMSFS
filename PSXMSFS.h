@@ -1,8 +1,6 @@
 #ifndef __PSXMSFS_H_
 #define __PSXMSFS_H_
 
-#include <pthread.h>
-
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MAXLEN 8192
@@ -19,8 +17,10 @@
 
 
 
-extern pthread_mutex_t mutex, mutexsitu;
-extern pthread_cond_t condNewSitu;
+//extern pthread_mutex_t mutex, mutexsitu;
+extern HANDLE mutex, mutexsitu;
+//extern pthread_cond_t condNewSitu;
+extern CONDITION_VARIABLE condNewSitu;
 
 extern int quit;
 extern HANDLE hSimConnect;

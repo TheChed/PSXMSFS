@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <math.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -541,7 +540,8 @@ int umain(void)
 
         // New situ loaded
         if (strstr(line_start, "load3")) {
-            pthread_mutex_lock(&mutexsitu);
+            //    pthread_mutex_lock(&mutexsitu);
+            WaitForSingleObject(mutexsitu, INFINITE);
             newSitutime = newSituLoaded();
         }
 
@@ -549,16 +549,21 @@ int umain(void)
         if (intflags.updateNewSitu) {
             if (time(NULL) > newSitutime + 5) {
                 intflags.updateNewSitu = 0;
-                pthread_mutex_unlock(&mutexsitu);
-                pthread_cond_signal(&condNewSitu);
+                //       pthread_mutex_unlock(&mutexsitu);
+                ReleaseMutex(mutexsitu);
+                // pthread_cond_signal(&condNewSitu);
+                WakeConditionVariable(&condNewSitu);
+
                 printDebug(LL_INFO, "Resuming normal operations.");
             }
         }
 
         if (line_start[0] == 'Q') {
-            pthread_mutex_lock(&mutex);
+            // pthread_mutex_lock(&mutex);
+            WaitForSingleObject(mutex, INFINITE);
             Decode(line_start);
-            pthread_mutex_unlock(&mutex);
+            // pthread_mutex_unlock(&mutex);
+            ReleaseMutex(mutex);
         }
 
         line_start = line_end + 1;
@@ -607,9 +612,11 @@ int umainBoost(void)
         *line_end = 0;
 
         if (line_start[0] == 'F' || line_start[0] == 'G') {
-            pthread_mutex_lock(&mutex);
+            // pthread_mutex_lock(&mutex);
+            WaitForSingleObject(mutex, INFINITE);
             Decodeboost(line_start);
-            pthread_mutex_unlock(&mutex);
+            // pthread_mutex_unlock(&mutex);
+            ReleaseMutex(mutex);
         } else {
             printDebug(LL_VERBOSE, "Wrong boost string received: %s", line_start);
         }
