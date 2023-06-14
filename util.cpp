@@ -33,7 +33,7 @@ int sendQPSX(const char *s)
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
 
-    int nbsend = send(flags.sPSX, dem, strlen(s) + 1, 0);
+    int nbsend = send(flags.sPSX, dem, (int)(strlen(s) + 1), 0);
 
     if (nbsend == 0) {
         printDebug(LL_VERBOSE, "Error sending variable %s to PSX\n", s);
@@ -47,7 +47,7 @@ monotime getMonotonicTime(void)
     //struct timespec ts;
     //clock_gettime(CLOCK_MONOTONIC, &ts);
     //return ((uint64_t)ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
-    return getTime();
+    return (monotime)(getTime());
 }
 
 void CalcCoord(double heading, double lato, double longo, double *latr, double *longr)

@@ -161,7 +161,7 @@ void S448(char *s)
     token = strtok_s(NULL, DELIM, &savptr);
 
     if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        altimeter = strtol(token, &ptr, 10) / 100.0;
+        altimeter = strtol(token, &ptr, 10) / 100;
     }
     /* STD setting*/
     if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
@@ -510,7 +510,7 @@ int umain(void)
         return 0;
     }
 
-    int nbread = recv(flags.sPSX, (char *)&bufmain[bufmain_used], bufmain_remain, 0);
+    int nbread = recv(flags.sPSX, (char *)&bufmain[bufmain_used], (int)(bufmain_remain), 0);
 
     if (nbread == 0) {
         printDebug(LL_ERROR, "Main socket connection closed.");
@@ -584,7 +584,7 @@ int umainBoost(void)
         return 0;
     }
 
-    int nbread = recv(flags.sPSXBOOST, (char *)&bufboost[bufboost_used], bufboost_remain, 0);
+    int nbread = recv(flags.sPSXBOOST, (char *)&bufboost[bufboost_used], (int)(bufboost_remain), 0);
     if (nbread == 0) {
         printDebug(LL_ERROR, "Boost connection closed.");
         quit = 1;

@@ -14,7 +14,7 @@
 
 HANDLE hSimConnect = NULL;
 
-int close_PSX_socket(int sockid)
+int close_PSX_socket(SOCKET sockid)
 {
     return closesocket(sockid);
 }

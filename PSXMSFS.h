@@ -210,7 +210,7 @@ int init_param(void);
 int check_param(const char *);
 int init_socket(void);
 void init_variables(void);
-int close_PSX_socket(int socket);
+int close_PSX_socket(SOCKET socket);
 int open_connections();
 int umain(void);
 int umainBoost(void);

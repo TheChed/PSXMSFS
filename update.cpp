@@ -415,10 +415,10 @@ void init_pos()
                .TL = 18000};
 }
 
-void updateSteeringWheel(double wheelangle)
+void updateSteeringWheel(DWORD wheelangle)
 {
 
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, -wheelangle,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, wheelangle,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
@@ -458,18 +458,18 @@ void SetCOMM(int COM1, int COM2)
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
-void SetBARO(long altimeter, int standard)
+void SetBARO(DWORD altimeter, int standard)
 {
 
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
-                                   altimeter * 16.0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                   altimeter * 16, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     if (standard) {
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                        SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
-                                       1013.25 * 16.0, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                       (DWORD) (1013.25 * 16.0), SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                        SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
 }

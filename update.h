@@ -113,7 +113,7 @@ struct PSX {
  */
 void SetUTCTime(int hour, int minute, int day, int year);
 void SetCOMM(int COM1, int COM2);
-void SetBARO(long altimeter, int stdbar);
+void SetBARO(DWORD altimeter, int stdbar);
 void SetXPDR(int XPDR, int IDENT);
 void SetAcftElevation(double elevation);
 void init_pos(void);
@@ -154,7 +154,7 @@ void updateFlightPhase(int phase, int TA, int TL);
  * Updates steering wheel position
  */
  
-void updateSteeringWheel(double wheelangle);
+void updateSteeringWheel(DWORD wheelangle);
 
 /*
  * Functions used to set the weather zones
