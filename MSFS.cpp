@@ -1,13 +1,10 @@
-#include <math.h>
+#include <cmath>
+#include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
-#include <pthread.h>
-#include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"
@@ -26,7 +23,7 @@ static int key_press = 0;
 static int nb_acft = 0;
 static double min_dist = 999999;
 
-int getGroundAltitude(void)
+double getGroundAltitude(void)
 {
     return ground_altitude;
 }
@@ -171,7 +168,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
     (void)(cbData);
     (void)(pContext);
 
-    switch (pData->dwID) {
+       switch (pData->dwID) {
 
     case SIMCONNECT_RECV_ID_EXCEPTION: {
         SIMCONNECT_RECV_EXCEPTION *evt = (SIMCONNECT_RECV_EXCEPTION *)pData;
@@ -331,7 +328,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             alt = MSFS_POS.altitude;
             if (pObjData->dwentrynumber > 1) {
                 d = dist(ai->latitude, lat, ai->longitude, lon) / NM;
-                if (abs(ai->altitude - alt) < 7000) { // show only aircraft 2700 above or below us
+                if (abs(ai->altitude - alt) < 7000.0f) { // show only aircraft 2700 above or below us
                     update_TCAS(ai, d);
                 }
             }

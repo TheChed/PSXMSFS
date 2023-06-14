@@ -47,8 +47,8 @@ struct PSXMSFSFLAGS{
   
 	int SLAVE; //0 if PSX is slave, 1 if MSFS is slave
  
-	int sPSX; //main PSX socket id
-	int sPSXBOOST; //PSX boost socket id
+	SOCKET sPSX; //main PSX socket id
+	SOCKET sPSXBOOST; //PSX boost socket id
 };
 
 struct INTERNALFLAGS {

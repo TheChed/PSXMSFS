@@ -3,11 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
-#include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"
@@ -66,7 +63,7 @@ void H426(const char *s)
         pos = 0;
     }
 
-    updateSteeringWheel(pos);
+    updateSteeringWheel(DWORD(pos));
 }
 
 // Speedbrake lever variable Qh389
@@ -75,7 +72,7 @@ void H388(char *s)
     double SpeedBrakelevel = 0;
     struct SurfaceUpdate S;
     char *token, *ptr, *savptr;
-    if ((token = strtok_r(s + 6, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(s + 6, DELIM, &savptr)) != NULL) {
         SpeedBrakelevel = strtol(token, &ptr, 10);
     }
     S.Type = SPEED;
@@ -89,11 +86,11 @@ void S121(char *s)
     char *token, *savptr;
     struct SpeedUpdate SU;
 
-    token = strtok_r(s + 6, DELIM, &savptr);
-    token = strtok_r(NULL, DELIM, &savptr);
-    token = strtok_r(NULL, DELIM, &savptr);
-    token = strtok_r(NULL, DELIM, &savptr);
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    token = strtok_s(s + 6, DELIM, &savptr);
+    token = strtok_s(NULL, DELIM, &savptr);
+    token = strtok_s(NULL, DELIM, &savptr);
+    token = strtok_s(NULL, DELIM, &savptr);
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         SU.Speed.TAS = (double)strtoul(token, NULL, 10) / 1000.0;
     }
     SU.Type = TAS;
@@ -105,7 +102,7 @@ void S483(char *s)
     char *token, *ptr;
     struct SpeedUpdate SU;
 
-    if ((token = strtok_r(s + 6, DELIM, &ptr)) != NULL) {
+    if ((token = strtok_s(s + 6, DELIM, &ptr)) != NULL) {
         SU.Speed.IAS = strtol(token, NULL, 10) / 10.0;
     }
     SU.Type = IAS;
@@ -119,7 +116,7 @@ void S392(char *s)
     int flightPhase;
 
     // TA and TL are the 2nd and 3rd token
-    token = strtok_r(s, DELIM, &savptr);
+    token = strtok_s(s, DELIM, &savptr);
 
     /*
      * We now try to get the flight phase
@@ -127,10 +124,10 @@ void S392(char *s)
 
     flightPhase = token[9] - '0';
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         TA = (int)strtoul(token, NULL, 10);
     }
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         TL = (int)strtoul(token, NULL, 10);
     }
     updateFlightPhase(flightPhase, TA, TL);
@@ -159,15 +156,15 @@ void S448(char *s)
      * 5th token is STD setting
      */
 
-    token = strtok_r(s + 6, DELIM, &savptr);
-    token = strtok_r(NULL, DELIM, &savptr);
-    token = strtok_r(NULL, DELIM, &savptr);
+    token = strtok_s(s + 6, DELIM, &savptr);
+    token = strtok_s(NULL, DELIM, &savptr);
+    token = strtok_s(NULL, DELIM, &savptr);
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         altimeter = strtol(token, &ptr, 10) / 100.0;
     }
     /* STD setting*/
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         stdbar = ((abs(strtod(token, NULL)) == 1) ? 0 : 1);
     }
     SetBARO(altimeter, stdbar);
@@ -307,12 +304,12 @@ void Qsweather(char *s)
 
     zone = (int)strtoul(s + 2, NULL, 10) - 328; // Because the first zone is Qs328
 
-    if ((token = strtok_r(s + 6, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(s + 6, DELIM, &savptr)) != NULL) {
 
         // last token is the QNH, need to save a copy before it is set to NULL
         while (token) {
             strcpy(sav, token);
-            token = strtok_r(NULL, DELIM, &savptr);
+            token = strtok_s(NULL, DELIM, &savptr);
         }
     }
 
@@ -363,36 +360,36 @@ void Decodeboost(char *s)
     struct SpeedUpdate SU;
 
     /* get the first token */
-    if ((token = strtok_r(s, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(s, DELIM, &savptr)) != NULL) {
         onGround = (strcmp(token, "G") == 0 ? 1 : 0);
     }
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
 
         flightDeckAlt = strtol(token, &ptr, 10) / 100;
     }
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
     }
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         pitch = -strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
     }
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
     }
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
     }
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
     }
 
-    if ((token = strtok_r(NULL, DELIM, &savptr)) != NULL) {
+    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         ms = strtol(token, NULL, 10);
     }
 
@@ -408,7 +405,7 @@ void Decodeboost(char *s)
 
 void Decode(char *s)
 {
-
+    
     // ExtLts : External lights, Mode=XECON
     if (strstr(s, "Qs443")) {
         S443(strstr(s, "Qs443="));
@@ -505,7 +502,7 @@ int umain(void)
     char *line_end;
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
     static time_t newSitutime;
-
+    
     if (bufmain_remain == 0) {
         printDebug(LL_DEBUG, "Main socket line exceeded buffer length! Discarding input");
         bufmain_used = 0;
@@ -557,11 +554,14 @@ int umain(void)
                 printDebug(LL_INFO, "Resuming normal operations.");
             }
         }
-
+       
+        
         if (line_start[0] == 'Q') {
+            
             // pthread_mutex_lock(&mutex);
             WaitForSingleObject(mutex, INFINITE);
             Decode(line_start);
+            
             // pthread_mutex_unlock(&mutex);
             ReleaseMutex(mutex);
         }

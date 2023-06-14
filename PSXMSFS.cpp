@@ -5,10 +5,8 @@
 #include <cstring>
 #include <ctime>
 #include <math.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <time.h>
-#include <unistd.h>
 #include <windows.h>
 #include "SimConnect.h"
 #include "PSXMSFS.h"
@@ -35,11 +33,12 @@ int quit = 0;
 
 DWORD WINAPI ptDatafromMSFS(void *thread_param)
 {
+    
     (void)(thread_param);
     while (!quit) {
+       
         SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
-
-        Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
+              Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
                   // to avoid heavy polling
     }
     return 0;
@@ -66,6 +65,10 @@ int main(int argc, char **argv)
 {
     DWORD t1, t2, t3;
     HANDLE h1, h2, h3;
+
+    UNUSED(argc);
+    UNUSED(argv);
+
     /* Initialise the timer */
     elapsedStart(&TimeStart);
 
@@ -79,15 +82,15 @@ int main(int argc, char **argv)
     /*
      * check command line arguments
      */
-    parse_arguments(argc, argv);
+   //  parse_arguments(argc, argv);
 
     /*
      * version of program
      * And Compiler options used
      */
 
-    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
-    printDebug(LL_DEBUG, "Compiler options: %s", COMP);
+  //  printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+ //   printDebug(LL_DEBUG, "Compiler options: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
     /*

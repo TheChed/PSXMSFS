@@ -117,7 +117,7 @@ void SetBARO(long altimeter, int stdbar);
 void SetXPDR(int XPDR, int IDENT);
 void SetAcftElevation(double elevation);
 void init_pos(void);
-int getElevation(void);
+double getElevation(void);
 int getFlightPhase(void);
 time_t newSituLoaded(void);
 void getTATL(int *TA, int *TL);

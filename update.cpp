@@ -1,11 +1,10 @@
 #include <math.h>
+#include <cstdlib>
 #include <ctime>
 #include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <unistd.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"
@@ -60,7 +59,7 @@ int getFlightPhase(void)
 {
     return PSXDATA.flightPhase;
 }
-int getElevation(void)
+double getElevation(void)
 {
     return PSXDATA.acftelev;
 }
@@ -118,11 +117,11 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
     static double inc = 0;
     static int initalt = 0;
     static double incland = 0;
-    static int oldElevation = 0;
+    static double oldElevation = 0;
     static int takingoff, landing;
     int flightPhase;
     int TA, TL;
-    int elevation;
+    double elevation;
     double deltaPressure, deltaPresureMSFS;
 
     /*

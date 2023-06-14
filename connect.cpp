@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <winsock2.h>
+#include <winsock.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"
 #include "util.h"
+
+#ifndef __MINGW__
+#pragma comment(lib, "Ws2_32.lib")
+#endif // !__MINGW__
+
+
 
 HANDLE hSimConnect = NULL;
 
@@ -23,14 +28,14 @@ int init_socket()
     return !WSAStartup(MAKEWORD(2, 2), &wsa);
 }
 
-int init_connect_PSX(const char *hostname, int portno)
+SOCKET init_connect_PSX(const char *hostname, int portno)
 {
 
     struct sockaddr_in PSXmainserver;
-    int socketID;
+    SOCKET socketID;
 
     // Create a socket
-    if ((socketID = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((socketID = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error while creating the main PSX socket");
         return -1;
     }
@@ -49,9 +54,9 @@ int init_connect_PSX(const char *hostname, int portno)
     }
 }
 
-int init_connect_MSFS(HANDLE *p)
+int init_connect_MSFS(void)
 {
-    return (SimConnect_Open(p, "PSX", NULL, 0, 0, 0) == S_OK);
+    return (SUCCEEDED(SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0) == S_OK));
 }
 
 int open_connections()
@@ -68,7 +73,7 @@ int open_connections()
     printDebug(LL_INFO, "Connecting to PSX main server on: %s:%d", flags.PSXMainServer, flags.PSXPort);
 
     flags.sPSX = init_connect_PSX(flags.PSXMainServer, flags.PSXPort);
-    if (flags.sPSX < 0) {
+    if (flags.sPSX == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX socket. Exiting...");
         return 0;
     } else {
@@ -79,7 +84,7 @@ int open_connections()
     printDebug(LL_INFO, "Connecting to PSX boost server on: %s:%d", flags.PSXBoostServer, flags.PSXBoostPort);
 
     flags.sPSXBOOST = init_connect_PSX(flags.PSXBoostServer, flags.PSXBoostPort);
-    if (flags.sPSXBOOST < 0) {
+    if (flags.sPSXBOOST == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX boost socket. Are you sure it is "
                              "running? Exiting...");
         return 0;
@@ -88,7 +93,7 @@ int open_connections()
     }
 
     // finally connect to MSFS socket via SimConnect
-    if (!init_connect_MSFS(&hSimConnect)) {
+    if (!init_connect_MSFS()) {
         printDebug(LL_ERROR, "Could not connect to Simconnect.dll. Is MSFS running?");
         return 0;
     } else {

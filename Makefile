@@ -16,7 +16,7 @@ PSXMSFS: $(OBJ)
 	cp PSXMSFS.exe PSXMSFS
 
 %.o : %.cpp $(DEPS)
-	$(CC) $(CFLAGS) -DVER=$(VER) -DCOMP="\"$(LINK)\"" -c $<
+	$(CC) $(CFLAGS) -D__MINGW__ -DVER=$(VER) -DCOMP="\"$(LINK)\"" -c $<
 
 clean:
 	rm -rf PSXMSFS *.o *.exe
