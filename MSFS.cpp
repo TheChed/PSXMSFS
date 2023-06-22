@@ -1,10 +1,7 @@
 #include <cmath>
-#include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"

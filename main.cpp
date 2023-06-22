@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <windows.h>
+#include "PSXMSFS.h"
+#include "MSFS.h"
+#include "SimConnect.h"
+#include "util.h"
+
+
+struct PSXMSFSFLAGS flags;
+struct INTERNALFLAGS intflags;
+
+HANDLE mutex, mutexsitu;
+CONDITION_VARIABLE condNewSitu;
+int quit = 0;
+
+
+DWORD WINAPI ptDatafromMSFS(void *thread_param)
+{
+    
+    (void)(thread_param);
+    while (!quit) {
+       
+        SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
+              Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
+                  // to avoid heavy polling
+    }
+    return 0;
+}
+
+DWORD WINAPI ptUmainboost(void *)
+{
+    while (!quit) {
+        umainBoost();
+    }
+    return 0;
+}
+
+DWORD WINAPI ptUmain(void *)
+{
+
+    while (!quit) {
+        umain();
+    }
+    return 0;
+}
+
+DWORD main_launch(void)
+{
+    DWORD t1, t2, t3;
+    HANDLE h1, h2, h3;
+    /*
+     * Create a thread mutex so that two threads cannot change simulataneously
+     * the position of the aircraft
+     */
+    mutex = CreateMutex(NULL, FALSE, NULL);
+    mutexsitu = CreateMutex(NULL, FALSE, NULL);
+    InitializeConditionVariable(&condNewSitu);
+
+
+    /*
+     * Creating the 3 threads:
+     * Thread 1: main server PSX
+     * Thread 2: boost server
+     * Thread 3: callback function in MSFS
+     */
+
+    h1 = CreateThread(NULL, 0, ptUmain, NULL, 0, &t1);
+    if (h1 == NULL) {
+        printDebug(LL_ERROR, "Error creating thread Umain");
+        quit = 1;
+    }
+
+    h2 = CreateThread(NULL, 0, ptUmainboost, NULL, 0, &t2);
+    if (h2 == NULL) {
+        printDebug(LL_ERROR, "Error creating thread Umain");
+        quit = 1;
+    }
+    h3 = CreateThread(NULL, 0, ptDatafromMSFS, NULL, 0, &t3);
+    if (h3 == NULL) {
+        printDebug(LL_ERROR, "Error creating thread Umain");
+        quit = 1;
+    }
+
+    WaitForSingleObject(h1, INFINITE);
+    WaitForSingleObject(h2, INFINITE);
+    WaitForSingleObject(h3, INFINITE);
+
+    CloseHandle(mutex);
+    CloseHandle(mutexsitu);
+    return 0;
+}
