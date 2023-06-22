@@ -14,22 +14,17 @@
 #include "MSFS.h"
 #include "update.h"
 
-// struct PSXTIME PSXtime;
+#ifdef __MINGW__
+#include <getopt.h>
+#endif
 
 struct PSXMSFSFLAGS flags;
 struct INTERNALFLAGS intflags;
 
-// pthread_mutex_t mutex, mutexsitu;
 HANDLE mutex, mutexsitu;
 CONDITION_VARIABLE condNewSitu;
-// pthread_cond_t condNewSitu;
 int quit = 0;
 
-// char PSXMainServer[] = "999.999.999.999";
-// char MSFSServer[] = "999.999.999.999";
-// char PSXBoostServer[] = "999.999.999.999";
-// int PSXPort = 10747;
-// int PSXBoostPort = 10749;
 
 DWORD WINAPI ptDatafromMSFS(void *thread_param)
 {
@@ -81,16 +76,19 @@ int main(int argc, char **argv)
 
     /*
      * check command line arguments
+     * only when compiling with MINGW
+     * since no getopt.h header in Win32
      */
-   //  parse_arguments(argc, argv);
-
+#ifdef __MINGW__
+     parse_arguments(argc, argv);
+#endif
     /*
      * version of program
      * And Compiler options used
      */
 
-  //  printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
- //   printDebug(LL_DEBUG, "Compiler options: %s", COMP);
+    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+    printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
     /*
@@ -123,14 +121,11 @@ int main(int argc, char **argv)
      * Create a thread mutex so that two threads cannot change simulataneously
      * the position of the aircraft
      */
-    /*
-        pthread_mutex_init(&mutex, NULL);
-        pthread_mutex_init(&mutexsitu, NULL);
-        pthread_cond_init(&condNewSitu, NULL);
-    */
     mutex = CreateMutex(NULL, FALSE, NULL);
     mutexsitu = CreateMutex(NULL, FALSE, NULL);
     InitializeConditionVariable(&condNewSitu);
+
+
     /*
      * Creating the 3 threads:
      * Thread 1: main server PSX
@@ -158,26 +153,9 @@ int main(int argc, char **argv)
     WaitForSingleObject(h1, INFINITE);
     WaitForSingleObject(h2, INFINITE);
     WaitForSingleObject(h3, INFINITE);
-    /*
-        if (pthread_join(t1, NULL) != 0) {
-            printDebug(LL_ERROR, "Failed to join Main thread");
-        }
-        if (pthread_join(t2, NULL) != 0) {
-            printDebug(LL_ERROR, "Failed to join Boost thread");
-        }
-        if (pthread_join(t3, NULL) != 0) {
-            printDebug(LL_ERROR, "Failed to join MSFS thread");
-        }
-    */
-    /*
-     * Cleaning thread related tools
-     */
-    // pthread_mutex_destroy(&mutex);
-    // pthread_mutex_destroy(&mutexsitu);
 
     CloseHandle(mutex);
     CloseHandle(mutexsitu);
-    //   pthread_cond_destroy(&condNewSitu);
 
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
