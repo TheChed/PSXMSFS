@@ -9,35 +9,8 @@
 int main(int argc, char **argv)
 {
 
-    /* Initialise the timer */
-    elapsedStart(&TimeStart);
-
-    /* Read from .ini file the various values
-     * used in the program
-     */
-    if (init_param()) {
-        exit(EXIT_FAILURE);
-    }
-
-    /*
-     * check command line arguments
-     * only when compiling with MINGW
-     * since no getopt.h header in Win32
-     */
-
-     if(argc>1){
-        parse_arguments(argc, argv);
-     }
-
-    /*
-     * version of program
-     * And Compiler options used
-     */
-
-    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
-    printDebug(LL_DEBUG, "Compiled on: %s", COMP);
-    printDebug(LL_INFO, "Please disable all crash detection in MSFS");
-
+   
+    initialize(argc, argv);
     /*
      * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
      */
@@ -66,9 +39,8 @@ int main(int argc, char **argv)
 
     main_launch();
 
-
     cleanup();
-    
+
     printf("Normal exit. See you soon...\n");
     return 0;
 }

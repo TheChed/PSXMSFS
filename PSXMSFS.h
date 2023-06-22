@@ -218,4 +218,5 @@ double SetAltitude(int onGround);
 int init_connect_MSFS(HANDLE *p);
 DWORD main_launch(void);
 DWORD cleanup(void);
+DWORD initialize(int argc, char **argv);
 #endif

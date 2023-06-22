@@ -90,7 +90,8 @@ DWORD main_launch(void)
     return 0;
 }
 
-DWORD cleanup(void){
+DWORD cleanup(void)
+{
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
 
@@ -116,4 +117,38 @@ DWORD cleanup(void){
     remove_debug();
 
     return 0;
+}
+
+DWORD initialize(int argc, char **argv){
+         /* Initialise the timer */
+    elapsedStart(&TimeStart);
+
+    /* Read from .ini file the various values
+     * used in the program
+     */
+    if (init_param()) {
+        exit(EXIT_FAILURE);
+    }
+
+    /*
+     * check command line arguments
+     * only when compiling with MINGW
+     * since no getopt.h header in Win32
+     */
+
+     if(argc>1){
+        parse_arguments(argc, argv);
+     }
+
+    /*
+     * version of program
+     * And Compiler options used
+     */
+
+    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+    printDebug(LL_DEBUG, "Compiled on: %s", COMP);
+    printDebug(LL_INFO, "Please disable all crash detection in MSFS");
+
+return 0;
+
     }
