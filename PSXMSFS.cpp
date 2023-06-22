@@ -66,30 +66,9 @@ int main(int argc, char **argv)
 
     main_launch();
 
-    printDebug(LL_INFO, "Closing MSFS connection...");
-    SimConnect_Close(hSimConnect);
 
-    // Signaling PSX that we are quitting
-    sendQPSX("exit");
-
-    // and gracefully close main + boost sockets
-    printDebug(LL_INFO, "Closing PSX boost connection...");
-    if (close_PSX_socket(flags.sPSXBOOST)) {
-        printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
-    }
-    printDebug(LL_INFO, "Closing PSX main connection...\n");
-    if (close_PSX_socket(flags.sPSX)) {
-        printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
-    }
-
-    // Finally clean up the Win32 sockets
-    WSACleanup();
-
-    /* and clean up the debug file
-     * deleting it if not in DEBUG mode
-     */
-    remove_debug();
-
+    cleanup();
+    
     printf("Normal exit. See you soon...\n");
     return 0;
 }

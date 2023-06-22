@@ -217,4 +217,5 @@ int umainBoost(void);
 double SetAltitude(int onGround);
 int init_connect_MSFS(HANDLE *p);
 DWORD main_launch(void);
+DWORD cleanup(void);
 #endif
