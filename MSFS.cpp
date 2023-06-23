@@ -1,10 +1,7 @@
 #include <cmath>
-#include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <time.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 #include "SimConnect.h"
@@ -242,6 +239,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_P_PRESS: {
+            printDebug(LL_ERROR, "In P Event:  %d\n",evt->uEventID);
             if (!key_press) {
                 key_press = 1;
                 SimConnect_TransmitClientEvent(
@@ -265,7 +263,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         default:
-            printDebug(LL_ERROR, "Event not captured");
+            printDebug(LL_ERROR, "Event %i not captured",evt->uEventID);
         }
     } break;
 
@@ -505,7 +503,6 @@ int init_MS_data(void)
                                              "FREEZE_LATITUDE_LONGITUDE_SET");
     hr = SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG_TOGGLE,
                                              "FREEZE_LATITUDE_LONGITUDE_TOGGLE");
-
     /*
      * EVENT used to set the parking break
      */

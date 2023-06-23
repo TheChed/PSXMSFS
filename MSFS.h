@@ -1,4 +1,3 @@
-#include <windows.h>
 #include "SimConnect.h"
 
 int init_MS_data(void);

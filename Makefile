@@ -4,19 +4,19 @@ VER=$(shell date +"%y%m%d%H%M")
 LINK= -LInclude -lwsock32 -lSimConnect
 
 DEPS = PSXMSFS.h util.h update.h MSFS.h
-OBJ = PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o
+OBJ = PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o main.o
 
-all: PSXMSFS win
+all: PSXMSFS win exe
 rel: all hash
 
-comp: PSXMSFS
+comp: PSXMSFS win
 
 PSXMSFS: $(OBJ) 
 	$(CC) $(OBJ) -o PSXMSFS $(LINK)
 	cp PSXMSFS.exe PSXMSFS
 
 %.o : %.cpp $(DEPS)
-	$(CC) $(CFLAGS) -D__MINGW__ -DVER=$(VER) -DCOMP="\"$(LINK)\"" -c $<
+	$(CC) $(CFLAGS) -D__MINGW__ -DVER=$(VER) -DCOMP="\"MINGW\"" -c $<
 
 clean:
 	rm -rf PSXMSFS *.o *.exe
@@ -27,4 +27,5 @@ hash:
 win:
 	cp *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
 	cp *.h /home/stephan/NAS/TRANSFERT/pfpx/src
+exe:
 	cp PSXMSFS.exe /home/stephan/NAS/TRANSFERT/pfpx
