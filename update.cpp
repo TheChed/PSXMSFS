@@ -1,15 +1,11 @@
 #include <math.h>
-#include <cstdlib>
 #include <ctime>
-#include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#include "PSXMSFS.h"
-#include "SimConnect.h"
+#include "PSXMSFSLIB.h"
 #include "util.h"
-#include "MSFS.h"
 #include "update.h"
 
 static struct BOOST PSXBoost;
@@ -414,7 +410,7 @@ void init_pos()
                .TA = 18000,
                .TL = 18000};
 
-                   /*
+    /*
      * Sending Q423 DEMAND variable to PSX for the winds
      * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
      */
@@ -422,7 +418,6 @@ void init_pos()
     sendQPSX("demand=Qs483");
     sendQPSX("demand=Qs480");
     sendQPSX("demand=Qs562");
-    
 }
 
 void updateSteeringWheel(DWORD wheelangle)
@@ -479,7 +474,7 @@ void SetBARO(DWORD altimeter, int standard)
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                        SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
         SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
-                                       (DWORD) (1013.25 * 16.0), SIMCONNECT_GROUP_PRIORITY_HIGHEST,
+                                       (DWORD)(1013.25 * 16.0), SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                        SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
 }

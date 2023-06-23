@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#include "PSXMSFS.h"
+#include "PSXMSFSLIB.h"
 #include "SimConnect.h"
 #include "util.h"
 #include "update.h"
@@ -165,7 +165,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
     (void)(cbData);
     (void)(pContext);
 
-       switch (pData->dwID) {
+    switch (pData->dwID) {
 
     case SIMCONNECT_RECV_ID_EXCEPTION: {
         SIMCONNECT_RECV_EXCEPTION *evt = (SIMCONNECT_RECV_EXCEPTION *)pData;
@@ -239,7 +239,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_P_PRESS: {
-            printDebug(LL_ERROR, "In P Event:  %d\n",evt->uEventID);
+            printDebug(LL_ERROR, "In P Event:  %d\n", evt->uEventID);
             if (!key_press) {
                 key_press = 1;
                 SimConnect_TransmitClientEvent(
@@ -263,7 +263,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         default:
-            printDebug(LL_ERROR, "Event %i not captured",evt->uEventID);
+            printDebug(LL_ERROR, "Event %i not captured", evt->uEventID);
         }
     } break;
 

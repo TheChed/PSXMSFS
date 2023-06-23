@@ -7,8 +7,9 @@
 #include <stdint.h>
 #include <time.h>
 #include "util.h"
-#include "PSXMSFS.h"
+#include "PSXMSFSLIB.h"
 #include "SimConnect.h"
+
 #ifdef __MINGW__
 #include <getopt.h>
 #endif
@@ -16,13 +17,13 @@
 monotime TimeStart;
 FILE *fdebug;
 
-double getTime() {
-  LARGE_INTEGER freq, val;
-  QueryPerformanceFrequency(&freq);
-  QueryPerformanceCounter(&val);
-  return (double)val.QuadPart / (double)freq.QuadPart;
+double getTime()
+{
+    LARGE_INTEGER freq, val;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&val);
+    return (double)val.QuadPart / (double)freq.QuadPart;
 }
-
 
 int sendQPSX(const char *s)
 {
@@ -47,9 +48,9 @@ int sendQPSX(const char *s)
 }
 monotime getMonotonicTime(void)
 {
-    //struct timespec ts;
-    //clock_gettime(CLOCK_MONOTONIC, &ts);
-    //return ((uint64_t)ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
+    // struct timespec ts;
+    // clock_gettime(CLOCK_MONOTONIC, &ts);
+    // return ((uint64_t)ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
     return (monotime)(getTime());
 }
 
@@ -253,96 +254,94 @@ void remove_debug()
     remove("DEBUG.TXT");
 }
 
-
 void parse_arguments(int argc, char **argv)
 {
 
 #ifdef __MINGW__
-	int c;
-	while (1) {
-		static struct option long_options[] = {/* These options set a flag. */
-											   {"debug", no_argument, NULL, 'd'},
-											   /* These options don’t set a flag.
-											  We distinguish them by their indices. */
-											   {"boost", required_argument, NULL, 'b'},
-											   {"help", no_argument, NULL, 'h'},
-											   {"main", required_argument, NULL, 'm'},
-											   {"boost-port", required_argument, NULL, 'c'},
-											   {"main-port", required_argument, NULL, 'p'},
-											   {"slave", required_argument, NULL, 's'},
-											   {0, 0, 0, 0}};
-		/* getopt_long stores the option index here. */
-		int option_index = 0;
+    int c;
+    while (1) {
+        static struct option long_options[] = {/* These options set a flag. */
+                                               {"debug", no_argument, NULL, 'd'},
+                                               /* These options don’t set a flag.
+                                              We distinguish them by their indices. */
+                                               {"boost", required_argument, NULL, 'b'},
+                                               {"help", no_argument, NULL, 'h'},
+                                               {"main", required_argument, NULL, 'm'},
+                                               {"boost-port", required_argument, NULL, 'c'},
+                                               {"main-port", required_argument, NULL, 'p'},
+                                               {"slave", required_argument, NULL, 's'},
+                                               {0, 0, 0, 0}};
+        /* getopt_long stores the option index here. */
+        int option_index = 0;
 
-		c = getopt_long(argc, argv, "CEthvsm:b:c:p:f:", long_options, &option_index);
+        c = getopt_long(argc, argv, "CEthvsm:b:c:p:f:", long_options, &option_index);
 
-		/* Detect the end of the options. */
-		if (c == -1)
-			break;
+        /* Detect the end of the options. */
+        if (c == -1)
+            break;
 
-		switch (c) {
-		case 0:
-			/* If this option set a flag, do nothing else now. */
-			if (long_options[option_index].flag != 0)
-				break;
-			printf("option %s", long_options[option_index].name);
-			if (optarg)
-				printf(" with arg %s", optarg);
-			printf("\n");
-			break;
+        switch (c) {
+        case 0:
+            /* If this option set a flag, do nothing else now. */
+            if (long_options[option_index].flag != 0)
+                break;
+            printf("option %s", long_options[option_index].name);
+            if (optarg)
+                printf(" with arg %s", optarg);
+            printf("\n");
+            break;
 
-		case 'b':
-			flags.PSXBoostServer = optarg;
-			break;
-		case 'E':
-			flags.ELEV_INJECT = 0;
-			break;
-		case 'N':
-			flags.ONLINE = 0;
-			break;
-		case 'C':
-			flags.INHIB_CRASH_DETECT = 0;
-			break;
-		case 't':
-			flags.TCAS_INJECT = 0;
-			break;
-		case 'h':
-			usage();
-			break;
-		case 'm':
-			flags.PSXMainServer = optarg;
-			break;
-		case 'q':
-			flags.PSXBoostPort = (int)strtol(optarg, NULL, 10);
-			break;
-		case 'p':
-			flags.PSXPort = (int)strtol(optarg, NULL, 10);
-			break;
-		case 'd':
-			flags.LOG_VERBOSITY = LL_ERROR;
-			break;
-		case 's':
-			flags.SLAVE = 1;
-			break;
+        case 'b':
+            flags.PSXBoostServer = optarg;
+            break;
+        case 'E':
+            flags.ELEV_INJECT = 0;
+            break;
+        case 'N':
+            flags.ONLINE = 0;
+            break;
+        case 'C':
+            flags.INHIB_CRASH_DETECT = 0;
+            break;
+        case 't':
+            flags.TCAS_INJECT = 0;
+            break;
+        case 'h':
+            usage();
+            break;
+        case 'm':
+            flags.PSXMainServer = optarg;
+            break;
+        case 'q':
+            flags.PSXBoostPort = (int)strtol(optarg, NULL, 10);
+            break;
+        case 'p':
+            flags.PSXPort = (int)strtol(optarg, NULL, 10);
+            break;
+        case 'd':
+            flags.LOG_VERBOSITY = LL_ERROR;
+            break;
+        case 's':
+            flags.SLAVE = 1;
+            break;
 
-		case '?':
-			/* getopt_long already printDebug an error message. */
-			usage();
-			break;
+        case '?':
+            /* getopt_long already printDebug an error message. */
+            usage();
+            break;
 
-		default:
-			abort();
-		}
-	}
+        default:
+            abort();
+        }
+    }
 
-	/* Print any remaining command line arguments (not options). */
-	if (optind < argc) {
-		// printf("non-option ARGV-elements: ");
-		while (optind < argc)
-			optind++;
-	}
-    #else
-     printDebug(LL_INFO,"Parsing of arguments not available on native MSVS C++");
-     #endif
+    /* Print any remaining command line arguments (not options). */
+    if (optind < argc) {
+        // printf("non-option ARGV-elements: ");
+        while (optind < argc)
+            optind++;
+    }
+#else
+    printDebug(LL_INFO, "Parsing of arguments not available on native MSVS C++");
+#endif
 }
-

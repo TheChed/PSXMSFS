@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <windows.h>
-#include "PSXMSFS.h"
+#include "PSXMSFSLIB.h"
 #include "MSFS.h"
 #include "SimConnect.h"
 #include "util.h"
-
+#include "update.h"
 
 struct PSXMSFSFLAGS flags;
 struct INTERNALFLAGS intflags;
@@ -13,15 +13,14 @@ HANDLE mutex, mutexsitu;
 CONDITION_VARIABLE condNewSitu;
 int quit = 0;
 
-
 DWORD WINAPI ptDatafromMSFS(void *thread_param)
 {
-    
+
     (void)(thread_param);
     while (!quit) {
-       
+
         SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
-              Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
+        Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
                   // to avoid heavy polling
     }
     return 0;
@@ -55,7 +54,6 @@ DWORD main_launch(void)
     mutex = CreateMutex(NULL, FALSE, NULL);
     mutexsitu = CreateMutex(NULL, FALSE, NULL);
     InitializeConditionVariable(&condNewSitu);
-
 
     /*
      * Creating the 3 threads:
@@ -119,8 +117,9 @@ DWORD cleanup(void)
     return 0;
 }
 
-DWORD initialize(int argc, char **argv){
-         /* Initialise the timer */
+DWORD initialize(int argc, char **argv)
+{
+    /* Initialise the timer */
     elapsedStart(&TimeStart);
 
     /* Read from .ini file the various values
@@ -136,9 +135,9 @@ DWORD initialize(int argc, char **argv){
      * since no getopt.h header in Win32
      */
 
-     if(argc>1){
+    if (argc > 1 && argv != NULL) {
         parse_arguments(argc, argv);
-     }
+    }
 
     /*
      * version of program
@@ -149,6 +148,19 @@ DWORD initialize(int argc, char **argv){
     printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
-return 0;
+    // initialize the data to be received as well as all EVENTS
+    init_MS_data();
 
+    /*
+    Initialize position at LFPG*/
+    init_pos();
+
+    /*
+     * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
+     */
+    if (!open_connections()) {
+        exit(EXIT_FAILURE);
     }
+
+    return 0;
+}

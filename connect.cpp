@@ -1,16 +1,12 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <winsock.h>
 #include <windows.h>
-#include "PSXMSFS.h"
 #include "SimConnect.h"
 #include "util.h"
 
 #ifndef __MINGW__
 #pragma comment(lib, "Ws2_32.lib")
 #endif // !__MINGW__
-
-
 
 HANDLE hSimConnect = NULL;
 

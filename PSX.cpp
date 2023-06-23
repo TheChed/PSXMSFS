@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <windows.h>
-#include "PSXMSFS.h"
+#include "PSXMSFSLIB.h"
 #include "SimConnect.h"
 #include "util.h"
 #include "update.h"
@@ -405,7 +405,7 @@ void Decodeboost(char *s)
 
 void Decode(char *s)
 {
-    
+
     // ExtLts : External lights, Mode=XECON
     if (strstr(s, "Qs443")) {
         S443(strstr(s, "Qs443="));
@@ -502,7 +502,7 @@ int umain(void)
     char *line_end;
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
     static time_t newSitutime;
-    
+
     if (bufmain_remain == 0) {
         printDebug(LL_DEBUG, "Main socket line exceeded buffer length! Discarding input");
         bufmain_used = 0;
@@ -554,14 +554,13 @@ int umain(void)
                 printDebug(LL_INFO, "Resuming normal operations.");
             }
         }
-       
-        
+
         if (line_start[0] == 'Q') {
-            
+
             // pthread_mutex_lock(&mutex);
             WaitForSingleObject(mutex, INFINITE);
             Decode(line_start);
-            
+
             // pthread_mutex_unlock(&mutex);
             ReleaseMutex(mutex);
         }

@@ -10,102 +10,101 @@
  */
 
 struct BOOST {
-	// Updated by Boost server
-	double flightDeckAlt;
-	double latitude;
-	double longitude;
-	double heading_true;
-	double pitch;
-	double bank;
-	int onGround;
+    // Updated by Boost server
+    double flightDeckAlt;
+    double latitude;
+    double longitude;
+    double heading_true;
+    double pitch;
+    double bank;
+    int onGround;
 };
 
 struct MovingParts {
-	double GearDown;
-	double FlapsPosition;
-	double SpeedBrake;
-	double rudder;
-	double elevator;
-	double ailerons;
+    double GearDown;
+    double FlapsPosition;
+    double SpeedBrake;
+    double rudder;
+    double elevator;
+    double ailerons;
 };
 
 /*
  * Structures used to update MSFS
  */
 enum SpeedType { IAS,
-				 TAS,
-				 VS } ;
+                 TAS,
+                 VS };
 
 enum SurfaceType {
-	GEAR,
-	FLAPS,
-	SPEED,
-  MOVING
+    GEAR,
+    FLAPS,
+    SPEED,
+    MOVING
 };
 
 struct SpeedUpdate {
-	SpeedType Type;
-	union {
-		double IAS;
-		double TAS;
-		double VS;
-	} Speed;
+    SpeedType Type;
+    union {
+        double IAS;
+        double TAS;
+        double VS;
+    } Speed;
 };
 
-
 struct SurfaceUpdate {
-	SurfaceType Type;
-	union {
-    double FlapsPosition;
-		double SpeedBrake;
-		double GearDown;
-    struct {
-        double rudder;
-        double ailerons;
-        double elevator;
-    } movingElements;
-	} UN;
+    SurfaceType Type;
+    union {
+        double FlapsPosition;
+        double SpeedBrake;
+        double GearDown;
+        struct {
+            double rudder;
+            double ailerons;
+            double elevator;
+        } movingElements;
+    } UN;
 };
 
 struct SpeedStruct {
-	double IAS;
-	double TAS;
-	double VS;
+    double IAS;
+    double TAS;
+    double VS;
 };
 /*
  * Structure containing PSX information
  * we want to update in MSFS
  */
 struct PSX {
-	// COMMS & XPDR
-	int XPDR;
-	int IDENT;
-	int COM1;
-	int COM2;
+    // COMMS & XPDR
+    int XPDR;
+    int IDENT;
+    int COM1;
+    int COM2;
 
-	// Altimeter
-	double altimeter;
-	int STD;
+    // Altimeter
+    double altimeter;
+    int STD;
 
-	// Speed
-	double IAS;
-	double GS;
-	double TAS;
+    // Speed
+    double IAS;
+    double GS;
+    double TAS;
 
-	// local QNH on the weather zone
-	int weatherZone;
-	double QNH[8];
+    // local QNH on the weather zone
+    int weatherZone;
+    double QNH[8];
 
-	/*
-	 * Acft elevation and indicator whether it has been
-	 *  updated from PSX
-	 */
-	double acftelev;
-	int elevupdated;
+    /*
+     * Acft elevation and indicator whether it has been
+     *  updated from PSX
+     */
+    double acftelev;
+    int elevupdated;
 
-	int flightPhase;
-	int TA;
-	int TL;
+    int flightPhase;
+    int TA;
+    int TL;
 };
 
 /*
@@ -153,7 +152,7 @@ void updateFlightPhase(int phase, int TA, int TL);
 /*
  * Updates steering wheel position
  */
- 
+
 void updateSteeringWheel(DWORD wheelangle);
 
 /*
@@ -163,14 +162,13 @@ void updateSteeringWheel(DWORD wheelangle);
 void setWeather(int zone, double QNH);
 void setWeatherZone(int zone);
 
-
 /*
  * Updates the position of MSFS
  * This function should be called in a frame change event in the callback function
  * and should not be called at will as it leads to some untraceable crashes
  */
 void SetMSFSPos(double flightDeckAlt, double heading, double latitude, double longitude,
-				double bank, double pitch);
+                double bank, double pitch);
 
 /*
  * Setting the correct altitude
@@ -192,5 +190,3 @@ void updateGear(double position);
  * Update gear position
  */
 void updateParkingBreak(int position);
-
-
