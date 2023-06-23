@@ -413,6 +413,16 @@ void init_pos()
                .flightPhase = 0, // onground by default
                .TA = 18000,
                .TL = 18000};
+
+                   /*
+     * Sending Q423 DEMAND variable to PSX for the winds
+     * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
+     */
+
+    sendQPSX("demand=Qs483");
+    sendQPSX("demand=Qs480");
+    sendQPSX("demand=Qs562");
+    
 }
 
 void updateSteeringWheel(DWORD wheelangle)

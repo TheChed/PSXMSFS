@@ -14,7 +14,9 @@
 #define LL_VERBOSE 2
 #define LL_INFO 3
 #define LL_ERROR 4
-
+#include "util.h"
+#include "MSFS.h"
+#include "update.h"
 
 
 //extern pthread_mutex_t mutex, mutexsitu;
