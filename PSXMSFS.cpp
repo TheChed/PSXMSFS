@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <windows.h>
+#include "PSXMSFS.h"
 #include "PSXMSFSLIB.h"
 #include "MSFS.h"
 #include "SimConnect.h"
@@ -148,6 +149,13 @@ DWORD initialize(int argc, char **argv)
     printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
+    /*
+     * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
+     */
+    if (!open_connections()) {
+        exit(EXIT_FAILURE);
+    }
+
     // initialize the data to be received as well as all EVENTS
     init_MS_data();
 
@@ -155,12 +163,6 @@ DWORD initialize(int argc, char **argv)
     Initialize position at LFPG*/
     init_pos();
 
-    /*
-     * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
-     */
-    if (!open_connections()) {
-        exit(EXIT_FAILURE);
-    }
 
     return 0;
 }

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include "PSXMSFS.h"
 #include "PSXMSFSLIB.h"
 #include "SimConnect.h"
 #include "util.h"

@@ -8,13 +8,13 @@ OBJ = link.o PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o
 LIBOBJ = MSFS.o PSX.o connect.o util.o update.o PSXMSFS.o
 OBJLINK = link.o
 
-all: lib win exe
+all: lib link win exe
 rel: all hash
 
 comp: lib win
 
 lib: $(LIBOBJ)
-	$(CC) $(LIBOBJ) -shared -fPIC -o PSXMSFS.lib $(LINK)
+	$(CC) $(LIBOBJ) -shared -fPIC -o PSXMSFS.dll $(LINK)
 
 link: $(OBJLINK) 
 	$(CC) $(OBJLINK) -o LINK -lPSXMSFS $(LINK)
@@ -30,7 +30,8 @@ hash:
 	md5sum PSXMSFS.exe > bin/PSXMSFS.MD5
 
 win:
-	cp --update=none *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
-	cp --update=none *.h /home/stephan/NAS/TRANSFERT/pfpx/src
+	cp  *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
+	cp  *.h /home/stephan/NAS/TRANSFERT/pfpx/src
 exe:
-	cp PSXMSFS.lib /home/stephan/Documents/C/src/PSXMSFS/Include
+	cp PSXMSFS.lib /home/stephan/Documents/C/src/PSX/Include
+	cp LINK.exe /home/stephan/NAS/TRANSFERT/pfpx
