@@ -44,7 +44,9 @@ DWORD WINAPI ptUmain(void *)
     return 0;
 }
 
-DWORD main_launch(void)
+
+
+void thread_launch(void)
 {
     DWORD t1, t2, t3;
     HANDLE h1, h2, h3;
@@ -86,7 +88,7 @@ DWORD main_launch(void)
 
     CloseHandle(mutex);
     CloseHandle(mutexsitu);
-    return 0;
+
 }
 
 DWORD cleanup(void)
@@ -164,5 +166,13 @@ DWORD initialize(int argc, char **argv)
     init_pos();
 
 
+    return 0;
+}
+
+DWORD main_launch(int argc, char** argv)
+{
+    initialize(argc, argv);
+    thread_launch();
+    cleanup();
     return 0;
 }
