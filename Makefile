@@ -23,8 +23,10 @@ link: $(OBJLINK)
 %.o : %.cpp $(DEPS)
 	$(CC) $(CFLAGS) -D__MINGW__ -DVER=$(VER) -DCOMP="\"MINGW\"" -c $<
 
+tex:
+	lualatex --shell-escape PSXMSFS.tex
 clean:
-	rm -rf LINK *.o *.exe *.dll
+	rm -rf LINK *.o *.exe *.dll *.aux *.log *.pdf
 
 hash:
 	md5sum PSXMSFS.exe > bin/PSXMSFS.MD5

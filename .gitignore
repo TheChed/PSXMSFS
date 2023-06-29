@@ -8,3 +8,7 @@ err.cpp
 PSXMSFS
 *.exe
 .gitattributes
+*.aux
+*.log
+*.pdf
+_minted-PSXMSFS/
