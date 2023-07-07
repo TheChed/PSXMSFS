@@ -7,11 +7,28 @@
 #include "util.h"
 #include "update.h"
 
+
+/*
+ * State flags from either:
+ * ini file, command line options or default flags
+ */
+
 struct PSXMSFSFLAGS flags;
 struct INTERNALFLAGS intflags;
 
+/* 
+ * Handles for mutexes used in 
+ * various threads
+ */
 HANDLE mutex, mutexsitu;
 CONDITION_VARIABLE condNewSitu;
+
+/* 
+ * Global variable used in the main 3 
+ * thread loops
+ * 0: continues the program
+ * 1: quits
+ */
 int quit = 0;
 
 DWORD WINAPI ptDatafromMSFS(void *thread_param)
@@ -67,18 +84,18 @@ void thread_launch(void)
 
     h1 = CreateThread(NULL, 0, ptUmain, NULL, 0, &t1);
     if (h1 == NULL) {
-        printDebug(LL_ERROR, "Error creating thread Umain");
+        printDebug(LL_ERROR, "Error creating PSX main server thread. Quitting now.");
         quit = 1;
     }
 
     h2 = CreateThread(NULL, 0, ptUmainboost, NULL, 0, &t2);
     if (h2 == NULL) {
-        printDebug(LL_ERROR, "Error creating thread Umain");
+        printDebug(LL_ERROR, "Error creating boost server thread. Quitting now.");
         quit = 1;
     }
     h3 = CreateThread(NULL, 0, ptDatafromMSFS, NULL, 0, &t3);
     if (h3 == NULL) {
-        printDebug(LL_ERROR, "Error creating thread Umain");
+        printDebug(LL_ERROR, "Error creating MSFS server thread. Quitting now.");
         quit = 1;
     }
 

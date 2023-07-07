@@ -8,6 +8,9 @@
 #pragma comment(lib, "Ws2_32.lib")
 #endif // !__MINGW__
 
+#define bzero(b, len) (memset((b), '\0', (len)), (void)0)
+
+
 HANDLE hSimConnect = NULL;
 
 int close_PSX_socket(SOCKET sockid)

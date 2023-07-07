@@ -13,6 +13,7 @@
 #include "MSFS.h"
 
 #define VSSAMPLE 50 // number of samples used from boost string to calculate the vertical speed
+#define DELIM  ";"
 
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;

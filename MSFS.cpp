@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-#include "PSXMSFS.h"
 #include "PSXMSFSLIB.h"
 #include "SimConnect.h"
 #include "util.h"
 #include "update.h"
+#include "MSFS.h"
 
 TCAS tcas_acft[7];
 static struct Struct_MSFS MSFS_POS;

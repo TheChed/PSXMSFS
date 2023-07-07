@@ -14,6 +14,10 @@
 #include <getopt.h>
 #endif
 
+
+#define MAXLEN 8192 //maximum debug message size
+
+
 monotime TimeStart;
 FILE *fdebug;
 

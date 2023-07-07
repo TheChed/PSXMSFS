@@ -8,6 +8,7 @@
 #include "PSXMSFSLIB.h"
 #include "util.h"
 #include "update.h"
+#include "MSFS.h"
 
 static struct BOOST PSXBoost;
 static struct MovingParts APos;

@@ -1,13 +1,8 @@
 #ifndef __PSXMSFSLIB_H_
 #define __PSXMSFSLIB_H_
 
-#define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MAXLEN 8192
 #define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
-#define MAXBUFF 165536
-#define DELIM ";"
-#define PSXMSFS_VERSION 2
 
 /*Log levels*/
 #define LL_DEBUG 1
@@ -18,7 +13,6 @@
 /*Anti-warning macro*/
 #define UNUSED(V) ((void)V)
 
-#include "MSFS.h"
 
 extern HANDLE mutex, mutexsitu;
 extern CONDITION_VARIABLE condNewSitu;
@@ -28,6 +22,7 @@ extern HANDLE hSimConnect;
 
 extern struct PSXMSFSFLAGS flags;
 extern struct INTERNALFLAGS intflags;
+extern "C" __declspec(dllexport) DWORD main_launch(int argc, char** argv);
 
 struct PSXMSFSFLAGS {
 
@@ -49,7 +44,7 @@ struct PSXMSFSFLAGS {
 
     SOCKET sPSX;      // main PSX socket id
     SOCKET sPSXBOOST; // PSX boost socket id
-};
+} ;
 
 struct INTERNALFLAGS {
     int oldcrz;
