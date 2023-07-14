@@ -20,18 +20,25 @@ extern CONDITION_VARIABLE condNewSitu;
 extern int quit;
 extern HANDLE hSimConnect;
 
-extern struct PSXMSFSFLAGS flags;
+extern  struct FLAGS PSXflags;
 extern struct INTERNALFLAGS intflags;
-extern "C" __declspec(dllexport) DWORD main_launch(int argc, char** argv);
 
-struct PSXMSFSFLAGS {
 
+/*
+ * structure used at initialization
+ * to get user info about PSX and
+ * MSFS servers
+ */
+typedef struct server_options{
     char *PSXMainServer;  // IP address of the PSX main server
     char *MSFSServer;     // IP address of the PSX boost server
     char *PSXBoostServer; // IP address of the MSFS server
-    int PSXPort;          // Main PSX port
-    int PSXBoostPort;
+    size_t PSXPort;          // Main PSX port
+    size_t PSXBoostPort;    // PSX boot server port
 
+} server_options;
+
+typedef struct flags{
     int TCAS_INJECT;        // 1 if TCAS is injected to PSX, 0 otherwise
     int ELEV_INJECT;        // 1 if MSFS elevation is injected into PSX. 0 otherwise
     int INHIB_CRASH_DETECT; // 1 if no crash detection in PSX when loading new situ. 0 otherwise
@@ -41,10 +48,16 @@ struct PSXMSFSFLAGS {
     int LOG_VERBOSITY; // verbosity of the logs
 
     int SLAVE; // 0 if PSX is slave, 1 if MSFS is slave
+} flags;
+
+typedef struct FLAGS {
+
+    server_options server;
+    flags flags;
 
     SOCKET sPSX;      // main PSX socket id
     SOCKET sPSXBOOST; // PSX boost socket id
-} ;
+} FLAGS;
 
 struct INTERNALFLAGS {
     int oldcrz;
@@ -140,7 +153,7 @@ struct TATL {
 };
 
 // Function definitions
-int init_param(void);
+FLAGS *init_param(server_options *ini, flags *flags);
 int check_param(const char *);
 int init_socket(void);
 void init_variables(void);
@@ -151,4 +164,7 @@ int umainBoost(void);
 double SetAltitude(int onGround);
 int init_connect_MSFS(HANDLE *p);
 
+extern "C" __declspec(dllexport) FLAGS *initialize(server_options *server, flags *flags);
+extern "C" __declspec(dllexport) DWORD main_launch(void);
+extern "C" __declspec(dllexport) DWORD cleanup(FLAGS *ini);
 #endif

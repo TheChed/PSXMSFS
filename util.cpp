@@ -14,9 +14,7 @@
 #include <getopt.h>
 #endif
 
-
-#define MAXLEN 8192 //maximum debug message size
-
+#define MAXLEN 8192 // maximum debug message size
 
 monotime TimeStart;
 FILE *fdebug;
@@ -41,7 +39,7 @@ int sendQPSX(const char *s)
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
 
-    int nbsend = send(flags.sPSX, dem, (int)(strlen(s) + 1), 0);
+    int nbsend = send(PSXflags.sPSX, dem, (int)(strlen(s) + 1), 0);
 
     if (nbsend == 0) {
         printDebug(LL_VERBOSE, "Error sending variable %s to PSX\n", s);
@@ -113,7 +111,7 @@ void printDebug(int level, const char *debugInfo, ...)
     va_end(ap);
 
     strftime(timestamp, 50, "%H:%M:%S", &date);
-    if (level >= flags.LOG_VERBOSITY) {
+    if (level >= PSXflags.flags.LOG_VERBOSITY) {
         fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000, msg);
         fprintf(fdebug, "\n");
         fflush(fdebug);
@@ -175,12 +173,12 @@ void write_ini_file()
     fprintf(f, "MSFSServer=%s\n", "127.0.0.1");
 
     /* Switches */
-    fprintf(f, "LOG_VERBOSITY=%d\n", flags.LOG_VERBOSITY);
-    fprintf(f, "TCAS_INJECT=%d\n", flags.TCAS_INJECT);
-    fprintf(f, "SLAVE=%d\n", flags.SLAVE);
-    fprintf(f, "ELEV_INJECT=%d\n", flags.ELEV_INJECT);
-    fprintf(f, "INHIB_CRASH_DETECT=%d\n", flags.INHIB_CRASH_DETECT);
-    fprintf(f, "ONLINE=%d\n", flags.ONLINE);
+    fprintf(f, "LOG_VERBOSITY=%d\n", PSXflags.flags.LOG_VERBOSITY);
+    fprintf(f, "TCAS_INJECT=%d\n", PSXflags.flags.TCAS_INJECT);
+    fprintf(f, "SLAVE=%d\n", PSXflags.flags.SLAVE);
+    fprintf(f, "ELEV_INJECT=%d\n", PSXflags.flags.ELEV_INJECT);
+    fprintf(f, "INHIB_CRASH_DETECT=%d\n", PSXflags.flags.INHIB_CRASH_DETECT);
+    fprintf(f, "ONLINE=%d\n", PSXflags.flags.ONLINE);
 
     fclose(f);
     return;
@@ -207,21 +205,33 @@ void resetInternalFlags(void)
     intflags.updateNewSitu = 1;
 }
 
-int init_param()
+FLAGS *init_param(server_options *server, flags *flags)
 {
     FILE *fini;
     char *value;
     char *stop;
 
+    FLAGS *ini = (FLAGS *)malloc(sizeof(FLAGS));
+
+    if (ini == NULL) {
+        quit = 1;
+        return NULL;
+    }
+
     /* Sensible default values*/
-    flags.PSXPort = 10747;
-    flags.PSXBoostPort = 10749;
-    flags.SLAVE = 0;
-    flags.LOG_VERBOSITY = LL_INFO;
-    flags.TCAS_INJECT = 1;
-    flags.ELEV_INJECT = 1;
-    flags.INHIB_CRASH_DETECT = 0;
-    flags.ONLINE = 0;
+    if (server == NULL) {
+
+        server->PSXPort = 10747;
+        server->PSXBoostPort = 10749;
+    }
+    if (flags == NULL) {
+        flags->SLAVE = 0;
+        flags->LOG_VERBOSITY = LL_INFO;
+        flags->TCAS_INJECT = 1;
+        flags->ELEV_INJECT = 1;
+        flags->INHIB_CRASH_DETECT = 0;
+        flags->ONLINE = 0;
+    }
 
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
@@ -229,29 +239,29 @@ int init_param()
                              "guesses... Please restart PSXMSFS");
         write_ini_file();
         quit = 1;
-        return 1;
+        return NULL;
     } else {
-        flags.PSXMainServer = scan_ini(fini, "PSXMainServer");
-        flags.PSXBoostServer = scan_ini(fini, "PSXBoostServer");
-        flags.MSFSServer = scan_ini(fini, "MSFSServer");
+        ini->server.PSXMainServer = scan_ini(fini, "PSXMainServer");
+        ini->server.PSXBoostServer = scan_ini(fini, "PSXBoostServer");
+        ini->server.MSFSServer = scan_ini(fini, "MSFSServer");
 
         value = scan_ini(fini, "SLAVE");
-        flags.SLAVE = strtol(value, &stop, 10);
+        ini->flags.SLAVE = strtol(value, &stop, 10);
         value = scan_ini(fini, "TCAS_INJECT");
-        flags.TCAS_INJECT = strtol(value, &stop, 10);
+        ini->flags.TCAS_INJECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "LOG_VERBOSITY");
-        flags.LOG_VERBOSITY = (int)strtol(value, &stop, 10);
+        ini->flags.LOG_VERBOSITY = (int)strtol(value, &stop, 10);
         value = scan_ini(fini, "ELEV_INJECT");
-        flags.ELEV_INJECT = strtol(value, &stop, 10);
+        ini->flags.ELEV_INJECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "INHIB_CRASH_DETECT");
-        flags.INHIB_CRASH_DETECT = strtol(value, &stop, 10);
+        ini->flags.INHIB_CRASH_DETECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "ONLINE");
-        flags.ONLINE = strtol(value, &stop, 10);
+        ini->flags.ONLINE = strtol(value, &stop, 10);
         free(value);
         fclose(fini);
     }
 
-    return 0;
+    return ini;
 }
 void remove_debug()
 {
@@ -296,37 +306,37 @@ void parse_arguments(int argc, char **argv)
             break;
 
         case 'b':
-            flags.PSXBoostServer = optarg;
+            PSXflags.server.PSXBoostServer = optarg;
             break;
         case 'E':
-            flags.ELEV_INJECT = 0;
+            PSXflags.flags.ELEV_INJECT = 0;
             break;
         case 'N':
-            flags.ONLINE = 0;
+            PSXflags.flags.ONLINE = 0;
             break;
         case 'C':
-            flags.INHIB_CRASH_DETECT = 0;
+            PSXflags.flags.INHIB_CRASH_DETECT = 0;
             break;
         case 't':
-            flags.TCAS_INJECT = 0;
+            PSXflags.flags.TCAS_INJECT = 0;
             break;
         case 'h':
             usage();
             break;
         case 'm':
-            flags.PSXMainServer = optarg;
+            PSXflags.server.PSXMainServer = optarg;
             break;
         case 'q':
-            flags.PSXBoostPort = (int)strtol(optarg, NULL, 10);
+            PSXflags.server.PSXBoostPort = (int)strtol(optarg, NULL, 10);
             break;
         case 'p':
-            flags.PSXPort = (int)strtol(optarg, NULL, 10);
+            PSXflags.server.PSXPort = (int)strtol(optarg, NULL, 10);
             break;
         case 'd':
-            flags.LOG_VERBOSITY = LL_ERROR;
+            PSXflags.flags.LOG_VERBOSITY = LL_ERROR;
             break;
         case 's':
-            flags.SLAVE = 1;
+            PSXflags.flags.SLAVE = 1;
             break;
 
         case '?':

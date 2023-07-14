@@ -10,7 +10,6 @@
 
 #define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 
-
 HANDLE hSimConnect = NULL;
 
 int close_PSX_socket(SOCKET sockid)
@@ -69,10 +68,10 @@ int open_connections()
 
     // connect to PSX main socket
 
-    printDebug(LL_INFO, "Connecting to PSX main server on: %s:%d", flags.PSXMainServer, flags.PSXPort);
+    printDebug(LL_INFO, "Connecting to PSX main server on: %s:%d", PSXflags.server.PSXMainServer, PSXflags.server.PSXPort);
 
-    flags.sPSX = init_connect_PSX(flags.PSXMainServer, flags.PSXPort);
-    if (flags.sPSX == INVALID_SOCKET) {
+    PSXflags.sPSX = init_connect_PSX(PSXflags.server.PSXMainServer, PSXflags.server.PSXPort);
+    if (PSXflags.sPSX == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX socket. Exiting...");
         return 0;
     } else {
@@ -80,10 +79,10 @@ int open_connections()
     }
 
     // connect to boost socket
-    printDebug(LL_INFO, "Connecting to PSX boost server on: %s:%d", flags.PSXBoostServer, flags.PSXBoostPort);
+    printDebug(LL_INFO, "Connecting to PSX boost server on: %s:%d", PSXflags.server.PSXBoostServer, PSXflags.server.PSXBoostPort);
 
-    flags.sPSXBOOST = init_connect_PSX(flags.PSXBoostServer, flags.PSXBoostPort);
-    if (flags.sPSXBOOST == INVALID_SOCKET) {
+    PSXflags.sPSXBOOST = init_connect_PSX(PSXflags.server.PSXBoostServer, PSXflags.server.PSXBoostPort);
+    if (PSXflags.sPSXBOOST == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX boost socket. Are you sure it is "
                              "running? Exiting...");
         return 0;

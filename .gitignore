@@ -1,9 +1,11 @@
 Makefile
 *.dll
 *.o
+*.a
 *.lib
 algo.txt
 bin/
+Include/
 err.cpp
 PSXMSFS
 *.exe

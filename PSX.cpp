@@ -13,7 +13,7 @@
 #include "MSFS.h"
 
 #define VSSAMPLE 50 // number of samples used from boost string to calculate the vertical speed
-#define DELIM  ";"
+#define DELIM ";"
 
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
@@ -137,10 +137,10 @@ void S78(const char *s)
 {
 
     if (strstr(s, "MSFS")) {
-        flags.SLAVE = 1;
+        PSXflags.flags.SLAVE = 1;
     } else {
         if (strstr(s, "PSX")) {
-            flags.SLAVE = 0;
+            PSXflags.flags.SLAVE = 0;
         }
     }
 }
@@ -511,7 +511,7 @@ int umain(void)
         return 0;
     }
 
-    int nbread = recv(flags.sPSX, (char *)&bufmain[bufmain_used], (int)(bufmain_remain), 0);
+    int nbread = recv(PSXflags.sPSX, (char *)&bufmain[bufmain_used], (int)(bufmain_remain), 0);
 
     if (nbread == 0) {
         printDebug(LL_ERROR, "Main socket connection closed.");
@@ -584,7 +584,7 @@ int umainBoost(void)
         return 0;
     }
 
-    int nbread = recv(flags.sPSXBOOST, (char *)&bufboost[bufboost_used], (int)(bufboost_remain), 0);
+    int nbread = recv(PSXflags.sPSXBOOST, (char *)&bufboost[bufboost_used], (int)(bufboost_remain), 0);
     if (nbread == 0) {
         printDebug(LL_ERROR, "Boost connection closed.");
         quit = 1;

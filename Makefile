@@ -15,6 +15,7 @@ comp: lib win
 
 lib: $(LIBOBJ)
 	$(CC) $(LIBOBJ) -shared -fPIC -o PSXMSFS.dll $(LINK)
+	cp PSXMSFS.dll Include/libPSXMSFS.a
 
 link: $(OBJLINK) 
 	$(CC) $(OBJLINK) -o LINK -lPSXMSFS $(LINK)

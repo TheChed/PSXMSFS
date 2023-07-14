@@ -77,7 +77,7 @@ void Qi198Update(int onGround, double elevation)
     QSentGround = intflags.Qi198Sentground;
     QSentFlight = intflags.Qi198SentFlight;
 
-    if (flags.ELEV_INJECT) {
+    if (PSXflags.flags.ELEV_INJECT) {
         if (onGround || (elevation < 300)) {
             if (!QSentGround) {
                 printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation.");
@@ -210,7 +210,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
             oldctrcrz = ctrAltitude;
             intflags.oldcrz = 1;
         }
-        if (flags.ONLINE) {
+        if (PSXflags.flags.ONLINE) {
             oldctrcrz += offset / 100;
             FinalAltitude = oldctrcrz;
         }
@@ -497,7 +497,7 @@ time_t newSituLoaded(void)
      * we do this with conditional waits for threads
      */
 
-    if (flags.INHIB_CRASH_DETECT) {
+    if (PSXflags.flags.INHIB_CRASH_DETECT) {
         printDebug(LL_INFO, "No crash detection for 10 seconds");
         sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
     }
