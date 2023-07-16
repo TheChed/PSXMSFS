@@ -15,6 +15,7 @@
 #endif
 
 #define MAXLEN 8192 // maximum debug message size
+#define IP_LENGTH 128 // maximum lenght of IP address
 
 monotime TimeStart;
 FILE *fdebug;
@@ -205,25 +206,51 @@ void resetInternalFlags(void)
     intflags.updateNewSitu = 1;
 }
 
+FLAGS *create_flags_struct(){
+
+    FLAGS *result=(FLAGS *)malloc(sizeof(FLAGS));
+
+    if (result == NULL) {
+        quit = 1;
+        return NULL;
+    }
+
+    result->server.PSXMainServer = (char *)malloc(IP_LENGTH);
+    result->server.PSXBoostServer = (char *)malloc(IP_LENGTH);
+    result->server.MSFSServer = (char *)malloc(IP_LENGTH);
+
+    if((result->server.PSXMainServer == NULL) || (result->server.PSXMainServer == NULL) ||(result->server.PSXMainServer == NULL){
+        quit = 1;
+        return NULL;
+            }
+
+        return result;
+    
+}
+
 FLAGS *init_param(server_options *server, flags *flags)
 {
     FILE *fini;
     char *value;
     char *stop;
 
-    FLAGS *ini = (FLAGS *)malloc(sizeof(FLAGS));
+    
 
-    if (ini == NULL) {
-        quit = 1;
-        return NULL;
-    }
+    FLAGS *ini = create_flags_struct();
+
 
     /* Sensible default values*/
     if (server == NULL) {
 
-        server->PSXPort = 10747;
-        server->PSXBoostPort = 10749;
+        ini->server.PSXMainServer="127.0.0.1";
+        ini->server.PSXBoostServer="127.0.0.1";
+        ini->server.MSFSServer="127.0.0.1";
+        ini->server.PSXPort = 10747;
+        ini->server.PSXBoostPort = 10749;
+    } else {
+        
     }
+
     if (flags == NULL) {
         flags->SLAVE = 0;
         flags->LOG_VERBOSITY = LL_INFO;

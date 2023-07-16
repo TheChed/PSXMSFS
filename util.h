@@ -83,3 +83,9 @@ int sendQPSX(const char *s);
  * when a situ is reloaded for example
  */
 void resetInternalFlags(void);
+
+/* 
+ * Function used to create and allocate the flags
+ * structre
+ */
+static FLAGS *create_flags_struct(void);
