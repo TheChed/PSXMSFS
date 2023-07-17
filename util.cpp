@@ -14,7 +14,7 @@
 #include <getopt.h>
 #endif
 
-#define MAXLEN 8192 // maximum debug message size
+#define MAXLEN 8192   // maximum debug message size
 #define IP_LENGTH 128 // maximum lenght of IP address
 
 monotime TimeStart;
@@ -206,9 +206,10 @@ void resetInternalFlags(void)
     intflags.updateNewSitu = 1;
 }
 
-FLAGS *create_flags_struct(){
+FLAGS *create_flags_struct()
+{
 
-    FLAGS *result=(FLAGS *)malloc(sizeof(FLAGS));
+    FLAGS *result = (FLAGS *)malloc(sizeof(FLAGS));
 
     if (result == NULL) {
         quit = 1;
@@ -219,45 +220,40 @@ FLAGS *create_flags_struct(){
     result->server.PSXBoostServer = (char *)malloc(IP_LENGTH);
     result->server.MSFSServer = (char *)malloc(IP_LENGTH);
 
-    if((result->server.PSXMainServer == NULL) || (result->server.PSXMainServer == NULL) ||(result->server.PSXMainServer == NULL)){
+    if ((result->server.PSXMainServer == NULL) || (result->server.PSXBoostServer == NULL) || (result->server.MSFSServer == NULL)) {
         quit = 1;
         return NULL;
-            }
+    }
 
-        return result;
-    
+    return result;
 }
 
-FLAGS *init_param(server_options *server, flags *flags)
+DWORD init_param(server_options *server, flags *flags)
 {
     FILE *fini;
     char *value;
     char *stop;
 
-    
-
     FLAGS *ini = create_flags_struct();
-
 
     /* Sensible default values*/
     if (server == NULL) {
 
-        strcpy(ini->server.PSXMainServer,"127.0.0.1");
-        strcpy(ini->server.PSXBoostServer,"127.0.0.1");
-        strcpy(ini->server.MSFSServer,"127.0.0.1");
+        strcpy(ini->server.PSXMainServer, "127.0.0.5");
+        strcpy(ini->server.PSXBoostServer, "127.0.0.1");
+        strcpy(ini->server.MSFSServer, "127.0.0.1");
         ini->server.PSXPort = 10747;
         ini->server.PSXBoostPort = 10749;
     } else {
-        
     }
 
     if (flags == NULL) {
-        flags->SLAVE = 0;
-        flags->LOG_VERBOSITY = LL_INFO;
-        flags->TCAS_INJECT = 1;
-        flags->ELEV_INJECT = 1;
-        flags->INHIB_CRASH_DETECT = 0;
-        flags->ONLINE = 0;
+        ini->flags.SLAVE = 0;
+        ini->flags.LOG_VERBOSITY = LL_INFO;
+        ini->flags.TCAS_INJECT = 1;
+        ini->flags.ELEV_INJECT = 1;
+        ini->flags.INHIB_CRASH_DETECT = 0;
+        ini->flags.ONLINE = 0;
     }
 
     fini = fopen("PSXMSFS.ini", "r");
@@ -266,11 +262,11 @@ FLAGS *init_param(server_options *server, flags *flags)
                              "guesses... Please restart PSXMSFS");
         write_ini_file();
         quit = 1;
-        return NULL;
+        return 1;
     } else {
-        ini->server.PSXMainServer = scan_ini(fini, "PSXMainServer");
-        ini->server.PSXBoostServer = scan_ini(fini, "PSXBoostServer");
-        ini->server.MSFSServer = scan_ini(fini, "MSFSServer");
+        strcpy(ini->server.PSXMainServer, scan_ini(fini, "PSXMainServer"));
+        strcpy(ini->server.PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
+        strcpy(ini->server.MSFSServer, scan_ini(fini, "MSFSServer"));
 
         value = scan_ini(fini, "SLAVE");
         ini->flags.SLAVE = strtol(value, &stop, 10);
@@ -288,7 +284,11 @@ FLAGS *init_param(server_options *server, flags *flags)
         fclose(fini);
     }
 
-    return ini;
+    PSXflags=*ini;
+
+    free(ini);
+
+    return 0;
 }
 void remove_debug()
 {

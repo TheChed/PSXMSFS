@@ -102,7 +102,7 @@ void thread_launch(void)
     CloseHandle(mutexsitu);
 }
 
-DWORD cleanup(FLAGS *ini)
+DWORD cleanup(void)
 {
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
@@ -132,26 +132,24 @@ DWORD cleanup(FLAGS *ini)
      * and free the used memory
      */
 
-    free(ini);
+   // free(&PSXflags);
     return 0;
 }
 
-FLAGS *initialize(server_options *server, flags *flags)
+DWORD initialize(server_options *server, flags *flags)
 {
 
-    FLAGS *tmpflags=NULL;
     /* Initialise the timer */
     elapsedStart(&TimeStart);
 
     /* Read from .ini file the various values
      * used in the program
      */
-    tmpflags = init_param(server, flags);
-    
-    if(tmpflags==NULL){
-        printDebug(LL_DEBUG,"Could not initialize various PSX internal flags. Exiting now...");
-        quit=1;
-        return NULL;
+
+    if (init_param(server,flags) != 0 ) {
+        printDebug(LL_DEBUG, "Could not initialize various PSX internal flags. Exiting now...");
+        quit = 1;
+        return 1;
     }
 
     /*
@@ -166,12 +164,17 @@ FLAGS *initialize(server_options *server, flags *flags)
      * version of program
      * And Compiler options used
      */
+    return 0;
+
+}
+
+DWORD connectPSXMSFS(void){
 
     /*
      * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
      */
     if (!open_connections()) {
-        return NULL;
+        return 1;
     }
 
     // initialize the data to be received as well as all EVENTS
@@ -185,7 +188,7 @@ FLAGS *initialize(server_options *server, flags *flags)
     printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
-    return tmpflags;
+    return 0;
 }
 
 DWORD main_launch()

@@ -13,32 +13,30 @@
 /*Anti-warning macro*/
 #define UNUSED(V) ((void)V)
 
-
 extern HANDLE mutex, mutexsitu;
 extern CONDITION_VARIABLE condNewSitu;
 
 extern int quit;
 extern HANDLE hSimConnect;
 
-extern  struct FLAGS PSXflags;
+extern struct FLAGS PSXflags;
 extern struct INTERNALFLAGS intflags;
-
 
 /*
  * structure used at initialization
  * to get user info about PSX and
  * MSFS servers
  */
-typedef struct server_options{
+typedef struct server_options {
     char *PSXMainServer;  // IP address of the PSX main server
     char *MSFSServer;     // IP address of the PSX boost server
     char *PSXBoostServer; // IP address of the MSFS server
-    size_t PSXPort;          // Main PSX port
-    size_t PSXBoostPort;    // PSX boot server port
+    size_t PSXPort;       // Main PSX port
+    size_t PSXBoostPort;  // PSX boot server port
 
 } server_options;
 
-typedef struct flags{
+typedef struct flags {
     int TCAS_INJECT;        // 1 if TCAS is injected to PSX, 0 otherwise
     int ELEV_INJECT;        // 1 if MSFS elevation is injected into PSX. 0 otherwise
     int INHIB_CRASH_DETECT; // 1 if no crash detection in PSX when loading new situ. 0 otherwise
@@ -153,7 +151,7 @@ struct TATL {
 };
 
 // Function definitions
-FLAGS *init_param(server_options *ini, flags *flags);
+ DWORD init_param(server_options *ini, flags *flags);
 int check_param(const char *);
 int init_socket(void);
 void init_variables(void);
@@ -164,7 +162,8 @@ int umainBoost(void);
 double SetAltitude(int onGround);
 int init_connect_MSFS(HANDLE *p);
 
-extern "C" __declspec(dllexport) FLAGS *initialize(server_options *server, flags *flags);
+extern "C" __declspec(dllexport) DWORD initialize(server_options *server, flags *flags);
+extern "C" __declspec(dllexport) DWORD connectPSXMSFS(void);
 extern "C" __declspec(dllexport) DWORD main_launch(void);
-extern "C" __declspec(dllexport) DWORD cleanup(FLAGS *ini);
+extern "C" __declspec(dllexport) DWORD cleanup(void);
 #endif
