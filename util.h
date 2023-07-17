@@ -88,4 +88,4 @@ void resetInternalFlags(void);
  * Function used to create and allocate the flags
  * structre
  */
-static FLAGS *create_flags_struct(void);
+FLAGS *create_flags_struct(void);

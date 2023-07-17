@@ -219,7 +219,7 @@ FLAGS *create_flags_struct(){
     result->server.PSXBoostServer = (char *)malloc(IP_LENGTH);
     result->server.MSFSServer = (char *)malloc(IP_LENGTH);
 
-    if((result->server.PSXMainServer == NULL) || (result->server.PSXMainServer == NULL) ||(result->server.PSXMainServer == NULL){
+    if((result->server.PSXMainServer == NULL) || (result->server.PSXMainServer == NULL) ||(result->server.PSXMainServer == NULL)){
         quit = 1;
         return NULL;
             }
@@ -242,9 +242,9 @@ FLAGS *init_param(server_options *server, flags *flags)
     /* Sensible default values*/
     if (server == NULL) {
 
-        ini->server.PSXMainServer="127.0.0.1";
-        ini->server.PSXBoostServer="127.0.0.1";
-        ini->server.MSFSServer="127.0.0.1";
+        strcpy(ini->server.PSXMainServer,"127.0.0.1");
+        strcpy(ini->server.PSXBoostServer,"127.0.0.1");
+        strcpy(ini->server.MSFSServer,"127.0.0.1");
         ini->server.PSXPort = 10747;
         ini->server.PSXBoostPort = 10749;
     } else {
