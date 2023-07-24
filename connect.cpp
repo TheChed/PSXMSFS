@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "SimConnect.h"
 #include "util.h"
+#include "log.h"
 
 #ifndef __MINGW__
 #pragma comment(lib, "Ws2_32.lib")

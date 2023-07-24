@@ -8,6 +8,7 @@
 #include "util.h"
 #include "update.h"
 #include "MSFS.h"
+#include "log.h"
 
 TCAS tcas_acft[7];
 static struct Struct_MSFS MSFS_POS;

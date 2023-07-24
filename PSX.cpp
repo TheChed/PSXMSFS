@@ -11,6 +11,7 @@
 #include "util.h"
 #include "update.h"
 #include "MSFS.h"
+#include "log.h"
 
 #define VSSAMPLE 50 // number of samples used from boost string to calculate the vertical speed
 #define DELIM ";"

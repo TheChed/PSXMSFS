@@ -4,12 +4,6 @@
 #define MAX(x, y) ((x) > (y) ? (x) : (y))
 #define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
 
-/*Log levels*/
-#define LL_DEBUG 1
-#define LL_VERBOSE 2
-#define LL_INFO 3
-#define LL_ERROR 4
-
 /*Anti-warning macro*/
 #define UNUSED(V) ((void)V)
 
@@ -151,7 +145,7 @@ struct TATL {
 };
 
 // Function definitions
- DWORD init_param(server_options *ini, flags *flags);
+DWORD init_param(server_options *ini, flags *flags);
 int check_param(const char *);
 int init_socket(void);
 void init_variables(void);
@@ -163,7 +157,7 @@ double SetAltitude(int onGround);
 int init_connect_MSFS(HANDLE *p);
 
 extern "C" __declspec(dllexport) DWORD initialize(server_options *server, flags *flags);
-extern "C" __declspec(dllexport) DWORD connectPSXMSFS(void);
+extern "C" __declspec(dllexport) server_options *connectPSXMSFS(void);
 extern "C" __declspec(dllexport) DWORD main_launch(void);
 extern "C" __declspec(dllexport) DWORD cleanup(void);
 #endif

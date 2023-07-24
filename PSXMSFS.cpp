@@ -1,9 +1,11 @@
+#include <cstdlib>
 #include <stdio.h>
 #include <windows.h>
 #include "PSXMSFSLIB.h"
 #include "MSFS.h"
 #include "util.h"
 #include "update.h"
+#include "log.h"
 
 /*
  * State flags from either:
@@ -104,6 +106,9 @@ void thread_launch(void)
 
 DWORD cleanup(void)
 {
+    // To force threads to close if not yet done
+    quit = 1;
+
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
 
@@ -132,7 +137,7 @@ DWORD cleanup(void)
      * and free the used memory
      */
 
-   // free(&PSXflags);
+    // free(&PSXflags);
     return 0;
 }
 
@@ -146,11 +151,15 @@ DWORD initialize(server_options *server, flags *flags)
      * used in the program
      */
 
-    if (init_param(server,flags) != 0 ) {
+    if (init_param(server, flags) != 0) {
         printDebug(LL_DEBUG, "Could not initialize various PSX internal flags. Exiting now...");
         quit = 1;
         return 1;
     }
+
+    /*
+     * Initialize buffer log if needed
+     */
 
     /*
      * check command line arguments
@@ -165,16 +174,16 @@ DWORD initialize(server_options *server, flags *flags)
      * And Compiler options used
      */
     return 0;
-
 }
 
-DWORD connectPSXMSFS(void){
+server_options *connectPSXMSFS(void)
+{
 
     /*
      * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
      */
     if (!open_connections()) {
-        return 1;
+        return NULL;
     }
 
     // initialize the data to be received as well as all EVENTS
@@ -188,7 +197,11 @@ DWORD connectPSXMSFS(void){
     printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
-    return 0;
+    server_options *server = (server_options *)malloc(sizeof(server_options));
+    server = &PSXflags.server;
+
+    // return &PSXflags;
+    return server;
 }
 
 DWORD main_launch()

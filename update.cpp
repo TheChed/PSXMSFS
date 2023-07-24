@@ -9,6 +9,7 @@
 #include "util.h"
 #include "update.h"
 #include "MSFS.h"
+#include "log.h"
 
 static struct BOOST PSXBoost;
 static struct MovingParts APos;
