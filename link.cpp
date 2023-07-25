@@ -39,19 +39,19 @@ int main(void)
 {
     DWORD logthread, mainthread;
     HANDLE loghandle, mainhandle;
+    debugMessage **debugBuff = initDebugBuff();
 
     if (initialize(NULL, NULL) != 0) {
         printf("Could not initialize various parameters. Quitting now\n");
         exit(EXIT_FAILURE);
     }
 
-    if (connectPSXMSFS() != 0) {
+    if (connectPSXMSFS()==NULL) {
 
         printf("Could not connect PSX to MSFS. Quitting now\n");
         exit(EXIT_FAILURE);
     }
 
-    debugMessage **debugBuff = initDebugBuff();
 
     loghandle = CreateThread(NULL, 0, printLogBuffer,debugBuff, 0, &logthread);
     mainhandle = CreateThread(NULL, 0, runLink, NULL, 0, &mainthread);

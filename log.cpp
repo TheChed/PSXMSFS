@@ -52,6 +52,7 @@ debugMessage **initDebugBuff(void)
     buffer = (debugMessage **)malloc(sizeof(debugMessage *) * NB_LOGS);
     for (int i = 0; i < NB_LOGS; i++) {
         buffer[i] = (debugMessage *)malloc(sizeof(debugMessage));
+        buffer[i]->Id=0;
     }
 
     D = buffer;
