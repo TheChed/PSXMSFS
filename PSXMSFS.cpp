@@ -204,7 +204,7 @@ server_options *connectPSXMSFS(void)
     return server;
 }
 
-DWORD main_launch()
+DWORD WINAPI main_launch()
 {
     thread_launch();
     return 0;

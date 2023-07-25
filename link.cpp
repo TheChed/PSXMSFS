@@ -1,21 +1,45 @@
 #include <stdio.h>
+#include <windows.h>
 #include "PSXMSFS.h"
 
-/* void printDebug(debugMessage **D)
-{
-    static uint64_t printedLogs = 0;
-    for (size_t i = 0; i < NB_LOGS; i++) {
-        if (D[i]->Id > printedLogs) {
-            printf("Debug Id: %llu\tLog: %s\n", D[i]->Id, D[i]->message);
-            printedLogs++;
-        }
-    }
+#define NB_LOGS 10
 
+struct resu {
+    debugMessage **D;
+    char logmsg[8192];
+} *resu;
+
+DWORD WINAPI runLink(void *param)
+{
+    (void)param;
+    main_launch();
+    return 0;
 }
 
-*/
+DWORD WINAPI printLogBuffer(void *Param)
+{
+
+
+    debugMessage **D = (debugMessage **)(Param);
+
+    
+    static uint64_t printedLogs = 0;
+    while (1) {
+        for (size_t i = 0; i < NB_LOGS; i++) {
+            if (D[i]->Id > printedLogs) {
+                printf("Debug Id: %llu\tLog: %s\n", D[i]->Id, D[i]->message);
+                printedLogs++;
+            }
+        }
+    }
+    return 0;
+}
+
 int main(void)
 {
+    DWORD logthread, mainthread;
+    HANDLE loghandle, mainhandle;
+
     if (initialize(NULL, NULL) != 0) {
         printf("Could not initialize various parameters. Quitting now\n");
         exit(EXIT_FAILURE);
@@ -27,12 +51,17 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    debugMessage **debugBuff = initDebugBuff(); 
-    (void) debugBuff;
-    main_launch();
+    debugMessage **debugBuff = initDebugBuff();
+
+    loghandle = CreateThread(NULL, 0, printLogBuffer,debugBuff, 0, &logthread);
+    mainhandle = CreateThread(NULL, 0, runLink, NULL, 0, &mainthread);
+
+    WaitForSingleObject(loghandle, INFINITE);
+    WaitForSingleObject(mainhandle, INFINITE);
+
     cleanup();
 
-
+    free(resu);
     printf("Normal exit. See you soon...\n");
     return 0;
 }

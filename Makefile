@@ -8,7 +8,7 @@ OBJ = link.o PSXMSFS.o MSFS.o PSX.o connect.o util.o update.o log.o
 LIBOBJ = MSFS.o PSX.o connect.o util.o update.o PSXMSFS.o log.o
 OBJLINK = link.o
 
-all: lib link win exe
+all: lib link win
 rel: all hash
 
 comp: lib win
@@ -35,6 +35,3 @@ hash:
 win:
 	cp  *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
 	cp  *.h /home/stephan/NAS/TRANSFERT/pfpx/src
-exe:
-	cp PSXMSFS.lib /home/stephan/Documents/C/src/PSX/Include
-	cp LINK.exe /home/stephan/NAS/TRANSFERT/pfpx

@@ -158,6 +158,6 @@ int init_connect_MSFS(HANDLE *p);
 
 extern "C" __declspec(dllexport) DWORD initialize(server_options *server, flags *flags);
 extern "C" __declspec(dllexport) server_options *connectPSXMSFS(void);
-extern "C" __declspec(dllexport) DWORD main_launch(void);
+extern "C" __declspec(dllexport) DWORD WINAPI main_launch(void);
 extern "C" __declspec(dllexport) DWORD cleanup(void);
 #endif

@@ -7,7 +7,7 @@
 
 int currCount = 0;
 
-debugMessage **D=NULL;
+debugMessage **D = NULL;
 
 void printDebug(int level, const char *debugInfo, ...)
 {
@@ -36,12 +36,13 @@ void printDebug(int level, const char *debugInfo, ...)
 
         // and also print on the console or in buffer
         printf("%s\n", msg);
-        logging(D, msg);
+        if (D != NULL) {
+            logging(D, msg);
+        }
     }
 
     fclose(fdebug);
 }
-
 
 debugMessage **initDebugBuff(void)
 {
@@ -53,7 +54,7 @@ debugMessage **initDebugBuff(void)
         buffer[i] = (debugMessage *)malloc(sizeof(debugMessage));
     }
 
-    D=buffer;
+    D = buffer;
 
     return buffer;
 }
