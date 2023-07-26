@@ -19,10 +19,8 @@ DWORD WINAPI runLink(void *param)
 DWORD WINAPI printLogBuffer(void *Param)
 {
 
-
     debugMessage **D = (debugMessage **)(Param);
 
-    
     static uint64_t printedLogs = 0;
     while (1) {
         for (size_t i = 0; i < NB_LOGS; i++) {
@@ -39,21 +37,21 @@ int main(void)
 {
     DWORD logthread, mainthread;
     HANDLE loghandle, mainhandle;
+
     debugMessage **debugBuff = initDebugBuff();
+    loghandle = CreateThread(NULL, 0, printLogBuffer, debugBuff, 0, &logthread);
 
     if (initialize(NULL, NULL) != 0) {
         printf("Could not initialize various parameters. Quitting now\n");
         exit(EXIT_FAILURE);
     }
 
-    if (connectPSXMSFS()==NULL) {
+    if (connectPSXMSFS() == NULL) {
 
         printf("Could not connect PSX to MSFS. Quitting now\n");
         exit(EXIT_FAILURE);
     }
 
-
-    loghandle = CreateThread(NULL, 0, printLogBuffer,debugBuff, 0, &logthread);
     mainhandle = CreateThread(NULL, 0, runLink, NULL, 0, &mainthread);
 
     WaitForSingleObject(loghandle, INFINITE);
