@@ -175,7 +175,7 @@ void S448(char *s)
 void S458(char *s)
 {
     int C1, C2;
-    char COM1[9] = {0}, COM2[9] = {0};
+    char COM1[10] = {0}, COM2[10] = {0};
     /*
      * discard the last digit from the Qs string as it is not taken into MSFS.
      * and start at second digit, as first one is always 1
@@ -183,6 +183,7 @@ void S458(char *s)
     strncpy(COM1, s + 6, 3);
     strncat(COM1, s + 10, 3);
     strcat(COM1, "000");
+    COM1[9]='\0';
 
     C1 = strtol(COM1, NULL, 10);
 
@@ -193,6 +194,7 @@ void S458(char *s)
     strncpy(COM2, s + 13, 3);
     strncat(COM2, s + 17, 3);
     strcat(COM2, "000");
+    COM2[9]='\0';
 
     C2 = strtol(COM2, NULL, 10);
     if (C2 < 118000000 || C2 > 136990000) {
