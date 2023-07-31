@@ -157,22 +157,6 @@ DWORD initialize(server_options *server, flags *flags)
         return 1;
     }
 
-    /*
-     * Initialize buffer log if needed
-     */
-
-    /*
-     * check command line arguments
-     * only when compiling with MINGW
-     * since no getopt.h header in Win32
-     */
-    //  if (argc > 1 && argv != NULL) {
-    //      parse_arguments(argc, argv);
-    //  }
-    /*
-     * version of program
-     * And Compiler options used
-     */
     return 0;
 }
 
