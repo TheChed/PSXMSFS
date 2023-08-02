@@ -41,8 +41,8 @@ int main(void)
     debugMessage **debugBuff = initDebugBuff();
     loghandle = CreateThread(NULL, 0, printLogBuffer, debugBuff, 0, &logthread);
 
-    if (initialize(NULL, NULL) != 0) {
-        printf("Could not initialize various parameters. Quitting now\n");
+    if (initialize("127.0.0.1", "192.168.1.132", 10747, NULL, 10749) != 0) {
+        printf("Quitting now\n");
         exit(EXIT_FAILURE);
     }
 

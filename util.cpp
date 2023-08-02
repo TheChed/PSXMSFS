@@ -123,35 +123,36 @@ void usage()
 
     exit(EXIT_SUCCESS);
 }
-void write_ini_file()
+int write_ini_file(FLAGS *ini)
 {
     FILE *f;
 
     f = fopen("PSXMSFS.ini", "w");
     if (!f) {
-        printDebug(LL_ERROR, "Cannot create PSXMSFS.ini file. Something is seriously wrong!");
-        return;
+        printDebug(LL_ERROR, "Cannot create PSXMSFS.ini file. Something is seriously wrong! No choice but to exit.");
+        quit = 1;
+        return 1;
     }
 
     /*PSX server addresses and port*/
-    fprintf(f, "PSXMainServer=%s\n", "127.0.0.1");
-    fprintf(f, "PSXBoostServer=%s\n", "127.0.0.1");
-    fprintf(f, "PSXPort=%d\n", 10747);
-    fprintf(f, "PSXBoostPort=%d\n", 10749);
+    fprintf(f, "PSXMainServer=%s\n", ini->server.PSXMainServer);
+    fprintf(f, "PSXBoostServer=%s\n", ini->server.PSXBoostServer);
+    fprintf(f, "PSXPort=%d\n", ini->server.PSXPort);
+    fprintf(f, "PSXBoostPort=%d\n", ini->server.PSXBoostPort);
 
     /*MSFS address*/
-    fprintf(f, "MSFSServer=%s\n", "127.0.0.1");
+    fprintf(f, "MSFSServer=%s\n", ini->server.MSFSServer);
 
     /* Switches */
-    fprintf(f, "LOG_VERBOSITY=%d\n", PSXflags.flags.LOG_VERBOSITY);
-    fprintf(f, "TCAS_INJECT=%d\n", PSXflags.flags.TCAS_INJECT);
-    fprintf(f, "SLAVE=%d\n", PSXflags.flags.SLAVE);
-    fprintf(f, "ELEV_INJECT=%d\n", PSXflags.flags.ELEV_INJECT);
-    fprintf(f, "INHIB_CRASH_DETECT=%d\n", PSXflags.flags.INHIB_CRASH_DETECT);
-    fprintf(f, "ONLINE=%d\n", PSXflags.flags.ONLINE);
+    fprintf(f, "LOG_VERBOSITY=%d\n", ini->flags.LOG_VERBOSITY);
+    fprintf(f, "TCAS_INJECT=%d\n", ini->flags.TCAS_INJECT);
+    fprintf(f, "SLAVE=%d\n", ini->flags.SLAVE);
+    fprintf(f, "ELEV_INJECT=%d\n", ini->flags.ELEV_INJECT);
+    fprintf(f, "INHIB_CRASH_DETECT=%d\n", ini->flags.INHIB_CRASH_DETECT);
+    fprintf(f, "ONLINE=%d\n", ini->flags.ONLINE);
 
     fclose(f);
-    return;
+    return 0;
 }
 
 char *scan_ini(FILE *file, const char *key)
@@ -197,41 +198,58 @@ FLAGS *create_flags_struct()
     return result;
 }
 
-DWORD init_param(server_options *server, flags *flags)
+void init_servers(FLAGS *ini, const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {
+    /* Sensible default values for Main PSX server*/
+    if (PSXMainIP == NULL || strlen(PSXMainIP) > 15) {
+
+        strcpy(ini->server.PSXMainServer, "127.0.0.1");
+        ini->server.PSXPort = 10747;
+    } else {
+        strcpy(ini->server.PSXMainServer, PSXMainIP);
+        ini->server.PSXPort = PSXMainPort;
+    }
+
+    /* Sensible default values for PSX Boost server*/
+    if (PSXBoostIP == NULL || strlen(PSXBoostIP) > 15) {
+
+        strcpy(ini->server.PSXBoostServer, ini->server.PSXMainServer);
+        ini->server.PSXBoostPort = 10749;
+    } else {
+        strcpy(ini->server.PSXBoostServer, PSXBoostIP);
+        ini->server.PSXBoostPort = PSXBoostPort;
+    }
+
+    /* Sensible default values for MSFS server*/
+    if (MSFSServerIP == NULL || strlen(MSFSServerIP) > 15) {
+        strcpy(ini->server.MSFSServer, "127.0.0.1");
+    } else {
+        strcpy(ini->server.MSFSServer, MSFSServerIP);
+    }
+}
+
+int init_flags(FLAGS *ini)
+{
+
     FILE *fini;
     char *value;
     char *stop;
 
-    FLAGS *ini = create_flags_struct();
-
-    /* Sensible default values*/
-    if (server == NULL) {
-
-        strcpy(ini->server.PSXMainServer, "127.0.0.5");
-        strcpy(ini->server.PSXBoostServer, "127.0.0.1");
-        strcpy(ini->server.MSFSServer, "127.0.0.1");
-        ini->server.PSXPort = 10747;
-        ini->server.PSXBoostPort = 10749;
-    } else {
-    }
-
-    if (flags == NULL) {
-        ini->flags.SLAVE = 0;
-        ini->flags.LOG_VERBOSITY = LL_INFO;
-        ini->flags.TCAS_INJECT = 1;
-        ini->flags.ELEV_INJECT = 1;
-        ini->flags.INHIB_CRASH_DETECT = 0;
-        ini->flags.ONLINE = 0;
-    }
+    /*
+     * Default values for the flags
+     */
+    ini->flags.SLAVE = 0;
+    ini->flags.LOG_VERBOSITY = LL_INFO;
+    ini->flags.TCAS_INJECT = 1;
+    ini->flags.ELEV_INJECT = 1;
+    ini->flags.INHIB_CRASH_DETECT = 0;
+    ini->flags.ONLINE = 0;
 
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
-        printDebug(LL_ERROR, "Cannot open config file: trying to create one with educated "
-                             "guesses... Please restart PSXMSFS");
-        write_ini_file();
+        write_ini_file(ini);
         quit = 1;
-        return 1;
+        return 2;
     } else {
         strcpy(ini->server.PSXMainServer, scan_ini(fini, "PSXMainServer"));
         strcpy(ini->server.PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
@@ -253,12 +271,40 @@ DWORD init_param(server_options *server, flags *flags)
         fclose(fini);
     }
 
+    return 0;
+}
+
+int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
+{
+
+    int flags_ok = 0;
+    FLAGS *ini = create_flags_struct();
+
+    if (ini == NULL) {
+        printDebug(LL_ERROR, "Could not initialize PSX, PSXBoost or MSFS server values.Exiting now...");
+        quit = 1;
+        return 1;
+    }
+
+    /*
+     * Initialise server addresses from user input parameters
+     * or default values
+     */
+    init_servers(ini, MSFSServerIP, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);
+
+    /*
+     * Flags are directly read from the ini file
+     * or defaulted to what is in the ini structure
+     */
+
+    flags_ok = init_flags(ini);
+
     PSXflags = *ini;
 
     free(ini);
-
-    return 0;
+    return flags_ok;
 }
+
 void remove_debug()
 {
     remove("DEBUG.TXT");

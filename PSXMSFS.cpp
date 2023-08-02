@@ -141,26 +141,29 @@ DWORD cleanup(void)
     return 0;
 }
 
-DWORD initialize(server_options *server, flags *flags)
+DWORD initialize(const char *MSFSServer, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {
+
+    int result_init;
 
     /* Initialise the timer */
     elapsedStart(&TimeStart);
 
-    /* Read from .ini file the various values
-     * used in the program
-     */
+    result_init = init_param(MSFSServer, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);
 
-    if (init_param(server, flags) != 0) {
-        printDebug(LL_DEBUG, "Could not initialize various PSX internal flags. Exiting now...");
-        quit = 1;
-        return 1;
+    if(result_init == 1){ 
+        printDebug(LL_ERROR, "Could not initialize various PSX internal flags. Exiting now...");
+        quit=1;
+    }
+    if(result_init == 2){ 
+        printDebug(LL_ERROR, "Could not open config file, will try to create one with educated guesses... Please restart the program");
+        quit=1;
     }
 
-    return 0;
+    return result_init;
 }
 
-server_options *connectPSXMSFS(void)
+FLAGS *connectPSXMSFS(void)
 {
 
     /*
@@ -181,11 +184,7 @@ server_options *connectPSXMSFS(void)
     printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
-    server_options *server = (server_options *)malloc(sizeof(server_options));
-    server = &PSXflags.server;
-
-    // return &PSXflags;
-    return server;
+     return &PSXflags;
 }
 
 DWORD WINAPI main_launch()

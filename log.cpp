@@ -50,7 +50,7 @@ debugMessage **initDebugBuff(void)
     debugMessage **buffer = NULL;
 
     buffer = (debugMessage **)malloc(sizeof(debugMessage *) * NB_LOGS);
-    if(buffer == NULL){
+    if (buffer == NULL) {
         return NULL;
     }
 
@@ -66,7 +66,7 @@ debugMessage **initDebugBuff(void)
 
 void logging(debugMessage **D, const char *msg)
 {
-    static int nblogs = 0;
+    static int nblogs = 1;
 
     D[currCount]->Id = nblogs;
     strncpy(D[currCount]->message, msg, MAXLEN_DEBUG_MSG - 1);

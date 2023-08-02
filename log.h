@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #define MAXLEN_DEBUG_MSG 8192 // maximum debug message size
-#define NB_LOGS 10
+#define NB_LOGS 20
 
 /*Log levels*/
 #define LL_DEBUG 1

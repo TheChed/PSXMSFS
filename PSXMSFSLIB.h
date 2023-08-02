@@ -25,8 +25,8 @@ typedef struct server_options {
     char *PSXMainServer;  // IP address of the PSX main server
     char *MSFSServer;     // IP address of the PSX boost server
     char *PSXBoostServer; // IP address of the MSFS server
-    size_t PSXPort;       // Main PSX port
-    size_t PSXBoostPort;  // PSX boot server port
+    int PSXPort;          // Main PSX port
+    int PSXBoostPort;     // PSX boot server port
 
 } server_options;
 
@@ -145,7 +145,7 @@ struct TATL {
 };
 
 // Function definitions
-DWORD init_param(server_options *ini, flags *flags);
+int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort);
 int check_param(const char *);
 int init_socket(void);
 void init_variables(void);
@@ -156,8 +156,8 @@ int umainBoost(void);
 double SetAltitude(int onGround);
 int init_connect_MSFS(HANDLE *p);
 
-extern "C" __declspec(dllexport) DWORD initialize(server_options *server, flags *flags);
-extern "C" __declspec(dllexport) server_options *connectPSXMSFS(void);
+extern "C" __declspec(dllexport) DWORD initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
+extern "C" __declspec(dllexport) FLAGS *connectPSXMSFS(void);
 extern "C" __declspec(dllexport) DWORD WINAPI main_launch(void);
 extern "C" __declspec(dllexport) DWORD cleanup(void);
 #endif
