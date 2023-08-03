@@ -29,7 +29,7 @@ void printDebug(int level, const char *debugInfo, ...)
     va_end(ap);
 
     strftime(timestamp, 50, "%H:%M:%S", &date);
-    if (level >= PSXflags.flags.LOG_VERBOSITY) {
+    if (level >= PSXflags.LOG_VERBOSITY) {
         fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000, msg);
         fprintf(fdebug, "\n");
         fflush(fdebug);

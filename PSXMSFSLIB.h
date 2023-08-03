@@ -1,57 +1,52 @@
 #ifndef __PSXMSFSLIB_H_
 #define __PSXMSFSLIB_H_
 
-#define MAX(x, y) ((x) > (y) ? (x) : (y))
-#define MSFSHEIGHT 15.13 // offset when on ground compared to PSX
 
-/*Anti-warning macro*/
+/*---------------------------------
+ * usefull macros
+ *-------------------------------*/
 #define UNUSED(V) ((void)V)
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define bzero(b, len) (memset((b), '\0', (len)), (void)0)
 
-extern HANDLE mutex, mutexsitu;
-extern CONDITION_VARIABLE condNewSitu;
+/*---------------------------------
+ * various constant definitions
+ * used in the variosu modules
+ *-------------------------------*/
+#define MSFSHEIGHT 15.13 //altitude offset in feet of the default 747 in MSFS when on ground
+#define M_PI 3.14159265358979323846
+#define NM 1852           // meters in a nm
+#define EARTH_RAD 6371008 // earth radius in meters
+#define FTM 0.3048        // feet to meters
+#define DEG2RAD (M_PI / 180.0)
+#define LMB (-0.0065)  // temperature gradient per meters
+#define ALPHA -5.255822518257 //used in the atmosphere modelization
+#define VSSAMPLE 50 // number of samples used from boost string to calculate the vertical speed
+#define DELIM ";"
 
-extern int quit;
-extern HANDLE hSimConnect;
 
-extern struct FLAGS PSXflags;
-extern struct INTERNALFLAGS intflags;
-
-/*
+/*-----------------------------------------
  * structure used at initialization
- * to get user info about PSX and
- * MSFS servers
- */
-typedef struct server_options {
+ * to get user info about PSX servers, MSFS
+ * and to store various user defined flags
+ *----------------------------------------*/
+typedef struct flags {
     char *PSXMainServer;  // IP address of the PSX main server
     char *MSFSServer;     // IP address of the PSX boost server
     char *PSXBoostServer; // IP address of the MSFS server
     int PSXPort;          // Main PSX port
     int PSXBoostPort;     // PSX boot server port
 
-} server_options;
-
-typedef struct flags {
     int TCAS_INJECT;        // 1 if TCAS is injected to PSX, 0 otherwise
     int ELEV_INJECT;        // 1 if MSFS elevation is injected into PSX. 0 otherwise
     int INHIB_CRASH_DETECT; // 1 if no crash detection in PSX when loading new situ. 0 otherwise
-
     int ONLINE; // 1 if PSXMSFS is used on online on VATSIM,IVAO etc, 0 otherwise
-
-    int LOG_VERBOSITY; // verbosity of the logs
-
+    int LOG_VERBOSITY; // verbosity of the logs: 1 very verbose and 4 minimum verbosity
     int SLAVE; // 0 if PSX is slave, 1 if MSFS is slave
-} flags;
+} FLAGS ;
+    
 
-typedef struct FLAGS {
-
-    server_options server;
-    flags flags;
-
-    SOCKET sPSX;      // main PSX socket id
-    SOCKET sPSXBOOST; // PSX boost socket id
-} FLAGS;
-
-struct INTERNALFLAGS {
+struct INTERNALPSXflags {
     int oldcrz;
     int updateNewSitu;
     int Qi198Sentground;
@@ -77,12 +72,13 @@ struct Struct_MSFS {
     double temperature; // ambiant temperature
 };
 
-/* Definition of the structure used to update MSFS
- * It is VERY important that the order this structure elements are defined is the
- * same order as when mapping the variables in PSXMSFS.cpp
- */
+/*------------------------------------------------------------
+ * Definition of the structure used to update MSFS
+ * It is VERY important that the order this structure elements 
+ * are defined is the same order as when mapping the variables 
+ * in PSXMSFS.cpp
+ *------------------------------------------------------------*/
 struct AcftMSFS {
-    // Updated by Boost server
     double altitude;
     double latitude;
     double longitude;
@@ -107,54 +103,34 @@ struct AcftLight {
     double LightLogo;         // Wing light
 };
 
-typedef struct {
 
-    int altitude;
-    double latitude;
-    double longitude;
-    int heading;
-    double distance;
-} TCAS;
 
-/*
- * Structure of AI traffic present in MSFS
- */
+/*---------------------------------
+ * Global variables
+ *--------------------------------*/
+extern HANDLE mutex, mutexsitu;
+extern CONDITION_VARIABLE condNewSitu;
+extern HANDLE hSimConnect;
 
-struct AI_TCAS {
-    double altitude;
-    double latitude;
-    double longitude;
-    double heading;
-};
+extern int quit;
 
-/*
- * Storage for Transation Altitude
- * and tranition level
- */
+extern struct INTERNALPSXflags intflags;
 
-struct TATL {
-    int TA;
-    int TL;
+extern SOCKET sPSX;      // main PSX socket id
+extern SOCKET sPSXBOOST; // PSX boost socket id
+extern FLAGS PSXflags; 
 
-    // Flight phase as per Qs392
-    // 0 : climb
-    // 1: cruise
-    // 2: descent
+/*-------------------------------------------------------------------------
+ * Function declarations used in all modules
+ * ---------------------------------------------------------------------*/
 
-    int phase;
-};
-
-// Function definitions
-int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort);
-int check_param(const char *);
-int init_socket(void);
 void init_variables(void);
-int close_PSX_socket(SOCKET socket);
-int open_connections();
-int umain(void);
-int umainBoost(void);
 double SetAltitude(int onGround);
-int init_connect_MSFS(HANDLE *p);
+
+
+/*--------------------------------------------------------
+ * Functions to be exported in the DLL
+ *------------------------------------------------------*/
 
 extern "C" __declspec(dllexport) DWORD initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
 extern "C" __declspec(dllexport) FLAGS *connectPSXMSFS(void);

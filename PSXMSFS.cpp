@@ -6,6 +6,15 @@
 #include "util.h"
 #include "update.h"
 #include "log.h"
+#include "connect.h"
+
+/*----------------------------------------------
+ * Main thread functions used to get data from
+ * PSX and Boost servers.
+ * Defined in PSXDATA.cpp
+ * --------------------------------------------*/
+int getDataFromPSX(void);
+int getDataFromBoost(void);
 
 /*
  * State flags from either:
@@ -13,7 +22,7 @@
  */
 FLAGS PSXflags;
 
-struct INTERNALFLAGS intflags;
+struct INTERNALPSXflags intflags;
 
 /*
  * Handles for mutexes used in
@@ -22,18 +31,12 @@ struct INTERNALFLAGS intflags;
 HANDLE mutex, mutexsitu;
 CONDITION_VARIABLE condNewSitu;
 
-/*
- * Global variable used in the main 3
- * thread loops
- * 0: continues the program
- * 1: quits
- */
 int quit = 0;
 
-DWORD WINAPI ptDatafromMSFS(void *thread_param)
+DWORD WINAPI ptDataFromMSFS(void *thread_param)
 {
 
-    (void)(thread_param);
+    UNUSED(thread_param);
     while (!quit) {
 
         SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
@@ -43,19 +46,19 @@ DWORD WINAPI ptDatafromMSFS(void *thread_param)
     return 0;
 }
 
-DWORD WINAPI ptUmainboost(void *)
+DWORD WINAPI ptDataFromBoost(void *)
 {
     while (!quit) {
-        umainBoost();
+         getDataFromBoost();
     }
     return 0;
 }
 
-DWORD WINAPI ptUmain(void *)
+DWORD WINAPI ptDataFromPSX(void *)
 {
 
     while (!quit) {
-        umain();
+         getDataFromPSX();
     }
     return 0;
 }
@@ -79,18 +82,18 @@ void thread_launch(void)
      * Thread 3: callback function in MSFS
      */
 
-    h1 = CreateThread(NULL, 0, ptUmain, NULL, 0, &t1);
+    h1 = CreateThread(NULL, 0, ptDataFromPSX, NULL, 0, &t1);
     if (h1 == NULL) {
         printDebug(LL_ERROR, "Error creating PSX main server thread. Quitting now.");
         quit = 1;
     }
 
-    h2 = CreateThread(NULL, 0, ptUmainboost, NULL, 0, &t2);
+    h2 = CreateThread(NULL, 0, ptDataFromBoost, NULL, 0, &t2);
     if (h2 == NULL) {
         printDebug(LL_ERROR, "Error creating boost server thread. Quitting now.");
         quit = 1;
     }
-    h3 = CreateThread(NULL, 0, ptDatafromMSFS, NULL, 0, &t3);
+    h3 = CreateThread(NULL, 0, ptDataFromMSFS, NULL, 0, &t3);
     if (h3 == NULL) {
         printDebug(LL_ERROR, "Error creating MSFS server thread. Quitting now.");
         quit = 1;
@@ -117,11 +120,11 @@ DWORD cleanup(void)
 
     // and gracefully close main + boost sockets
     printDebug(LL_INFO, "Closing PSX boost connection...");
-    if (close_PSX_socket(PSXflags.sPSXBOOST)) {
+    if (close_PSX_socket(sPSXBOOST)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
     }
     printDebug(LL_INFO, "Closing PSX main connection...\n");
-    if (close_PSX_socket(PSXflags.sPSX)) {
+    if (close_PSX_socket(sPSX)) {
         printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
     }
 
@@ -137,7 +140,7 @@ DWORD cleanup(void)
      * and free the used memory
      */
 
-    // free(&PSXflags);
+   // free(&PSXflags);
     return 0;
 }
 
@@ -184,7 +187,7 @@ FLAGS *connectPSXMSFS(void)
     printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
-     return &PSXflags;
+    return &PSXflags;
 }
 
 DWORD WINAPI main_launch()

@@ -46,7 +46,7 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    if (connectPSXMSFS() == NULL) {
+    if (connectPSXMSFS()== NULL) {
 
         printf("Could not connect PSX to MSFS. Quitting now\n");
         exit(EXIT_FAILURE);

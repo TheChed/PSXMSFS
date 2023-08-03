@@ -3,22 +3,7 @@
 #include <windows.h>
 #include "PSXMSFSLIB.h"
 
-#define M_PI 3.14159265358979323846
-#define NM 1852           // meters in a nm
-#define EARTH_RAD 6371008 // earth radius in meters
-#define FTM 0.3048        // feet to meters
-#define DEG2RAD (M_PI / 180.0)
-#define LMB (-0.0065)  // temperature gradient per meters
-#define GACCEL 9.80655 // gravitation acceleration at sea level
-#define ALPHA -5.255822518257
 
-/*
- *
- *
- * Various functions and variables used for time management
- *
- *
- * */
 
 typedef uint64_t monotime; // long unsigned 64 bit integer used to store time related variables
 extern monotime TimeStart; // Timestamp when the simulation is started.

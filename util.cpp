@@ -40,7 +40,7 @@ int sendQPSX(const char *s)
     strncpy(dem, s, strlen(s));
     dem[strlen(s)] = 10;
 
-    int nbsend = send(PSXflags.sPSX, dem, (int)(strlen(s) + 1), 0);
+    int nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
 
     if (nbsend == 0) {
         printDebug(LL_VERBOSE, "Error sending variable %s to PSX\n", s);
@@ -135,21 +135,21 @@ int write_ini_file(FLAGS *ini)
     }
 
     /*PSX server addresses and port*/
-    fprintf(f, "PSXMainServer=%s\n", ini->server.PSXMainServer);
-    fprintf(f, "PSXBoostServer=%s\n", ini->server.PSXBoostServer);
-    fprintf(f, "PSXPort=%d\n", ini->server.PSXPort);
-    fprintf(f, "PSXBoostPort=%d\n", ini->server.PSXBoostPort);
+    fprintf(f, "PSXMainServer=%s\n", ini->PSXMainServer);
+    fprintf(f, "PSXBoostServer=%s\n", ini->PSXBoostServer);
+    fprintf(f, "PSXPort=%d\n", ini->PSXPort);
+    fprintf(f, "PSXBoostPort=%d\n", ini->PSXBoostPort);
 
     /*MSFS address*/
-    fprintf(f, "MSFSServer=%s\n", ini->server.MSFSServer);
+    fprintf(f, "MSFSServer=%s\n", ini->MSFSServer);
 
     /* Switches */
-    fprintf(f, "LOG_VERBOSITY=%d\n", ini->flags.LOG_VERBOSITY);
-    fprintf(f, "TCAS_INJECT=%d\n", ini->flags.TCAS_INJECT);
-    fprintf(f, "SLAVE=%d\n", ini->flags.SLAVE);
-    fprintf(f, "ELEV_INJECT=%d\n", ini->flags.ELEV_INJECT);
-    fprintf(f, "INHIB_CRASH_DETECT=%d\n", ini->flags.INHIB_CRASH_DETECT);
-    fprintf(f, "ONLINE=%d\n", ini->flags.ONLINE);
+    fprintf(f, "LOG_VERBOSITY=%d\n", ini->LOG_VERBOSITY);
+    fprintf(f, "TCAS_INJECT=%d\n", ini->TCAS_INJECT);
+    fprintf(f, "SLAVE=%d\n", ini->SLAVE);
+    fprintf(f, "ELEV_INJECT=%d\n", ini->ELEV_INJECT);
+    fprintf(f, "INHIB_CRASH_DETECT=%d\n", ini->INHIB_CRASH_DETECT);
+    fprintf(f, "ONLINE=%d\n", ini->ONLINE);
 
     fclose(f);
     return 0;
@@ -186,11 +186,11 @@ FLAGS *create_flags_struct()
         return NULL;
     }
 
-    result->server.PSXMainServer = (char *)malloc(IP_LENGTH);
-    result->server.PSXBoostServer = (char *)malloc(IP_LENGTH);
-    result->server.MSFSServer = (char *)malloc(IP_LENGTH);
+    result->PSXMainServer = (char *)malloc(IP_LENGTH);
+    result->PSXBoostServer = (char *)malloc(IP_LENGTH);
+    result->MSFSServer = (char *)malloc(IP_LENGTH);
 
-    if ((result->server.PSXMainServer == NULL) || (result->server.PSXBoostServer == NULL) || (result->server.MSFSServer == NULL)) {
+    if ((result->PSXMainServer == NULL) || (result->PSXBoostServer == NULL) || (result->MSFSServer == NULL)) {
         quit = 1;
         return NULL;
     }
@@ -203,28 +203,28 @@ void init_servers(FLAGS *ini, const char *MSFSServerIP, const char *PSXMainIP, i
     /* Sensible default values for Main PSX server*/
     if (PSXMainIP == NULL || strlen(PSXMainIP) > 15) {
 
-        strcpy(ini->server.PSXMainServer, "127.0.0.1");
-        ini->server.PSXPort = 10747;
+        strcpy(ini->PSXMainServer, "127.0.0.1");
+        ini->PSXPort = 10747;
     } else {
-        strcpy(ini->server.PSXMainServer, PSXMainIP);
-        ini->server.PSXPort = PSXMainPort;
+        strcpy(ini->PSXMainServer, PSXMainIP);
+        ini->PSXPort = PSXMainPort;
     }
 
     /* Sensible default values for PSX Boost server*/
     if (PSXBoostIP == NULL || strlen(PSXBoostIP) > 15) {
 
-        strcpy(ini->server.PSXBoostServer, ini->server.PSXMainServer);
-        ini->server.PSXBoostPort = 10749;
+        strcpy(ini->PSXBoostServer, ini->PSXMainServer);
+        ini->PSXBoostPort = 10749;
     } else {
-        strcpy(ini->server.PSXBoostServer, PSXBoostIP);
-        ini->server.PSXBoostPort = PSXBoostPort;
+        strcpy(ini->PSXBoostServer, PSXBoostIP);
+        ini->PSXBoostPort = PSXBoostPort;
     }
 
     /* Sensible default values for MSFS server*/
     if (MSFSServerIP == NULL || strlen(MSFSServerIP) > 15) {
-        strcpy(ini->server.MSFSServer, "127.0.0.1");
+        strcpy(ini->MSFSServer, "127.0.0.1");
     } else {
-        strcpy(ini->server.MSFSServer, MSFSServerIP);
+        strcpy(ini->MSFSServer, MSFSServerIP);
     }
 }
 
@@ -238,12 +238,12 @@ int init_flags(FLAGS *ini)
     /*
      * Default values for the flags
      */
-    ini->flags.SLAVE = 0;
-    ini->flags.LOG_VERBOSITY = LL_INFO;
-    ini->flags.TCAS_INJECT = 1;
-    ini->flags.ELEV_INJECT = 1;
-    ini->flags.INHIB_CRASH_DETECT = 0;
-    ini->flags.ONLINE = 0;
+    ini->SLAVE = 0;
+    ini->LOG_VERBOSITY = LL_INFO;
+    ini->TCAS_INJECT = 1;
+    ini->ELEV_INJECT = 1;
+    ini->INHIB_CRASH_DETECT = 0;
+    ini->ONLINE = 0;
 
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
@@ -251,22 +251,22 @@ int init_flags(FLAGS *ini)
         quit = 1;
         return 2;
     } else {
-        strcpy(ini->server.PSXMainServer, scan_ini(fini, "PSXMainServer"));
-        strcpy(ini->server.PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
-        strcpy(ini->server.MSFSServer, scan_ini(fini, "MSFSServer"));
+        strcpy(ini->PSXMainServer, scan_ini(fini, "PSXMainServer"));
+        strcpy(ini->PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
+        strcpy(ini->MSFSServer, scan_ini(fini, "MSFSServer"));
 
         value = scan_ini(fini, "SLAVE");
-        ini->flags.SLAVE = strtol(value, &stop, 10);
+        ini->SLAVE = strtol(value, &stop, 10);
         value = scan_ini(fini, "TCAS_INJECT");
-        ini->flags.TCAS_INJECT = strtol(value, &stop, 10);
+        ini->TCAS_INJECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "LOG_VERBOSITY");
-        ini->flags.LOG_VERBOSITY = (int)strtol(value, &stop, 10);
+        ini->LOG_VERBOSITY = (int)strtol(value, &stop, 10);
         value = scan_ini(fini, "ELEV_INJECT");
-        ini->flags.ELEV_INJECT = strtol(value, &stop, 10);
+        ini->ELEV_INJECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "INHIB_CRASH_DETECT");
-        ini->flags.INHIB_CRASH_DETECT = strtol(value, &stop, 10);
+        ini->INHIB_CRASH_DETECT = strtol(value, &stop, 10);
         value = scan_ini(fini, "ONLINE");
-        ini->flags.ONLINE = strtol(value, &stop, 10);
+        ini->ONLINE = strtol(value, &stop, 10);
         free(value);
         fclose(fini);
     }
@@ -281,7 +281,7 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
     FLAGS *ini = create_flags_struct();
 
     if (ini == NULL) {
-        printDebug(LL_ERROR, "Could not initialize PSX, PSXBoost or MSFS server values.Exiting now...");
+        printDebug(LL_ERROR, "Failed to initialize various server values.Exiting now...");
         quit = 1;
         return 1;
     }
@@ -302,6 +302,7 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
     PSXflags = *ini;
 
     free(ini);
+    
     return flags_ok;
 }
 
@@ -348,37 +349,37 @@ void parse_arguments(int argc, char **argv)
             break;
 
         case 'b':
-            PSXflags.server.PSXBoostServer = optarg;
+            PSXflags.PSXBoostServer = optarg;
             break;
         case 'E':
-            PSXflags.flags.ELEV_INJECT = 0;
+            PSXflags.ELEV_INJECT = 0;
             break;
         case 'N':
-            PSXflags.flags.ONLINE = 0;
+            PSXflags.ONLINE = 0;
             break;
         case 'C':
-            PSXflags.flags.INHIB_CRASH_DETECT = 0;
+            PSXflags.INHIB_CRASH_DETECT = 0;
             break;
         case 't':
-            PSXflags.flags.TCAS_INJECT = 0;
+            PSXflags.TCAS_INJECT = 0;
             break;
         case 'h':
             usage();
             break;
         case 'm':
-            PSXflags.server.PSXMainServer = optarg;
+            PSXflags.PSXMainServer = optarg;
             break;
         case 'q':
-            PSXflags.server.PSXBoostPort = (int)strtol(optarg, NULL, 10);
+            PSXflags.PSXBoostPort = (int)strtol(optarg, NULL, 10);
             break;
         case 'p':
-            PSXflags.server.PSXPort = (int)strtol(optarg, NULL, 10);
+            PSXflags.PSXPort = (int)strtol(optarg, NULL, 10);
             break;
         case 'd':
-            PSXflags.flags.LOG_VERBOSITY = LL_ERROR;
+            PSXflags.LOG_VERBOSITY = LL_ERROR;
             break;
         case 's':
-            PSXflags.flags.SLAVE = 1;
+            PSXflags.SLAVE = 1;
             break;
 
         case '?':

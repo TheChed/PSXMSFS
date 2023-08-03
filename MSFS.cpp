@@ -10,7 +10,25 @@
 #include "MSFS.h"
 #include "log.h"
 
-TCAS tcas_acft[7];
+struct {
+    int altitude;
+    double latitude;
+    double longitude;
+    int heading;
+    double distance;
+} tcas_acft[7];
+
+/*
+ * Structure of AI traffic present in MSFS
+ */
+
+struct AI_TCAS {
+    double altitude;
+    double latitude;
+    double longitude;
+    double heading;
+};
+
 static struct Struct_MSFS MSFS_POS;
 static double ground_altitude;
 static double MSL_pressure;
@@ -78,7 +96,7 @@ void Inject_MSFS_PSX(void)
     }
     MSFS_POS_avail = 0;
 }
-void update_TCAS(const AI_TCAS *ai, double d)
+void update_TCAS(const struct AI_TCAS *ai, double d)
 {
 
     if (d <= min_dist || nb_acft < 7) { // we found a closer aircraft or less than 7 aircrafts
@@ -144,6 +162,7 @@ void updateTCASPSX(void)
 void freezeMSFS(void)
 {
 
+    printDebug(LL_VERBOSE, "Freezing Altitude, Attitude and Coordinates in MSFS.");
     SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
@@ -164,8 +183,8 @@ void init_variables(void)
 
 void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext)
 {
-    (void)(cbData);
-    (void)(pContext);
+    UNUSED(cbData);
+    UNUSED(pContext);
 
     switch (pData->dwID) {
 
@@ -178,10 +197,11 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_OPEN: {
 
-        /* Structure received containing some info about the version
-         * of MSFS and Simconnect.
+        /*---------------------------------------------
+         * Structure received containing some info about
+         * the version of MSFS and Simconnect.
          * Just usefull for debugging and info purposes
-         */
+         *-----------------------------------------------*/
 
         SIMCONNECT_RECV_OPEN *evt = (SIMCONNECT_RECV_OPEN *)pData;
 
@@ -198,7 +218,6 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
          * engines.
          */
 
-        printDebug(LL_VERBOSE, "Freezing Altitude, Attitude and Coordinates in MSFS.");
         freezeMSFS();
     } break;
 
@@ -212,7 +231,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_6_HZ: {
-            if (PSXflags.flags.SLAVE) {
+            if (PSXflags.SLAVE) {
 
                 SimConnect_TransmitClientEvent(
                     hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 0,
@@ -231,7 +250,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             /*
              * TCAS injection every 4 seconds but only if TCAS switch is on
              */
-            if (PSXflags.flags.TCAS_INJECT) {
+            if (PSXflags.TCAS_INJECT) {
                 SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS,
                                                       TCAS_TRAFFIC_DATA, 40 * NM,
                                                       SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
@@ -248,7 +267,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
                     hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
                     SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
                 if (LL_ERROR) {
-                    if (!PSXflags.flags.SLAVE) {
+                    if (!PSXflags.SLAVE) {
                         sendQPSX("Qs419=");
                         printDebug(LL_INFO, "Injecting position to MSFS from PSX\n");
                     } else {
@@ -350,18 +369,13 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
-        //   pthread_mutex_lock(&mutexsitu);
 
         WaitForSingleObject(mutexsitu, INFINITE);
         while (intflags.updateNewSitu) {
-            // pthread_cond_wait(&condNewSitu, &mutexsitu);
         }
-        // pthread_mutex_unlock(&mutexsitu);
         ReleaseMutex(mutexsitu);
-        // pthread_mutex_lock(&mutex);
         WaitForSingleObject(mutex, INFINITE);
         SetMSFSPos();
-        // pthread_mutex_unlock(&mutex);
         ReleaseMutex(mutex);
 
     }

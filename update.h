@@ -30,6 +30,22 @@ struct MovingParts {
 };
 
 /*
+ * Storage for Transation Altitude
+ * and tranition level
+ */
+
+struct TATL {
+    int TA;
+    int TL;
+
+    // Flight phase as per Qs392
+    // 0 : climb
+    // 1: cruise
+    // 2: descent
+
+    int phase;
+};
+/*
  * Structures used to update MSFS
  */
 enum SpeedType { IAS,
