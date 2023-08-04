@@ -68,5 +68,6 @@ double getIndAltitude(void);
 int isGroundAltitudeAvailable(void);
 void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext);
 void freezeMSFS(void);
+void init_variables(void);
 
 #endif

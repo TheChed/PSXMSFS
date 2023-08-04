@@ -32,9 +32,10 @@ int sendQPSX(const char *s)
 {
 
     char *dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
+
     if (dem == NULL) {
-        printDebug(LL_ERROR, "Could not create PSX variable. I have to exit now.");
-        exit(EXIT_FAILURE);
+        printDebug(LL_ERROR, "Could not create PSX variable: PSX will not be updated.");
+        return -1;
     }
 
     strncpy(dem, s, strlen(s));
@@ -78,58 +79,13 @@ double dist(double lat1, double lat2, double long1, double long2)
                  cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2)));
 }
 
-double pressure_altitude(double T0, double P0, double H)
-{
-    return P0 * pow((T0 + 273.15) / (T0 + 273.15 + LMB * H * FTM), ALPHA);
-}
-double altitude_pressure(double T0, double P)
-{
-    return (T0 + 273.15) / LMB * (pow(1013.25 / P, 1 / ALPHA) - 1) / FTM;
-}
-
-double getISAdev(double T, double H)
-{
-    return T - (15 + H * LMB * FTM);
-}
-
-void usage()
-{
-
-    printf("usage: [-N] [-E] [-h] [-d] [-v] [-s] [-t][-m IP [-p port]] [-b IP [-q port]]\n");
-    printf("\t -h, --help");
-    printf("\t Prints this help\n");
-    printf("\t -d");
-    printf("\t debug. Prints out debug info on console and in file "
-           "DEBUG.TXT. Warning: can be very verbose. Adjust verbosity level in the ini file\n");
-    printf("\t -m");
-    printf("\t Main server IP. Default is 127.0.0.1\n");
-    printf("\t -p");
-    printf("\t Main server port. Default is 10747\n");
-    printf("\t -b");
-    printf("\t Boost server IP. Default is main server IP [127.0.0.1] \n");
-    printf("\t -q");
-    printf("\t Boost server port. Default is 10749\n");
-    printf("\t -t");
-    printf("\t Disables TCAS injection from MSFS to PSX\n");
-    printf("\t -s");
-    printf("\t Starts with PSX enslaved to MSFS\n");
-    printf("\t -E");
-    printf("\t Disables elevation injection into MSFS\n");
-    printf("\t -C");
-    printf("\t No crash detection during 10 seconds after loading a new situ\n");
-    printf("\t -N");
-    printf("\t Disables pressure altitude injection (usefull for online networks like VATSIM or "
-           "IVAO\n");
-
-    exit(EXIT_SUCCESS);
-}
 int write_ini_file(FLAGS *ini)
 {
     FILE *f;
 
     f = fopen("PSXMSFS.ini", "w");
     if (!f) {
-        printDebug(LL_ERROR, "Cannot create PSXMSFS.ini file. Something is seriously wrong! No choice but to exit.");
+        printDebug(LL_ERROR, "Cannot create PSXMSFS.ini file. Exiting now.");
         quit = 1;
         return 1;
     }
@@ -311,94 +267,3 @@ void remove_debug()
     remove("DEBUG.TXT");
 }
 
-void parse_arguments(int argc, char **argv)
-{
-
-#ifdef __MINGW__
-    int c;
-    while (1) {
-        static struct option long_options[] = {/* These options set a flag. */
-                                               {"debug", no_argument, NULL, 'd'},
-                                               /* These options don’t set a flag.
-                                              We distinguish them by their indices. */
-                                               {"boost", required_argument, NULL, 'b'},
-                                               {"help", no_argument, NULL, 'h'},
-                                               {"main", required_argument, NULL, 'm'},
-                                               {"boost-port", required_argument, NULL, 'c'},
-                                               {"main-port", required_argument, NULL, 'p'},
-                                               {"slave", required_argument, NULL, 's'},
-                                               {0, 0, 0, 0}};
-        /* getopt_long stores the option index here. */
-        int option_index = 0;
-
-        c = getopt_long(argc, argv, "CEthvsm:b:c:p:f:", long_options, &option_index);
-
-        /* Detect the end of the options. */
-        if (c == -1)
-            break;
-
-        switch (c) {
-        case 0:
-            /* If this option set a flag, do nothing else now. */
-            if (long_options[option_index].flag != 0)
-                break;
-            printf("option %s", long_options[option_index].name);
-            if (optarg)
-                printf(" with arg %s", optarg);
-            printf("\n");
-            break;
-
-        case 'b':
-            PSXflags.PSXBoostServer = optarg;
-            break;
-        case 'E':
-            PSXflags.ELEV_INJECT = 0;
-            break;
-        case 'N':
-            PSXflags.ONLINE = 0;
-            break;
-        case 'C':
-            PSXflags.INHIB_CRASH_DETECT = 0;
-            break;
-        case 't':
-            PSXflags.TCAS_INJECT = 0;
-            break;
-        case 'h':
-            usage();
-            break;
-        case 'm':
-            PSXflags.PSXMainServer = optarg;
-            break;
-        case 'q':
-            PSXflags.PSXBoostPort = (int)strtol(optarg, NULL, 10);
-            break;
-        case 'p':
-            PSXflags.PSXPort = (int)strtol(optarg, NULL, 10);
-            break;
-        case 'd':
-            PSXflags.LOG_VERBOSITY = LL_ERROR;
-            break;
-        case 's':
-            PSXflags.SLAVE = 1;
-            break;
-
-        case '?':
-            /* getopt_long already printDebug an error message. */
-            usage();
-            break;
-
-        default:
-            abort();
-        }
-    }
-
-    /* Print any remaining command line arguments (not options). */
-    if (optind < argc) {
-        // printf("non-option ARGV-elements: ");
-        while (optind < argc)
-            optind++;
-    }
-#else
-    printDebug(LL_INFO, "Parsing of arguments not available on native MSVS C++");
-#endif
-}

@@ -1,6 +1,6 @@
 #ifndef __PSXMSFSLIB_H_
 #define __PSXMSFSLIB_H_
-
+#include <stdint.h>
 
 /*---------------------------------
  * usefull macros
@@ -120,13 +120,8 @@ extern SOCKET sPSX;      // main PSX socket id
 extern SOCKET sPSXBOOST; // PSX boost socket id
 extern FLAGS PSXflags; 
 
-/*-------------------------------------------------------------------------
- * Function declarations used in all modules
- * ---------------------------------------------------------------------*/
-
-void init_variables(void);
-double SetAltitude(int onGround);
-
+typedef uint64_t monotime; // long unsigned 64 bit integer used to store time related variables
+extern monotime TimeStart; // Timestamp when the simulation is started.
 
 /*--------------------------------------------------------
  * Functions to be exported in the DLL
