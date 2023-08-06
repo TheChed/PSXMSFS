@@ -81,5 +81,15 @@ You will also need the following files, included in the Include directory to lin
     * Simconnect.h
     * SimConnect.lib
 
+#
+# CREATING DLL in MSVS
+#
 
+Create a Solution console.
+Add the SOURCE
+Add additionnal include directories to point to Simconnect.h in 
+Add _CRT_SECURE_NO_WARNINGS in the Preprocessor Definitions
+Add VER=xxxxxx in the Preprocessor Definitions
+Change C++ Language standard to ISO C++20 in Configurations->C/C++->Language
+Add additionnal include directories to point to SimConnect.lib in Configuration ->Linker -> General->Additionnal Library Directories
 Last warning: this tool is still in a very early beta version and probably very buggy. Please feel free to report or propose any enhancement to improve its quality. 

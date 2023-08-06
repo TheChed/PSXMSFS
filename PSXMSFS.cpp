@@ -184,7 +184,6 @@ FLAGS *connectPSXMSFS(void)
     init_pos();
 
     printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
-    printDebug(LL_DEBUG, "Compiled on: %s", COMP);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
     return &PSXflags;
