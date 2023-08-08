@@ -66,8 +66,7 @@ extern SOCKET sPSX;      // main PSX socket id
 extern SOCKET sPSXBOOST; // PSX boost socket id
 extern FLAGS PSXflags;
 
-typedef uint64_t monotime; // long unsigned 64 bit integer used to store time related variables
-extern monotime TimeStart; // Timestamp when the simulation is started.
+extern DWORD TimeStart; // Timestamp when the simulation is started.
 
 /*--------------------------------------------------------
  * Functions to be exported in the DLL

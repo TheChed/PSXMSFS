@@ -3,7 +3,7 @@
 #include <windows.h>
 #include "PSXMSFSLIB.h"
 
-static inline DWORD elapsedMs(monotime start_time)
+static inline DWORD elapsedMs(DWORD start_time)
 {
     return GetTickCount() - start_time;
 }

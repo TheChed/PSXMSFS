@@ -134,7 +134,7 @@ void SetAcftElevation(double elevation);
 void init_pos(void);
 double getElevation(void);
 int getFlightPhase(void);
-time_t newSituLoaded(void);
+DWORD newSituLoaded(void);
 void getTATL(int *TA, int *TL);
 /*
  * Function used to update the state inflight<->onground

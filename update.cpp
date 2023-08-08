@@ -89,7 +89,6 @@ void Qi198Update(int onGround, double elevation)
 
             sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
             sendQPSX(sQi198);
-            printDebug(LL_DEBUG, "Sending %s", sQi198);
         } else {
 
             if (!QSentFlight) {
@@ -484,27 +483,29 @@ void SetBARO(DWORD altimeter, int standard)
                                        SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
 }
-time_t newSituLoaded(void)
+
+void resetInternalFlags(void)
 {
+    intflags.oldcrz = 0;
+    intflags.updateNewSitu = 1;
+}
 
-    resetInternalFlags();
-
-    printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
-    printDebug(LL_INFO, "Let's wait five seconds to get everyone ready, shall we?");
-
-    freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
-    init_variables();
-
-    /*
-     * Now we wait and lock the update thread in order to get variables
-     * to reset themselves, especially those in MSFS
-     * we do this with conditional waits for threads
-     */
+DWORD newSituLoaded(void)
+{
 
     if (PSXflags.INHIB_CRASH_DETECT) {
         printDebug(LL_INFO, "No crash detection for 10 seconds");
         sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
         printDebug(LL_DEBUG, "Sent Qi198=-9999910 to PSX");
     }
-    return time(NULL);
+    resetInternalFlags();
+
+    printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
+    printDebug(LL_INFO, "Let's wait ten seconds to get everyone ready, shall we?");
+
+    freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
+    init_variables();
+
+
+    return GetTickCount();
 }

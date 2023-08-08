@@ -30,8 +30,6 @@ double getTime()
 int sendQPSX(const char *s)
 {
     int nbsend = 0;
-
-    int nbsend = 0;
     char *dem = (char *)malloc((strlen(s)) * sizeof(char));
 
     if (dem == NULL) {
@@ -41,11 +39,15 @@ int sendQPSX(const char *s)
 
     strncpy(dem, s, strlen(s));
 
+    /*-------------------------------------
+     * Send a Q variable to PSX if we are not
+     * just reloading a situ.
+     * ------------------------------------*/
     if (!intflags.updateNewSitu) {
-
-        nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
+        printDebug(LL_DEBUG, "Sending variable %s to PSX", s);
+        nbsend = send(sPSX, dem, (int)(strlen(s)), 0);
         if (nbsend == 0) {
-            printDebug(LL_ERROR, "Error sending variable %s to PSX\n", s);
+            printDebug(LL_ERROR, "Error sending variable %s to PSX", s);
         }
     }
     free(dem);
@@ -119,12 +121,6 @@ char *scan_ini(FILE *file, const char *key)
     return NULL;
 }
 
-void resetInternalFlags(void)
-{
-    /* same for internal flags */
-    intflags.oldcrz = 0;
-    intflags.updateNewSitu = 1;
-}
 
 FLAGS *create_flags_struct()
 {
@@ -248,8 +244,6 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
      *-------------------------------------------------*/
 
     flags_ok = init_flags(&PSXflags);
-
-    // PSXflags = *flags;
 
     free(flags);
 

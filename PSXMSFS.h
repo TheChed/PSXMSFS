@@ -24,19 +24,15 @@ struct flags {
     int ONLINE;             // 1 if PSXMSFS is used on online on VATSIM,IVAO etc, 0 otherwise
     int LOG_VERBOSITY;      // verbosity of the logs
     int SLAVE;              // 0 if PSX is slave, 1 if MSFS is slave
-
-} FLAGS;
+};
 
 struct debugMessage {
     uint64_t Id;
     char message[MAXLEN_DEBUG_MSG];
 };
 
-<<<<<<< HEAD
 typedef struct flags FLAGS;
-=======
 
->>>>>>> 0df5394 (2023-08-08 Cleaning up code base)
 typedef struct debugMessage debugMessage;
 
 /*

@@ -502,7 +502,7 @@ int getDataFromPSX(void)
     char *line_start = bufmain;
     char *line_end;
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
-    static time_t newSitutime;
+    static DWORD newSitutime;
 
     if (bufmain_remain == 0) {
         printDebug(LL_DEBUG, "Main socket line exceeded buffer length! Discarding input");
@@ -538,16 +538,16 @@ int getDataFromPSX(void)
 
         // New situ loaded
         if (strstr(line_start, "load3")) {
-            WaitForSingleObject(mutexsitu, INFINITE);
+            //      WaitForSingleObject(mutexsitu, INFINITE);
             newSitutime = newSituLoaded();
         }
 
         // we are still loading a new situ
         if (intflags.updateNewSitu) {
-            if (time(NULL) > newSitutime + 5) {
+            if (GetTickCount() > newSitutime + 10000) {
                 intflags.updateNewSitu = 0;
-                ReleaseMutex(mutexsitu);
-                WakeConditionVariable(&condNewSitu);
+                //       ReleaseMutex(mutexsitu);
+                //       WakeConditionVariable(&condNewSitu);
 
                 printDebug(LL_INFO, "Resuming normal operations.");
             }

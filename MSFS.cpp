@@ -369,10 +369,10 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
-        WaitForSingleObject(mutexsitu, INFINITE);
+        //   WaitForSingleObject(mutexsitu, INFINITE);
         while (intflags.updateNewSitu) {
         }
-        ReleaseMutex(mutexsitu);
+        //     ReleaseMutex(mutexsitu);
         WaitForSingleObject(mutex, INFINITE);
         SetMSFSPos();
         ReleaseMutex(mutex);

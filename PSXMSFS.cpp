@@ -29,7 +29,7 @@ HANDLE mutex, mutexsitu;
 CONDITION_VARIABLE condNewSitu;
 
 int quit = 0;
-monotime TimeStart;
+DWORD TimeStart;
 
 DWORD WINAPI ptDataFromMSFS(void *thread_param)
 {
