@@ -34,7 +34,7 @@ monotime TimeStart;
 DWORD WINAPI ptDataFromMSFS(void *thread_param)
 {
     UNUSED(thread_param);
-    
+
     while (!quit) {
         SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
@@ -127,7 +127,7 @@ int cleanup(void)
         printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
     }
 
-    WSACleanup(); // CLose the Win32 sockets
+    WSACleanup();   // CLose the Win32 sockets
     remove_debug(); // Remove DEBUG file if in DEBUG mode
 
     return 0;
@@ -138,10 +138,10 @@ int initialize(const char *MSFSServer, const char *PSXMainIP, int PSXMainPort, c
 
     int result_init;
 
-    TimeStart = GetTickCount(); //Initialize the timer
+    TimeStart = GetTickCount(); // Initialize the timer
 
     /*---------------------------------------------
-     * Initialize internal flags and 
+     * Initialize internal flags and
      * create default PSXMSFS.ini file if not present
      * -------------------------------------------*/
     result_init = init_param(MSFSServer, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);

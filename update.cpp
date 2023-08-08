@@ -86,9 +86,10 @@ void Qi198Update(int onGround, double elevation)
                 QSentGround = 1;
                 QSentFlight = 0;
             }
+
             sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
             sendQPSX(sQi198);
-            printDebug(LL_DEBUG, "Sending: %s\t to PSX", sQi198);
+            printDebug(LL_DEBUG, "Sending %s", sQi198);
         } else {
 
             if (!QSentFlight) {

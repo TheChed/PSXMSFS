@@ -29,6 +29,7 @@ double getTime()
 
 int sendQPSX(const char *s)
 {
+    int nbsend = 0;
 
     int nbsend = 0;
     char *dem = (char *)malloc((strlen(s)) * sizeof(char));
@@ -40,12 +41,13 @@ int sendQPSX(const char *s)
 
     strncpy(dem, s, strlen(s));
 
-    nbsend = send(sPSX, dem, (int)(strlen(s)), 0);
+    if (!intflags.updateNewSitu) {
 
-    if (nbsend == 0) {
-        printDebug(LL_ERROR, "Error sending variable %s to PSX\n", s);
+        nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
+        if (nbsend == 0) {
+            printDebug(LL_ERROR, "Error sending variable %s to PSX\n", s);
+        }
     }
-
     free(dem);
     return nbsend;
 }
@@ -247,7 +249,7 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
 
     flags_ok = init_flags(&PSXflags);
 
-    //PSXflags = *flags;
+    // PSXflags = *flags;
 
     free(flags);
 
@@ -256,5 +258,6 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
 
 void remove_debug()
 {
-    remove("DEBUG.TXT");
+    if (PSXflags.LOG_VERBOSITY > 1)
+        remove("DEBUG.TXT");
 }
