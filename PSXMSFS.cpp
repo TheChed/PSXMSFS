@@ -16,40 +16,37 @@
 int getDataFromPSX(void);
 int getDataFromBoost(void);
 
-/*
- * State flags from either:
- * ini file, command line options or default flags
- */
+/*----------------------------------------
+ * State flags read from PSXMSFS.ini file
+ *---------------------------------------*/
 FLAGS PSXflags;
 
-struct INTERNALPSXflags intflags;
-
-/*
+/*--------------------------------------------
  * Handles for mutexes used in
  * various threads
- */
+ *-------------------------------------------*/
 HANDLE mutex, mutexsitu;
 CONDITION_VARIABLE condNewSitu;
 
 int quit = 0;
+monotime TimeStart;
 
 DWORD WINAPI ptDataFromMSFS(void *thread_param)
 {
-
     UNUSED(thread_param);
+    
     while (!quit) {
-
         SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
-        Sleep(1); // We sleep for 1 ms (Sleep is a Win32 API with parameter in ms)
-                  // to avoid heavy polling
+        Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
+
     return 0;
 }
 
 DWORD WINAPI ptDataFromBoost(void *)
 {
     while (!quit) {
-         getDataFromBoost();
+        getDataFromBoost();
     }
     return 0;
 }
@@ -58,7 +55,7 @@ DWORD WINAPI ptDataFromPSX(void *)
 {
 
     while (!quit) {
-         getDataFromPSX();
+        getDataFromPSX();
     }
     return 0;
 }
@@ -67,20 +64,22 @@ void thread_launch(void)
 {
     DWORD t1, t2, t3;
     HANDLE h1, h2, h3;
-    /*
-     * Create a thread mutex so that two threads cannot change simulataneously
-     * the position of the aircraft
-     */
+
+    /*----------------------------------------------------
+     * Create a thread mutex so that two threads cannot
+     * change simulataneously the position of the aircraft
+     * And create a condition mutex while loading a situ
+     *---------------------------------------------------*/
     mutex = CreateMutex(NULL, FALSE, NULL);
     mutexsitu = CreateMutex(NULL, FALSE, NULL);
     InitializeConditionVariable(&condNewSitu);
 
-    /*
+    /*---------------------------------------
      * Creating the 3 threads:
      * Thread 1: main server PSX
      * Thread 2: boost server
      * Thread 3: callback function in MSFS
-     */
+     *---------------------------------------*/
 
     h1 = CreateThread(NULL, 0, ptDataFromPSX, NULL, 0, &t1);
     if (h1 == NULL) {
@@ -107,18 +106,18 @@ void thread_launch(void)
     CloseHandle(mutexsitu);
 }
 
-DWORD cleanup(void)
+int cleanup(void)
 {
-    // To force threads to close if not yet done
-    quit = 1;
+    quit = 1; // To force threads to close if not yet done
 
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
 
-    // Signaling PSX that we are quitting
-    sendQPSX("exit");
+    sendQPSX("exit"); // Signal PSX that we are quitting
 
-    // and gracefully close main + boost sockets
+    /*-------------------------------------------------------------------------------
+     * and gracefully try to close main and boost sockets
+     * -----------------------------------------------------------------------------*/
     printDebug(LL_INFO, "Closing PSX boost connection...");
     if (close_PSX_socket(sPSXBOOST)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
@@ -128,39 +127,32 @@ DWORD cleanup(void)
         printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
     }
 
-    // Finally clean up the Win32 sockets
-    WSACleanup();
+    WSACleanup(); // CLose the Win32 sockets
+    remove_debug(); // Remove DEBUG file if in DEBUG mode
 
-    /* and clean up the debug file
-     * deleting it if not in DEBUG mode
-     */
-    remove_debug();
-
-    /*
-     * and free the used memory
-     */
-
-   // free(&PSXflags);
     return 0;
 }
 
-DWORD initialize(const char *MSFSServer, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
+int initialize(const char *MSFSServer, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {
 
     int result_init;
 
-    /* Initialise the timer */
-    elapsedStart(&TimeStart);
+    TimeStart = GetTickCount(); //Initialize the timer
 
+    /*---------------------------------------------
+     * Initialize internal flags and 
+     * create default PSXMSFS.ini file if not present
+     * -------------------------------------------*/
     result_init = init_param(MSFSServer, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);
 
-    if(result_init == 1){ 
+    if (result_init == 1) {
         printDebug(LL_ERROR, "Could not initialize various PSX internal flags. Exiting now...");
-        quit=1;
+        quit = 1;
     }
-    if(result_init == 2){ 
+    if (result_init == 2) {
         printDebug(LL_ERROR, "Could not open config file, will try to create one with educated guesses... Please restart the program");
-        quit=1;
+        quit = 1;
     }
 
     return result_init;
@@ -170,7 +162,7 @@ FLAGS *connectPSXMSFS(void)
 {
 
     /*
-     * Initialise and connect to all sockets: PSX, PSX Boost and Simconnect
+     * Initialise and connect all sockets: PSX, PSX Boost and Simconnect
      */
     if (!open_connections()) {
         return NULL;

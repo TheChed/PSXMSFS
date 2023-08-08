@@ -17,7 +17,6 @@
 
 #define IP_LENGTH 128 // maximum lenght of IP address
 
-monotime TimeStart;
 FILE *fdebug;
 
 double getTime()
@@ -31,7 +30,8 @@ double getTime()
 int sendQPSX(const char *s)
 {
 
-    char *dem = (char *)malloc((strlen(s) + 1) * sizeof(char));
+    int nbsend = 0;
+    char *dem = (char *)malloc((strlen(s)) * sizeof(char));
 
     if (dem == NULL) {
         printDebug(LL_ERROR, "Could not create PSX variable: PSX will not be updated.");
@@ -39,23 +39,15 @@ int sendQPSX(const char *s)
     }
 
     strncpy(dem, s, strlen(s));
-    dem[strlen(s)] = 10;
 
-    int nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
+    nbsend = send(sPSX, dem, (int)(strlen(s)), 0);
 
     if (nbsend == 0) {
-        printDebug(LL_VERBOSE, "Error sending variable %s to PSX\n", s);
+        printDebug(LL_ERROR, "Error sending variable %s to PSX\n", s);
     }
 
     free(dem);
     return nbsend;
-}
-monotime getMonotonicTime(void)
-{
-    // struct timespec ts;
-    // clock_gettime(CLOCK_MONOTONIC, &ts);
-    // return ((uint64_t)ts.tv_sec) * 1000000 + ts.tv_nsec / 1000;
-    return (monotime)(getTime());
 }
 
 void CalcCoord(double heading, double lato, double longo, double *latr, double *longr)
@@ -234,31 +226,31 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
 {
 
     int flags_ok = 0;
-    FLAGS *ini = create_flags_struct();
+    FLAGS *flags = create_flags_struct();
 
-    if (ini == NULL) {
-        printDebug(LL_ERROR, "Failed to initialize various server values.Exiting now...");
+    if (flags == NULL) {
         quit = 1;
         return 1;
     }
+    PSXflags = *flags;
 
     /*
      * Initialise server addresses from user input parameters
      * or default values
      */
-    init_servers(ini, MSFSServerIP, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);
+    init_servers(&PSXflags, MSFSServerIP, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);
 
-    /*
+    /*--------------------------------------------------
      * Flags are directly read from the ini file
-     * or defaulted to what is in the ini structure
-     */
+     * or defaulted to what is in the flags structure
+     *-------------------------------------------------*/
 
-    flags_ok = init_flags(ini);
+    flags_ok = init_flags(&PSXflags);
 
-    PSXflags = *ini;
+    //PSXflags = *flags;
 
-    free(ini);
-    
+    free(flags);
+
     return flags_ok;
 }
 
@@ -266,4 +258,3 @@ void remove_debug()
 {
     remove("DEBUG.TXT");
 }
-

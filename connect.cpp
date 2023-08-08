@@ -9,7 +9,6 @@
 #pragma comment(lib, "Ws2_32.lib")
 #endif // !__MINGW__
 
-
 HANDLE hSimConnect = NULL;
 SOCKET sPSX;      // main PSX socket id
 SOCKET sPSXBOOST; // PSX boost socket id
@@ -59,7 +58,7 @@ int init_connect_MSFS(void)
     return (SUCCEEDED(SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0) == S_OK));
 }
 
-int open_connections()
+int open_connections(void)
 {
 
     // initialise Win32 socket library

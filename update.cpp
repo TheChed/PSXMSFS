@@ -15,6 +15,7 @@ static struct BOOST PSXBoost;
 static struct MovingParts APos;
 static struct PSX PSXDATA;
 static struct SpeedStruct PSXSPEED;
+struct INTERNALPSXflags intflags;
 
 double getlocalQNH(void)
 {
@@ -87,6 +88,7 @@ void Qi198Update(int onGround, double elevation)
             }
             sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
             sendQPSX(sQi198);
+            printDebug(LL_DEBUG, "Sending: %s\t to PSX", sQi198);
         } else {
 
             if (!QSentFlight) {
@@ -387,7 +389,7 @@ void SetXPDR(int XPDR, int IDENT)
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
-void init_pos()
+void init_pos(void)
 {
 
     /*
@@ -413,10 +415,10 @@ void init_pos()
                .TA = 18000,
                .TL = 18000};
 
-    /*
+    /*--------------------------------------------------------------------------
      * Sending Q423 DEMAND variable to PSX for the winds
      * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
-     */
+     *-------------------------------------------------------------------------*/
 
     sendQPSX("demand=Qs483");
     sendQPSX("demand=Qs480");
@@ -501,6 +503,7 @@ time_t newSituLoaded(void)
     if (PSXflags.INHIB_CRASH_DETECT) {
         printDebug(LL_INFO, "No crash detection for 10 seconds");
         sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
+        printDebug(LL_DEBUG, "Sent Qi198=-9999910 to PSX");
     }
     return time(NULL);
 }

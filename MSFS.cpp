@@ -369,7 +369,6 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
-
         WaitForSingleObject(mutexsitu, INFINITE);
         while (intflags.updateNewSitu) {
         }
@@ -394,7 +393,7 @@ int init_MS_data(void)
 
     /* Here we map all the variables that are used to update the 747 in MSFS.
      * It is VERY important that the order of those variables matches the order
-     * in with the structures defined in PSXMSFS.h
+     * in with the structures defined in PSXMSFSLIB.h
      */
     hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
     hr = SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");

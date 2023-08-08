@@ -59,6 +59,54 @@ enum DATA_REQUEST_ID {
     DATA_REQUEST_TCAS,
 };
 
+/*------------------------------------------------------------
+ * Definition of the structure used to update MSFS
+ * It is VERY important that the order this structure elements
+ * are defined is the same order as when mapping the variables
+ * in PSXMSFS.cpp
+ *------------------------------------------------------------*/
+struct AcftMSFS {
+    double altitude;
+    double latitude;
+    double longitude;
+    double heading_true;
+    double pitch;
+    double bank;
+};
+struct AcftLight {
+    double LandLeftOutboard;  // L Inboard
+    double LandLeftInboard;   // L Inboard
+    double LandRightInboard;  // R Inboard
+    double LandRightOutboard; // R Outboard
+    double LeftRwyTurnoff;    // L Runway Turnoff light
+    double RightRwyTurnoff;   // R Runway Turnoff light
+    double LightTaxi;         // Taxi light
+    double LightNav;          // Nav light
+    double Strobe;            // Strobe light
+    double BeaconLwr;         // Lower Beacon light
+    double Beacon;            // Both Beacon light
+    double LightWing;         // Wing light
+    double LightLogo;         // Wing light
+};
+
+struct Struct_MSFS {
+    double ground_altitude;           // ground altitude above MSL
+    double alt_above_ground;          // altitude of MSFS plane above ground
+    double alt_above_ground_minus_CG; // altitude of MSFS wheels above ground (not settable in MSFS)
+    double indicated_altitude;
+    double latitude;
+    double longitude;
+    double pitch;
+    double bank;
+    double heading_true;
+    double VS;
+    double TAS;
+    double altitude;    // plane altitude above MSL
+    double mmHg;        // ambiant pressure
+    double MSL;         // ambiant pressure
+    double baro;        // ambiant pressure
+    double temperature; // ambiant temperature
+};
 int init_MS_data(void);
 double getGroundAltitude(void);
 double getMSL_pressure(void);

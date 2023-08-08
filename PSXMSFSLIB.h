@@ -13,17 +13,16 @@
  * various constant definitions
  * used in the variosu modules
  *-------------------------------*/
-#define MSFSHEIGHT 15.13 //altitude offset in feet of the default 747 in MSFS when on ground
+#define MSFSHEIGHT 15.13 // altitude offset in feet of the default 747 in MSFS when on ground
 #define M_PI 3.14159265358979323846
 #define NM 1852           // meters in a nm
 #define EARTH_RAD 6371008 // earth radius in meters
 #define FTM 0.3048        // feet to meters
 #define DEG2RAD (M_PI / 180.0)
-#define LMB (-0.0065)  // temperature gradient per meters
-#define ALPHA -5.255822518257 //used in the atmosphere modelization
-#define VSSAMPLE 50 // number of samples used from boost string to calculate the vertical speed
+#define LMB (-0.0065)         // temperature gradient per meters
+#define ALPHA -5.255822518257 // used in the atmosphere modelization
+#define VSSAMPLE 50           // number of samples used from boost string to calculate the vertical speed
 #define DELIM ";"
-
 
 /*-----------------------------------------
  * structure used at initialization
@@ -40,11 +39,10 @@ typedef struct flags {
     int TCAS_INJECT;        // 1 if TCAS is injected to PSX, 0 otherwise
     int ELEV_INJECT;        // 1 if MSFS elevation is injected into PSX. 0 otherwise
     int INHIB_CRASH_DETECT; // 1 if no crash detection in PSX when loading new situ. 0 otherwise
-    int ONLINE; // 1 if PSXMSFS is used on online on VATSIM,IVAO etc, 0 otherwise
-    int LOG_VERBOSITY; // verbosity of the logs: 1 very verbose and 4 minimum verbosity
-    int SLAVE; // 0 if PSX is slave, 1 if MSFS is slave
-} FLAGS ;
-    
+    int ONLINE;             // 1 if PSXMSFS is used on online on VATSIM,IVAO etc, 0 otherwise
+    int LOG_VERBOSITY;      // verbosity of the logs: 1 very verbose and 4 minimum verbosity
+    int SLAVE;              // 0 if PSX is slave, 1 if MSFS is slave
+} FLAGS;
 
 struct INTERNALPSXflags {
     int oldcrz;
@@ -52,58 +50,6 @@ struct INTERNALPSXflags {
     int Qi198Sentground;
     int Qi198SentFlight;
 };
-
-struct Struct_MSFS {
-    double ground_altitude;           // ground altitude above MSL
-    double alt_above_ground;          // altitude of MSFS plane above ground
-    double alt_above_ground_minus_CG; // altitude of MSFS wheels above ground (not settable in MSFS)
-    double indicated_altitude;
-    double latitude;
-    double longitude;
-    double pitch;
-    double bank;
-    double heading_true;
-    double VS;
-    double TAS;
-    double altitude;    // plane altitude above MSL
-    double mmHg;        // ambiant pressure
-    double MSL;         // ambiant pressure
-    double baro;        // ambiant pressure
-    double temperature; // ambiant temperature
-};
-
-/*------------------------------------------------------------
- * Definition of the structure used to update MSFS
- * It is VERY important that the order this structure elements 
- * are defined is the same order as when mapping the variables 
- * in PSXMSFS.cpp
- *------------------------------------------------------------*/
-struct AcftMSFS {
-    double altitude;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
-};
-
-struct AcftLight {
-    double LandLeftOutboard;  // L Inboard
-    double LandLeftInboard;   // L Inboard
-    double LandRightInboard;  // R Inboard
-    double LandRightOutboard; // R Outboard
-    double LeftRwyTurnoff;    // L Runway Turnoff light
-    double RightRwyTurnoff;   // R Runway Turnoff light
-    double LightTaxi;         // Taxi light
-    double LightNav;          // Nav light
-    double Strobe;            // Strobe light
-    double BeaconLwr;         // Lower Beacon light
-    double Beacon;            // Both Beacon light
-    double LightWing;         // Wing light
-    double LightLogo;         // Wing light
-};
-
-
 
 /*---------------------------------
  * Global variables
@@ -118,7 +64,7 @@ extern struct INTERNALPSXflags intflags;
 
 extern SOCKET sPSX;      // main PSX socket id
 extern SOCKET sPSXBOOST; // PSX boost socket id
-extern FLAGS PSXflags; 
+extern FLAGS PSXflags;
 
 typedef uint64_t monotime; // long unsigned 64 bit integer used to store time related variables
 extern monotime TimeStart; // Timestamp when the simulation is started.
@@ -127,8 +73,8 @@ extern monotime TimeStart; // Timestamp when the simulation is started.
  * Functions to be exported in the DLL
  *------------------------------------------------------*/
 
-extern "C" __declspec(dllexport) DWORD initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
+extern "C" __declspec(dllexport) int initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
 extern "C" __declspec(dllexport) FLAGS *connectPSXMSFS(void);
 extern "C" __declspec(dllexport) DWORD WINAPI main_launch(void);
-extern "C" __declspec(dllexport) DWORD cleanup(void);
+extern "C" __declspec(dllexport) int cleanup(void);
 #endif

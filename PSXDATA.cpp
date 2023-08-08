@@ -13,7 +13,6 @@
 #include "MSFS.h"
 #include "log.h"
 
-
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
 char bufboost[256];
@@ -539,7 +538,6 @@ int getDataFromPSX(void)
 
         // New situ loaded
         if (strstr(line_start, "load3")) {
-            //    pthread_mutex_lock(&mutexsitu);
             WaitForSingleObject(mutexsitu, INFINITE);
             newSitutime = newSituLoaded();
         }
@@ -548,9 +546,7 @@ int getDataFromPSX(void)
         if (intflags.updateNewSitu) {
             if (time(NULL) > newSitutime + 5) {
                 intflags.updateNewSitu = 0;
-                //       pthread_mutex_unlock(&mutexsitu);
                 ReleaseMutex(mutexsitu);
-                // pthread_cond_signal(&condNewSitu);
                 WakeConditionVariable(&condNewSitu);
 
                 printDebug(LL_INFO, "Resuming normal operations.");
@@ -559,11 +555,8 @@ int getDataFromPSX(void)
 
         if (line_start[0] == 'Q') {
 
-            // pthread_mutex_lock(&mutex);
             WaitForSingleObject(mutex, INFINITE);
             Decode(line_start);
-
-            // pthread_mutex_unlock(&mutex);
             ReleaseMutex(mutex);
         }
 
@@ -613,10 +606,8 @@ int getDataFromBoost(void)
         *line_end = 0;
 
         if (line_start[0] == 'F' || line_start[0] == 'G') {
-            // pthread_mutex_lock(&mutex);
             WaitForSingleObject(mutex, INFINITE);
             Decodeboost(line_start);
-            // pthread_mutex_unlock(&mutex);
             ReleaseMutex(mutex);
         } else {
             printDebug(LL_VERBOSE, "Wrong boost string received: %s", line_start);
