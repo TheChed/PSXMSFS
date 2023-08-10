@@ -204,6 +204,7 @@ void S480(char *s)
     double rudder, aileron, elevator;
     struct SurfaceUpdate S;
     int val[10];
+    
     for (int i = 0; i < 10; i++) {
         val[i] = (s[2 * i + 6] - '0') * 10 + (s[2 * i + 1 + 6] - '0');
     }
