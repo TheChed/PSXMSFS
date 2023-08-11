@@ -1,4 +1,4 @@
-#include <cstdlib>
+//#include <cstdlib>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,10 +7,8 @@
 #include <time.h>
 #include <windows.h>
 #include "PSXMSFSLIB.h"
-#include "SimConnect.h"
 #include "util.h"
 #include "update.h"
-#include "MSFS.h"
 #include "log.h"
 
 size_t bufboost_used = 0;
