@@ -29,8 +29,12 @@ double getTime()
 
 int sendQPSX(const char *s)
 {
+     
+
+
+
     int nbsend = 0;
-    char *dem = (char *)malloc((strlen(s)) * sizeof(char));
+    char *dem = (char *)malloc((1+strlen(s)) * sizeof(char));
 
     if (dem == NULL) {
         printDebug(LL_ERROR, "Could not create PSX variable: PSX will not be updated.");
@@ -38,6 +42,7 @@ int sendQPSX(const char *s)
     }
 
     strncpy(dem, s, strlen(s));
+     dem[strlen(s)] = 10;
 
     /*-------------------------------------
      * Send a Q variable to PSX if we are not
@@ -45,7 +50,7 @@ int sendQPSX(const char *s)
      * ------------------------------------*/
     if (!intflags.updateNewSitu) {
         printDebug(LL_DEBUG, "Sending variable %s to PSX", s);
-        nbsend = send(sPSX, dem, (int)(strlen(s)), 0);
+        nbsend = send(sPSX, dem, (int)(strlen(s)+1), 0);
         if (nbsend == 0) {
             printDebug(LL_ERROR, "Error sending variable %s to PSX", s);
         }
