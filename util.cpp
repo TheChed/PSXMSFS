@@ -67,9 +67,9 @@ void CalcCoord(double heading, double lato, double longo, double *latr, double *
 
 double dist(double lat1, double lat2, double long1, double long2)
 {
-    return 2 * EARTH_RAD *
+    return 2 * EARTH_RAD * asin(
            (sqrt(pow(sin((lat2 - lat1) / 2), 2) +
-                 cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2)));
+                 cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2))));
 }
 
 int write_ini_file(FLAGS *ini)
