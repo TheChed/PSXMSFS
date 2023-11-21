@@ -1,5 +1,5 @@
-//#include <cstdlib>
-#include <math.h>
+// #include <cstdlib>
+#include <cmath>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -70,8 +70,14 @@ void H388(char *s)
     struct SurfaceUpdate S;
     char *token, *ptr, *savptr;
     if ((token = strtok_s(s + 6, DELIM, &savptr)) != NULL) {
-        SpeedBrakelevel = strtol(token, &ptr, 10);
+        SpeedBrakelevel = 16384 * strtol(token, &ptr, 10) / 800;
     }
+
+    if (SpeedBrakelevel < 0)
+        SpeedBrakelevel = 0;
+    if (SpeedBrakelevel > 16384)
+        SpeedBrakelevel = 16384;
+
     S.Type = SPEED;
     S.UN.SpeedBrake = SpeedBrakelevel;
     SetMovingSurfaces(&S);
@@ -202,13 +208,13 @@ void S480(char *s)
     double rudder, aileron, elevator;
     struct SurfaceUpdate S;
     int val[10];
-    
+
     for (int i = 0; i < 10; i++) {
         val[i] = (s[2 * i + 6] - '0') * 10 + (s[2 * i + 1 + 6] - '0');
     }
 
     rudder = 16384 * ((val[8] + val[9]) / 2 - 32) / 32.0; // maximum deflection = 64
-    aileron = -16384 * (val[0] - 20) / 20.0;              // maximum deflection in PSX  = 40
+    aileron = 16384 * (val[2] - 20) / 20.0;               // maximum deflection in PSX  = 40
     elevator = 16384 * (val[6] - 21) / 21.0;              // maximum deflection in PSX = 42
                                                           //
     S.Type = MOVING;

@@ -41,7 +41,7 @@ int sendQPSX(const char *s)
      * just reloading a situ.
      * ------------------------------------*/
     if (!intflags.updateNewSitu) {
-        printDebug(LL_DEBUG, "Sending variable %s to PSX", s);
+        printDebug(LL_DEBUG, "Sending '%s' to PSX", s);
         nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
         if (nbsend == 0) {
             printDebug(LL_ERROR, "Error sending variable %s to PSX", s);
@@ -67,9 +67,7 @@ void CalcCoord(double heading, double lato, double longo, double *latr, double *
 
 double dist(double lat1, double lat2, double long1, double long2)
 {
-    return 2 * EARTH_RAD * asin(
-           (sqrt(pow(sin((lat2 - lat1) / 2), 2) +
-                 cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2))));
+    return 2 * EARTH_RAD * asin((sqrt(pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2))));
 }
 
 int write_ini_file(FLAGS *ini)

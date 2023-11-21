@@ -416,7 +416,7 @@ int init_MS_data(void)
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "FLAPS HANDLE INDEX",
                                         "number");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES,
-                                        "SPOILERS HANDLE POSITION", "position");
+                                        "SPOILERS HANDLE POSITION", "position 16K");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "RUDDER POSITION",
                                         "position 16K");
     hr = SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "ELEVATOR POSITION",
