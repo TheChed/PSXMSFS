@@ -26,6 +26,7 @@ void H170(char *s)
     gearpos = (int)(s[6] - '0');
     S.Type = GEAR;
     S.UN.GearDown = ((gearpos == 3) ? 1.0 : 0.0);
+
     SetMovingSurfaces(&S);
 }
 
@@ -68,18 +69,22 @@ void H388(char *s)
 {
     double SpeedBrakelevel = 0;
     struct SurfaceUpdate S;
-    char *token, *ptr, *savptr;
+    char *token, *savptr;
+
     if ((token = strtok_s(s + 6, DELIM, &savptr)) != NULL) {
-        SpeedBrakelevel = 16384 * strtol(token, &ptr, 10) / 800;
+        SpeedBrakelevel = 16384 * strtol(token, NULL, 10) / 800.0;
     }
 
-    if (SpeedBrakelevel < 0)
-        SpeedBrakelevel = 0;
-    if (SpeedBrakelevel > 16384)
-        SpeedBrakelevel = 16384;
+    /*
+     * Since SpeedBrakeLEvel is set as a position 16K
+     * in MSFS.cpp, we make some sanity checks
+     */
+    SpeedBrakelevel = ((SpeedBrakelevel < 0) ? 0 : SpeedBrakelevel);
+    SpeedBrakelevel = ((SpeedBrakelevel > 16384) ? 16384 : SpeedBrakelevel);
 
     S.Type = SPEED;
     S.UN.SpeedBrake = SpeedBrakelevel;
+
     SetMovingSurfaces(&S);
 }
 
@@ -249,13 +254,14 @@ void S124(const char *s)
 void S443(const char *s)
 {
 
-    int *light = (int *)malloc(14 * sizeof(int));
+    //int *light = (int *)malloc(14 * sizeof(int));
+    int light[14];
 
     for (int i = 0; i < 14; i++) {
         light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
     updateLights(light);
-    free(light);
+    //free(light);
 }
 
 void I240(const char *s)
@@ -263,7 +269,7 @@ void I240(const char *s)
 
     int zone;
 
-    zone = strtoul(s + 6, NULL, 10);
+    zone = strtol(s + 6, NULL, 10);
     if (zone < 0 || zone > 7) {
         zone = 0;
     }

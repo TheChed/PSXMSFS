@@ -60,7 +60,7 @@ enum SurfaceType {
 };
 
 struct SpeedUpdate {
-    SpeedType Type;
+    enum SpeedType Type;
     union {
         double IAS;
         double TAS;
@@ -69,7 +69,7 @@ struct SpeedUpdate {
 };
 
 struct SurfaceUpdate {
-    SurfaceType Type;
+    enum SurfaceType Type;
     union {
         double FlapsPosition;
         double SpeedBrake;

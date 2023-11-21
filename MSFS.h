@@ -107,7 +107,7 @@ struct Struct_MSFS {
     double baro;        // ambiant pressure
     double temperature; // ambiant temperature
 };
-int init_MS_data(void);
+void init_MS_data(void);
 double getGroundAltitude(void);
 double getMSL_pressure(void);
 double getMSFS_baro(void);

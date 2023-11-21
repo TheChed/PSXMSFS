@@ -304,8 +304,6 @@ void SetMovingSurfaces(struct SurfaceUpdate *S)
         APos.FlapsPosition = S->UN.FlapsPosition;
         break;
     case SPEED:
-
-    printDebug(LL_DEBUG,"SpeedBrake: %f\n",S->UN.SpeedBrake);
         APos.SpeedBrake = S->UN.SpeedBrake;
         break;
     case MOVING:
