@@ -418,6 +418,7 @@ void init_pos(void)
     /*--------------------------------------------------------------------------
      * Sending Q423 DEMAND variable to PSX for the winds
      * Sending Q480 DEMAND variable to get aileron, rudder and elevator position
+     * Sending Q562 DEMAND variable  to get Baro altitude and STD altitude shown on captain's PFD
      *-------------------------------------------------------------------------*/
 
     sendQPSX("demand=Qs483");
@@ -503,7 +504,7 @@ DWORD newSituLoaded(void)
     printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
     printDebug(LL_INFO, "Let's wait ten seconds to get everyone ready, shall we?");
 
-    freezeMSFS(); // New Situ loaded, let's preventively freeze MSFS
+    freezeMSFS(1); // New Situ loaded, let's preventively freeze MSFS
     init_variables();
 
 

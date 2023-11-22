@@ -16,8 +16,11 @@ size_t bufmain_used = 0;
 char bufboost[256];
 char bufmain[4096];
 
-// Position of Gear
-
+/* MSFS SDK: The gear handle position, where
+ * 0 means the handle is retracted and 1 is the handle fully applied.
+ *
+ * in PSX, 1 = up, 2 = off and 3 = down
+ */
 void H170(char *s)
 {
     int gearpos;
@@ -30,13 +33,18 @@ void H170(char *s)
     SetMovingSurfaces(&S);
 }
 
-// Flap lever variable Qh389
+/* Index of current flap position.
+ * Qh389="FlapLever"; Mode=ECON; Min=0; Max=6;
+ */
 void H389(const char *s)
 {
+    int position = 0;
     struct SurfaceUpdate S;
-    int position;
 
     position = (int)(s[6] - '0');
+
+    position = (position < 0) ? 0 : position;
+    position = (position > 6) ? 6 : position;
 
     S.Type = FLAPS;
     S.UN.FlapsPosition = position;
@@ -48,23 +56,31 @@ void H397(const char *s)
 {
     int position;
     position = (int)(s[6] - '0');
+    position = (position == 0) ? 0 : 1;
+
     updateParkingBreak(position);
 }
 
-// Steering wheel
+/* MSFS SDK:
+ *Sets the value of the nose wheel steering position.
+ Zero is straight ahead (-16383, far left +16383, far right).
+ */
 void H426(const char *s)
 {
     double pos;
 
-    pos = strtol(s + 6, NULL, 10) / 999.0 * 16384.0;
-    if (abs(pos) > 16385) {
-        pos = 0;
-    }
+    pos = 16383.0 * strtol(s + 6, NULL, 10) / 999.0;
+
+    pos = (pos < -16383) ? -16383 : pos;
+    pos = (pos > 16383) ? 16383 : pos;
 
     updateSteeringWheel(DWORD(pos));
 }
 
-// Speedbrake lever variable Qh389
+/*
+ *  Speedbrake lever variable
+ *  Qh388="SpdBrkLever"; Mode=ECON; Min=0; Max=800;
+ */
 void H388(char *s)
 {
     double SpeedBrakelevel = 0;
@@ -88,20 +104,31 @@ void H388(char *s)
     SetMovingSurfaces(&S);
 }
 
+/*
+ * Qs121="PiBaHeAlTas"; Mode=ECON; Min=9; Max=200;
+ */
 void S121(char *s)
 {
 
     char *token, *savptr;
     struct SpeedUpdate SU;
+    double speed = 0;
 
     token = strtok_s(s + 6, DELIM, &savptr);
     token = strtok_s(NULL, DELIM, &savptr);
     token = strtok_s(NULL, DELIM, &savptr);
     token = strtok_s(NULL, DELIM, &savptr);
+    // TAS is the 5th token
     if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        SU.Speed.TAS = (double)strtoul(token, NULL, 10) / 1000.0;
+        speed = (double)strtoul(token, NULL, 10) / 1000.0;
     }
+
+    speed = (speed < 0) ? 0 : speed;
+    speed = (speed > 530) ? 530 : speed;
+
     SU.Type = TAS;
+    SU.Speed.TAS = speed;
+
     SetSpeed(&SU);
 }
 
@@ -109,10 +136,15 @@ void S483(char *s)
 {
     char *token, *ptr;
     struct SpeedUpdate SU;
+    double speed = 0;
 
     if ((token = strtok_s(s + 6, DELIM, &ptr)) != NULL) {
-        SU.Speed.IAS = strtol(token, NULL, 10) / 10.0;
+        speed = strtol(token, NULL, 10) / 10.0;
     }
+
+    speed = (speed < 0) ? 0 : speed;
+
+    SU.Speed.IAS = speed;
     SU.Type = IAS;
     SetSpeed(&SU);
 }
@@ -120,7 +152,7 @@ void S483(char *s)
 void S392(char *s)
 {
     char *token, *savptr;
-    int TA, TL;
+    int TA = 0, TL = 0;
     int flightPhase;
 
     // TA and TL are the 2nd and 3rd token
@@ -138,6 +170,10 @@ void S392(char *s)
     if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
         TL = (int)strtoul(token, NULL, 10);
     }
+
+    TL = (TL < 0) ? 0 : TL;
+    TA = (TA < 0) ? 0 :TA ;
+
     updateFlightPhase(flightPhase, TA, TL);
 }
 void S78(const char *s)
@@ -156,8 +192,8 @@ void S448(char *s)
 {
 
     char *token, *ptr, *savptr;
-    int stdbar;
-    long altimeter;
+    int stdbar=0;
+    long altimeter=0;
 
     /* get the first token
      * Altimeter setting is the 4th token
@@ -180,7 +216,7 @@ void S448(char *s)
 
 void S458(char *s)
 {
-    int C1, C2;
+    int C1=122800000, C2=122800000;
     char COM1[10] = {0}, COM2[10] = {0};
     /*
      * discard the last digit from the Qs string as it is not taken into MSFS.
@@ -254,14 +290,14 @@ void S124(const char *s)
 void S443(const char *s)
 {
 
-    //int *light = (int *)malloc(14 * sizeof(int));
+    // int *light = (int *)malloc(14 * sizeof(int));
     int light[14];
 
     for (int i = 0; i < 14; i++) {
         light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
     updateLights(light);
-    //free(light);
+    // free(light);
 }
 
 void I240(const char *s)
@@ -410,6 +446,7 @@ void Decodeboost(char *s)
      */
     SU.Type = VS;
     SU.Speed.VS = calcVS(flightDeckAlt, ms);
+
     SetSpeed(&SU);
 
     updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);

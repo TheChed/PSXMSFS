@@ -159,17 +159,22 @@ void updateTCASPSX(void)
     sendQPSX(QsTfcPos);
 }
 
-void freezeMSFS(void)
+void freezeMSFS(int freeze)
 {
 
-    printDebug(LL_VERBOSE, "Freezing Altitude, Attitude and Coordinates in MSFS.");
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 1,
+    if (freeze) {
+        printDebug(LL_VERBOSE, "Freezing Altitude, Attitude and Coordinates in MSFS.");
+    } else {
+
+        printDebug(LL_VERBOSE, "Unfreezing Altitude, Attitude and Coordinates in MSFS.");
+    }
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, freeze,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 1,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, freeze,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 1,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, freeze,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
@@ -215,10 +220,10 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
          * In this event, received when MSFS is opened
          * we freeze the altitude, attitude and coordinates
          * so that there is no stuttering and conflict with MSFS's
-         * engines.
+         * rendering engines.
          */
 
-        freezeMSFS();
+        freezeMSFS(1);
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -233,15 +238,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         case EVENT_6_HZ: {
             if (PSXflags.SLAVE) {
 
-                SimConnect_TransmitClientEvent(
-                    hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, 0,
-                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-                SimConnect_TransmitClientEvent(
-                    hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, 0,
-                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-                SimConnect_TransmitClientEvent(
-                    hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, 0,
-                    SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
+                freezeMSFS(0);
                 Inject_MSFS_PSX();
             }
         } break;
@@ -260,7 +257,6 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_P_PRESS: {
-            printDebug(LL_ERROR, "In P Event:  %d\n", evt->uEventID);
             if (!key_press) {
                 key_press = 1;
                 SimConnect_TransmitClientEvent(
@@ -369,10 +365,8 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
-        //   WaitForSingleObject(mutexsitu, INFINITE);
         while (intflags.updateNewSitu) {
         }
-        //     ReleaseMutex(mutexsitu);
         WaitForSingleObject(mutex, INFINITE);
         SetMSFSPos();
         ReleaseMutex(mutex);
