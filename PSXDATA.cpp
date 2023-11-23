@@ -586,7 +586,6 @@ int getDataFromPSX(void)
 
         // New situ loaded
         if (strstr(line_start, "load3")) {
-            //      WaitForSingleObject(mutexsitu, INFINITE);
             newSitutime = newSituLoaded();
         }
 
@@ -594,9 +593,6 @@ int getDataFromPSX(void)
         if (intflags.updateNewSitu) {
             if (GetTickCount() > newSitutime + 10000) {
                 intflags.updateNewSitu = 0;
-                //       ReleaseMutex(mutexsitu);
-                //       WakeConditionVariable(&condNewSitu);
-
                 printDebug(LL_INFO, "Resuming normal operations.");
             }
         }

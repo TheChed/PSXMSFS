@@ -79,7 +79,7 @@ void Qi198Update(int onGround, double elevation)
     QSentGround = intflags.Qi198Sentground;
     QSentFlight = intflags.Qi198SentFlight;
 
-    if (PSXflags.ELEV_INJECT) {
+    if (PSXflags.ELEV_INJECT && !intflags.updateNewSitu) {
         if (onGround || (elevation < 300)) {
             if (!QSentGround) {
                 printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation.");
@@ -129,7 +129,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
      * PSXELEV = -999 when we just launched PSXMSFS
      */
 
-    if (PSXELEV == -999) {
+    if (PSXELEV == -999 || intflags.updateNewSitu) {
         return altfltdeck;
     }
 
@@ -271,7 +271,6 @@ void SetMSFSPos()
     groundAltitude = getGroundAltitude();
     MSFS.altitude =
         SetAltitude(PSX.onGround, PSX.flightDeckAlt, -PSX.pitch, PSXDATA.acftelev, groundAltitude);
-
     MSFS.latitude = latc;
     MSFS.longitude = longc;
     MSFS.pitch = PSX.pitch;
@@ -497,7 +496,6 @@ DWORD newSituLoaded(void)
     if (PSXflags.INHIB_CRASH_DETECT) {
         printDebug(LL_INFO, "No crash detection for 10 seconds");
         sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
-        printDebug(LL_DEBUG, "Sent Qi198=-9999910 to PSX");
     }
     resetInternalFlags();
 
@@ -506,7 +504,6 @@ DWORD newSituLoaded(void)
 
     freezeMSFS(1); // New Situ loaded, let's preventively freeze MSFS
     init_variables();
-
 
     return GetTickCount();
 }
