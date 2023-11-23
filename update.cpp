@@ -191,7 +191,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
     flightPhase = getFlightPhase();
     msfsindalt = getIndAltitude();
-    if (abs(msfsindalt - ctrAltitude) > 3500) {
+    if (fabs(msfsindalt - ctrAltitude) > 3500) {
         msfsindalt = ctrAltitude;
     }
 
@@ -225,7 +225,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 
     if (onGround || (PSXELEV + incland < MSFSHEIGHT)) {
 
-        if (abs(groundalt - ctrAltitude) > 100) {
+        if (fabs(groundalt - ctrAltitude) > 100) {
             groundalt = ctrAltitude;
         }
         FinalAltitude = groundalt + MSFSHEIGHT;
