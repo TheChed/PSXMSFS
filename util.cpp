@@ -225,7 +225,6 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
         return 1;
     }
     PSXflags = *flags;
-
     /*
      * Initialise server addresses from user input parameters
      * or default values

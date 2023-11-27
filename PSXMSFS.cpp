@@ -47,6 +47,7 @@ DWORD WINAPI ptDataFromBoost(void *)
 {
     while (!quit) {
         getDataFromBoost();
+        Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
 }
@@ -56,6 +57,7 @@ DWORD WINAPI ptDataFromPSX(void *)
 
     while (!quit) {
         getDataFromPSX();
+        Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
 }
