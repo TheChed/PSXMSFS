@@ -23,7 +23,7 @@ link: $(OBJLINK)
 
 %.o : %.cpp $(DEPS)
 	$(CC) $(CFLAGS) -D__MINGW__ -DVER=$(VER) -DCOMP="\"MINGW\"" -c $<
-	cp  $< /home/stephan/NAS/TRANSFERT/pfpx/src
+	cp  $< /home/stephan/NAS/TRANSFERT/PSXMSFS/SRC
 
 tex:
 	lualatex --shell-escape PSXMSFS.tex

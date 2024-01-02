@@ -82,6 +82,7 @@ int write_ini_file(FLAGS *ini)
     }
 
     /*PSX server addresses and port*/
+    fprintf(f, "#Self Explanatory IP and port variables\n");
     fprintf(f, "PSXMainServer=%s\n", ini->PSXMainServer);
     fprintf(f, "PSXBoostServer=%s\n", ini->PSXBoostServer);
     fprintf(f, "PSXPort=%d\n", ini->PSXPort);
@@ -89,13 +90,20 @@ int write_ini_file(FLAGS *ini)
 
     /*MSFS address*/
     fprintf(f, "MSFSServer=%s\n", ini->MSFSServer);
+    fprintf(f, "\n");
 
     /* Switches */
+    fprintf(f, "#How much debug you want. DEBUG = 1, VERBOSE = 2, INFO = 3, ERROR = 4\n");
     fprintf(f, "LOG_VERBOSITY=%d\n", ini->LOG_VERBOSITY);
+    fprintf(f, "\n#Inject MSFS TCAS in PSX\n");
     fprintf(f, "TCAS_INJECT=%d\n", ini->TCAS_INJECT);
+    fprintf(f, "\n#If 0 then MSFS slave to PSX. If 1 then PSX slave to MSFS\n");
     fprintf(f, "SLAVE=%d\n", ini->SLAVE);
+    fprintf(f, "\n#If 1 then inject PSX elevations to MSFS. If 0 the other way round. Best results with 1\n");
     fprintf(f, "ELEV_INJECT=%d\n", ini->ELEV_INJECT);
+    fprintf(f, "\n#If 1 inhibits PSX crash detections for 10 seconds when loading a situ. If 0 crashes are not inhibited\n");
     fprintf(f, "INHIB_CRASH_DETECT=%d\n", ini->INHIB_CRASH_DETECT);
+    fprintf(f, "\n#If 1 reports proper FL on networks such as IVAO, VATSIM, etc. If 0 no correction is made\n");
     fprintf(f, "ONLINE=%d\n", ini->ONLINE);
 
     fclose(f);
@@ -107,12 +115,18 @@ char *scan_ini(FILE *file, const char *key)
 
     char name[64];
     char val[64];
+    char buffer[128];
+
     rewind(file);
-    while (fscanf(file, "%63[^=]=%63[^\n]%*c", name, val) == 2) {
-        if (0 == strcmp(name, key)) {
-            return _strdup(val);
+    while (fgets(buffer, sizeof(buffer), file) != NULL) {
+        int n = sscanf(buffer, "%63[^=]=%63[^\n]%*c", name, val);
+        if (n == 2) {
+            if (0 == strcmp(name, key)) {
+                return _strdup(val);
+            }
         }
     }
+
     return NULL;
 }
 
@@ -195,18 +209,18 @@ int init_flags(FLAGS *ini)
         strcpy(ini->PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
         strcpy(ini->MSFSServer, scan_ini(fini, "MSFSServer"));
 
-        value = scan_ini(fini, "SLAVE");
-        ini->SLAVE = strtol(value, &stop, 10);
-        value = scan_ini(fini, "TCAS_INJECT");
-        ini->TCAS_INJECT = strtol(value, &stop, 10);
-        value = scan_ini(fini, "LOG_VERBOSITY");
-        ini->LOG_VERBOSITY = (int)strtol(value, &stop, 10);
-        value = scan_ini(fini, "ELEV_INJECT");
-        ini->ELEV_INJECT = strtol(value, &stop, 10);
-        value = scan_ini(fini, "INHIB_CRASH_DETECT");
-        ini->INHIB_CRASH_DETECT = strtol(value, &stop, 10);
-        value = scan_ini(fini, "ONLINE");
-        ini->ONLINE = strtol(value, &stop, 10);
+        if ((value = scan_ini(fini, "SLAVE")))
+            ini->SLAVE = strtol(value, &stop, 10);
+        if ((value = scan_ini(fini, "TCAS_INJECT")))
+            ini->TCAS_INJECT = strtol(value, &stop, 10);
+        if ((value = scan_ini(fini, "ELEV_INJECT")))
+            ini->ELEV_INJECT = strtol(value, &stop, 10);
+        if ((value = scan_ini(fini, "INHIB_CRASH_DETECT")))
+            ini->INHIB_CRASH_DETECT = strtol(value, &stop, 10);
+        if ((value = scan_ini(fini, "ONLINE")))
+            ini->ONLINE = strtol(value, &stop, 10);
+        if ((value = scan_ini(fini, "LOG_VERBOSITY")))
+            ini->LOG_VERBOSITY = (int)strtol(value, &stop, 10);
         free(value);
         fclose(fini);
     }

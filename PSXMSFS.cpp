@@ -177,7 +177,8 @@ FLAGS *connectPSXMSFS(void)
     Initialize position at LFPG*/
     init_pos();
 
-    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+    //printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+    printDebug(LL_INFO, "DLL built on %s",__DATE__);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
     return &PSXflags;

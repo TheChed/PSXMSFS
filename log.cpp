@@ -11,7 +11,6 @@ debugMessage **D = NULL;
 
 void printDebug(int level, const char *debugInfo, ...)
 {
-
     va_list ap;
     char msg[MAXLEN_DEBUG_MSG];
     char timestamp[50];
