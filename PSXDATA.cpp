@@ -571,7 +571,7 @@ int getDataFromPSX(void)
         return 0;
     }
     if (nbread < 0) {
-        printDebug(LL_ERROR, "Main socket Connection error");
+        if(!quit) printDebug(LL_ERROR, "Main socket connection error");
         return 0;
     }
     bufmain_used += nbread;

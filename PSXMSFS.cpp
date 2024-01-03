@@ -115,6 +115,7 @@ int cleanup(void)
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
 
+    printDebug(LL_INFO, "MSFS closed.");
     sendQPSX("exit"); // Signal PSX that we are quitting
 
     /*-------------------------------------------------------------------------------
@@ -124,13 +125,14 @@ int cleanup(void)
     if (close_PSX_socket(sPSXBOOST)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
     }
-    printDebug(LL_INFO, "Closing PSX main connection...\n");
+    printDebug(LL_INFO, "Closing PSX main connection...");
     if (close_PSX_socket(sPSX)) {
         printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
     }
 
     WSACleanup();   // CLose the Win32 sockets
     remove_debug(); // Remove DEBUG file if in DEBUG mode
+    printDebug(LL_INFO, "See you next time!");
 
     return 0;
 }
@@ -177,8 +179,8 @@ FLAGS *connectPSXMSFS(void)
     Initialize position at LFPG*/
     init_pos();
 
-    //printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
-    printDebug(LL_INFO, "DLL built on %s",__DATE__);
+    printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
+    //printDebug(LL_INFO, "DLL built on %s",__DATE__);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
     return &PSXflags;
