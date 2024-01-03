@@ -131,8 +131,8 @@ int cleanup(void)
     }
 
     WSACleanup();   // CLose the Win32 sockets
-    remove_debug(); // Remove DEBUG file if in DEBUG mode
     printDebug(LL_INFO, "See you next time!");
+    remove_debug(); // Remove DEBUG file if not in DEBUG mode
 
     return 0;
 }
