@@ -49,6 +49,7 @@ struct INTERNALPSXflags {
     int updateNewSitu;
     int Qi198Sentground;
     int Qi198SentFlight;
+    DWORD NewSituTimeLoad;
 };
 
 /*---------------------------------

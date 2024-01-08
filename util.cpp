@@ -41,7 +41,7 @@ int sendQPSX(const char *s)
      * just reloading a situ.
      * ------------------------------------*/
     if (!intflags.updateNewSitu) {
-        printDebug(LL_DEBUG, "Sending '%s' to PSX", s);
+        printDebug(LL_DEBUG, "Sending %s to PSX", s);
         nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
         if (nbsend == 0) {
             printDebug(LL_ERROR, "Error sending variable %s to PSX", s);

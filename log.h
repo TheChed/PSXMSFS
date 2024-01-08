@@ -11,6 +11,7 @@
 #define LL_ERROR 4
 
 void printDebug(int level, const char *debugInfo, ...);
+void printPSX(int boost, const char *debugInfo, ...);
 
 struct debugMessage {
     uint64_t Id;

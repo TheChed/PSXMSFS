@@ -9,6 +9,50 @@ int currCount = 0;
 
 debugMessage **D = NULL;
 
+void printPSX(int boost, const char *debugInfo, ...)
+{
+    va_list ap;
+    char msg[MAXLEN_DEBUG_MSG];
+    char timestamp[50];
+
+    time_t t = time(NULL);
+    struct tm date = *localtime(&t);
+    FILE *fdebug=NULL;
+
+    switch (boost) {
+    case 1:
+        fdebug=fopen("BOOST.TXT", "a");
+        break;
+    case 0:
+        fdebug=fopen("SERVER.TXT", "a");
+        break;
+    case 2:
+        fdebug=fopen("Q.TXT", "a");
+        break;
+    }
+    // fdebug = boost ? fopen("BOOST.TXT", "a") : fopen("SERVER.TXT", "a");
+    if (!fdebug)
+        return;
+
+    va_start(ap, debugInfo);
+    vsnprintf(msg, sizeof(msg), debugInfo, ap);
+    va_end(ap);
+
+    strftime(timestamp, 50, "%H:%M:%S", &date);
+    if (PSXflags.LOG_VERBOSITY == LL_DEBUG) {
+        fprintf(fdebug, "%s[+%ld.%.03ds]\t%s", timestamp, (long)elapsedMs(TimeStart) / 1000, (int)elapsedMs(TimeStart) % 1000, msg);
+        fprintf(fdebug, "\n");
+        fflush(fdebug);
+
+        // and also print on the console or in buffer
+        printf("%s\n", msg);
+        if (D != NULL) {
+            logging(D, msg);
+        }
+    }
+
+    fclose(fdebug);
+}
 void printDebug(int level, const char *debugInfo, ...)
 {
     va_list ap;

@@ -172,7 +172,7 @@ void S392(char *s)
     }
 
     TL = (TL < 0) ? 0 : TL;
-    TA = (TA < 0) ? 0 :TA ;
+    TA = (TA < 0) ? 0 : TA;
 
     updateFlightPhase(flightPhase, TA, TL);
 }
@@ -192,8 +192,8 @@ void S448(char *s)
 {
 
     char *token, *ptr, *savptr;
-    int stdbar=0;
-    long altimeter=0;
+    int stdbar = 0;
+    long altimeter = 0;
 
     /* get the first token
      * Altimeter setting is the 4th token
@@ -216,7 +216,7 @@ void S448(char *s)
 
 void S458(char *s)
 {
-    int C1=122800000, C2=122800000;
+    int C1 = 122800000, C2 = 122800000;
     char COM1[10] = {0}, COM2[10] = {0};
     /*
      * discard the last digit from the Qs string as it is not taken into MSFS.
@@ -287,6 +287,16 @@ void S124(const char *s)
     SetUTCTime(hour, minute, day, year);
 }
 
+void S122(const char *s)
+{
+
+    int reposition = (int)(s[6] - '0');
+    if (reposition) {
+        sendQPSX("bang");
+        printDebug(LL_DEBUG, "PSX repositionned");
+        intflags.updateNewSitu = 1;
+    }
+}
 void S443(const char *s)
 {
 
@@ -397,13 +407,14 @@ double calcVS(double alt, int ms)
     }
     return VS;
 }
-void Decodeboost(char *s)
+void Decodeboost(const char *strboost)
 {
 
     double flightDeckAlt, heading_true, pitch, bank;
     double latitude, longitude;
     int onGround, ms;
     char *token, *ptr, *savptr;
+    char *s = _strdup(strboost);
 
     struct SpeedUpdate SU;
 
@@ -450,14 +461,22 @@ void Decodeboost(char *s)
     SetSpeed(&SU);
 
     updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
+
+    free(s);
 }
 
 void Decode(char *s)
 {
 
+    // Check if repositionning occured on first character of string Qs122
+    if (strstr(s, "Qs122")) {
+        S122(strstr(s, "Qs122="));
+        return;
+    }
     // ExtLts : External lights, Mode=XECON
     if (strstr(s, "Qs443")) {
         S443(strstr(s, "Qs443="));
+        return;
     }
 
     //// Update Gear position
@@ -550,12 +569,10 @@ int getDataFromPSX(void)
     char *line_start = bufmain;
     char *line_end;
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
-    static DWORD newSitutime;
 
     if (bufmain_remain == 0) {
-        printDebug(LL_DEBUG, "Main socket line exceeded buffer length! Discarding input");
+        printDebug(LL_DEBUG, "PSX buffer overflow! Discarding input. Buffer starts with %.10s",bufmain);
         bufmain_used = 0;
-        printDebug(LL_DEBUG, bufmain);
         return 0;
     }
 
@@ -571,7 +588,8 @@ int getDataFromPSX(void)
         return 0;
     }
     if (nbread < 0) {
-        if(!quit) printDebug(LL_ERROR, "Main socket connection error");
+        if (!quit)
+            printDebug(LL_ERROR, "Main socket connection error");
         return 0;
     }
     bufmain_used += nbread;
@@ -586,12 +604,13 @@ int getDataFromPSX(void)
 
         // New situ loaded
         if (strstr(line_start, "load3")) {
-            newSitutime = newSituLoaded();
+            printDebug(LL_DEBUG, "Loading new situ file");
+            intflags.NewSituTimeLoad = newSituLoaded();
         }
 
         // we are still loading a new situ
         if (intflags.updateNewSitu) {
-            if (GetTickCount() > newSitutime + 10000) {
+            if (GetTickCount() > intflags.NewSituTimeLoad+ 10000) {
                 intflags.updateNewSitu = 0;
                 printDebug(LL_INFO, "Resuming normal operations.");
             }

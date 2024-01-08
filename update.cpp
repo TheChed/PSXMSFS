@@ -87,14 +87,19 @@ void Qi198Update(int onGround, double elevation)
                 QSentFlight = 0;
             }
 
-            sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
-            sendQPSX(sQi198);
+            if (GetTickCount() > intflags.NewSituTimeLoad + 10000) {
+                if (isGroundAltitudeAvailable()) {
+                    // wait 10 seconds after new situ loaded to send elevation
+                    sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
+                    sendQPSX(sQi198);
+                }
+            }
         } else {
 
             if (!QSentFlight) {
 
                 printDebug(LL_INFO, "Above 300 ft AGL => using PSX elevation.");
-                sendQPSX("Qi198=-999999"); // if airborne, use PSX elevation data
+                sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
                 QSentFlight = 1;
                 QSentGround = 0;
             }
@@ -130,6 +135,18 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
      */
 
     if (PSXELEV == -999 || intflags.updateNewSitu) {
+        /*we have a new situ
+         * lets reset the static variables
+         */
+
+        oldctr = 0;
+        oldctrcrz = -1.0; // to keep track of last good indicated altitude
+        delta = 0;
+        inc = 0;
+        initalt = 0;
+        incland = 0;
+        oldElevation = 0;
+
         return altfltdeck;
     }
 

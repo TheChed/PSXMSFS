@@ -100,8 +100,8 @@ void thread_launch(void)
         quit = 1;
     }
 
-    WaitForSingleObject(h1, INFINITE);
-    WaitForSingleObject(h2, INFINITE);
+   // WaitForSingleObject(h1, INFINITE);
+   // WaitForSingleObject(h2, INFINITE);
     WaitForSingleObject(h3, INFINITE);
 
     CloseHandle(mutex);

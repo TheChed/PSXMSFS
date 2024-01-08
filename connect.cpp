@@ -55,7 +55,10 @@ SOCKET init_connect_PSX(const char *hostname, int portno)
 
 int init_connect_MSFS(void)
 {
-    return (SUCCEEDED(SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0) == S_OK));
+    HRESULT hr;
+    hr = SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0);
+    printDebug(LL_DEBUG, "Connected to MSFS with return code %d",hr);
+    return (SUCCEEDED(hr== S_OK));
 }
 
 int open_connections(void)
