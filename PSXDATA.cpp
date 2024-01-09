@@ -375,7 +375,7 @@ void Qsweather(char *s)
         QNH = strtoul(sav, NULL, 10);
         setWeather(zone, QNH);
     }
-    printDebug(LL_DEBUG, "Weather zone: %d\t QNH:%.2f", zone, QNH);
+    printPSX(0, "Weather zone: %d\t QNH:%.2f", zone, QNH);
 }
 
 double calcVS(double alt, int ms)
@@ -612,7 +612,7 @@ int getDataFromPSX(void)
         if (intflags.updateNewSitu) {
             if (GetTickCount() > intflags.NewSituTimeLoad+ 10000) {
                 intflags.updateNewSitu = 0;
-                printDebug(LL_INFO, "Resuming normal operations.");
+                printDebug(LL_INFO, "Resuming normal operations. You are good to go.");
             }
         }
 

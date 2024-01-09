@@ -46,11 +46,7 @@ void printPSX(int boost, const char *debugInfo, ...)
 
         // and also print on the console or in buffer
         printf("%s\n", msg);
-        if (D != NULL) {
-            logging(D, msg);
-        }
     }
-
     fclose(fdebug);
 }
 void printDebug(int level, const char *debugInfo, ...)

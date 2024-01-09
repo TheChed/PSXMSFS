@@ -41,7 +41,8 @@ int sendQPSX(const char *s)
      * just reloading a situ.
      * ------------------------------------*/
     if (!intflags.updateNewSitu) {
-        printDebug(LL_DEBUG, "Sending %s to PSX", s);
+        // printDebug(LL_DEBUG, "Sending %s to PSX", s);
+        printPSX(2, "Sending: %s", s);
         nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
         if (nbsend == 0) {
             printDebug(LL_ERROR, "Error sending variable %s to PSX", s);
@@ -259,6 +260,10 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
 
 void remove_debug()
 {
-    if (PSXflags.LOG_VERBOSITY > 1)
+    if (PSXflags.LOG_VERBOSITY > 1) {
         remove("DEBUG.TXT");
+        remove("Q.TXT");
+        remove("BOOST.TXT");
+        remove("SERVER.TXT");
+    }
 }

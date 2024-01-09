@@ -57,7 +57,7 @@ int init_connect_MSFS(void)
 {
     HRESULT hr;
     hr = SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0);
-    printDebug(LL_DEBUG, "Connected to MSFS with return code %d",hr);
+    printDebug(LL_DEBUG, "Connected to MSFS Simconnect with return code %d",hr);
     return (SUCCEEDED(hr== S_OK));
 }
 
