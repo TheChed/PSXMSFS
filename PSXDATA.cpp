@@ -320,7 +320,6 @@ void I240(const char *s)
         zone = 0;
     }
     setWeatherZone(zone);
-    printDebug(LL_DEBUG, "Active weather zone: %d\t", zone);
 }
 void I204(const char *s)
 {
@@ -375,7 +374,6 @@ void Qsweather(char *s)
         QNH = strtoul(sav, NULL, 10);
         setWeather(zone, QNH);
     }
-    printPSX(0, "Weather zone: %d\t QNH:%.2f", zone, QNH);
 }
 
 double calcVS(double alt, int ms)
@@ -571,7 +569,7 @@ int getDataFromPSX(void)
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
     if (bufmain_remain == 0) {
-        printDebug(LL_DEBUG, "PSX buffer overflow! Discarding input. Buffer starts with %.10s",bufmain);
+        printDebug(LL_DEBUG, "PSX buffer overflow! Discarding input. Buffer starts with %.10s", bufmain);
         bufmain_used = 0;
         return 0;
     }
@@ -610,7 +608,7 @@ int getDataFromPSX(void)
 
         // we are still loading a new situ
         if (intflags.updateNewSitu) {
-            if (GetTickCount() > intflags.NewSituTimeLoad+ 10000) {
+            if (GetTickCount() > intflags.NewSituTimeLoad + 10000) {
                 intflags.updateNewSitu = 0;
                 printDebug(LL_INFO, "Resuming normal operations. You are good to go.");
             }

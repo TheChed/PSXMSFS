@@ -10,9 +10,7 @@
 #define LL_INFO 3
 #define LL_ERROR 4
 
-/* TODO: Merge those two functions*/
 void printDebug(int level, const char *debugInfo, ...);
-void printPSX(int boost, const char *debugInfo, ...);
 
 struct debugMessage {
     uint64_t Id;
