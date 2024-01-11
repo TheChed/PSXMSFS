@@ -5,7 +5,7 @@
 #define NB_LOGS 10
 
 struct resu {
-    debugMessage **D;
+    logMessage **D;
     char logmsg[8192];
 } *resu;
 
@@ -19,7 +19,7 @@ DWORD WINAPI runLink(void *param)
 DWORD WINAPI printLogBuffer(void *Param)
 {
 
-    debugMessage **D = (debugMessage **)(Param);
+    logMessage **D = (logMessage **)(Param);
 
     static uint64_t printedLogs = 0;
     while (1) {
@@ -38,7 +38,7 @@ int main(void)
     DWORD logthread, mainthread;
     HANDLE loghandle, mainhandle;
 
-    debugMessage **debugBuff = initDebugBuff();
+    logMessage **debugBuff = initDebugBuff();
     loghandle = CreateThread(NULL, 0, printLogBuffer, debugBuff, 0, &logthread);
 
     if (initialize("127.0.0.1", "192.168.1.132", 10747, NULL, 10749) != 0) {

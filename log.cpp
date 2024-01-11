@@ -7,7 +7,7 @@
 
 int currCount = 0;
 
-debugMessage **D = NULL;
+logMessage **D = NULL;
 
 void printDebug(int level, const char *debugInfo, ...)
 {
@@ -43,18 +43,18 @@ void printDebug(int level, const char *debugInfo, ...)
     fclose(fdebug);
 }
 
-debugMessage **initDebugBuff(void)
+logMessage **initDebugBuff(void)
 {
 
-    debugMessage **buffer = NULL;
+    logMessage **buffer = NULL;
 
-    buffer = (debugMessage **)malloc(sizeof(debugMessage *) * NB_LOGS);
+    buffer = (logMessage **)malloc(sizeof(logMessage *) * NB_LOGS);
     if (buffer == NULL) {
         return NULL;
     }
 
     for (int i = 0; i < NB_LOGS; i++) {
-        buffer[i] = (debugMessage *)malloc(sizeof(debugMessage));
+        buffer[i] = (logMessage *)malloc(sizeof(logMessage));
         buffer[i]->Id = 0;
     }
 
@@ -63,7 +63,7 @@ debugMessage **initDebugBuff(void)
     return buffer;
 }
 
-void logging(debugMessage **D, const char *msg)
+void logging(logMessage **D, const char *msg)
 {
     static int nblogs = 1;
 
@@ -74,7 +74,7 @@ void logging(debugMessage **D, const char *msg)
     currCount = currCount % NB_LOGS;
 }
 
-void cleanupDebugBuffer(debugMessage **D)
+void cleanupDebugBuffer(logMessage **D)
 {
     for (int i = 0; i < NB_LOGS; i++) {
         free(D[i]);

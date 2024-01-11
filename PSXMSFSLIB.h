@@ -73,6 +73,9 @@ extern DWORD TimeStart; // Timestamp when the simulation is started.
  * Functions to be exported in the DLL
  *------------------------------------------------------*/
 
+typedef struct logMessage logMessage;
+
+extern "C" __declspec(dllexport) logMessage **initDebugBuff(void);
 extern "C" __declspec(dllexport) int initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
 extern "C" __declspec(dllexport) FLAGS *connectPSXMSFS(void);
 extern "C" __declspec(dllexport) DWORD WINAPI main_launch(void);

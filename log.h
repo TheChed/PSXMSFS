@@ -12,13 +12,10 @@
 
 void printDebug(int level, const char *debugInfo, ...);
 
-struct debugMessage {
+struct logMessage {
     uint64_t Id;
     char message[MAXLEN_DEBUG_MSG];
 };
 
-typedef struct debugMessage debugMessage;
-
-void cleanupDebugBuffer(debugMessage **D);
-void logging(debugMessage **D, const char *msg);
-extern "C" __declspec(dllexport) debugMessage **initDebugBuff(void);
+void cleanupDebugBuffer(logMessage **D);
+void logging(logMessage **D, const char *msg);

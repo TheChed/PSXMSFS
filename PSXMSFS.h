@@ -21,13 +21,13 @@ struct flags {
     int SLAVE;              // 0 if PSX is slave, 1 if MSFS is slave
 };
 
-struct debugMessage {
+struct logMessage {
     uint64_t Id;
     char message[MAXLEN_DEBUG_MSG];
 };
 
 typedef struct flags FLAGS;
-typedef struct debugMessage debugMessage;
+typedef struct logMessage logMessage;
 
 /*---------------------------------
  * Functions imported from the PSXMSFS DLL
@@ -37,5 +37,5 @@ extern "C" __declspec(dllimport) DWORD initialize(const char *MSFSIP, const char
 extern "C" __declspec(dllimport) FLAGS *connectPSXMSFS(void);
 extern "C" __declspec(dllimport) DWORD WINAPI main_launch(void);
 extern "C" __declspec(dllimport) DWORD cleanup(void);
-extern "C" __declspec(dllimport) debugMessage **initDebugBuff(void);
+extern "C" __declspec(dllimport) logMessage **initDebugBuff(void);
 #endif
