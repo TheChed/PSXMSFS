@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <windows.h>
 
 #define MAXLEN_DEBUG_MSG 8192 // maximum debug message size
 #define NB_LOGS 20

@@ -608,9 +608,9 @@ int getDataFromPSX(void)
 
         // we are still loading a new situ
         if (intflags.updateNewSitu) {
-            if (GetTickCount() > intflags.NewSituTimeLoad + 10000) {
+            if (GetTickCount() > intflags.NewSituTimeLoad + 2500) {
                 intflags.updateNewSitu = 0;
-                printDebug(LL_INFO, "Resuming normal operations. You are good to go.");
+                printDebug(LL_INFO, "We are good to go: resuming normal operations");
             }
         }
 

@@ -75,9 +75,15 @@ extern DWORD TimeStart; // Timestamp when the simulation is started.
 
 typedef struct logMessage logMessage;
 
-extern "C" __declspec(dllexport) logMessage **initDebugBuff(void);
 extern "C" __declspec(dllexport) int initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
 extern "C" __declspec(dllexport) FLAGS *connectPSXMSFS(void);
 extern "C" __declspec(dllexport) DWORD WINAPI main_launch(void);
 extern "C" __declspec(dllexport) int cleanup(void);
+/*----------------------------------
+ * Log related functions
+ *
+ * ---------------------------------*/
+extern "C" __declspec(dllexport) logMessage **initDebugBuff(void);
+extern "C" __declspec(dllexport) DWORD getlogID(logMessage *log, int n);
+extern "C" __declspec(dllexport) char *getLogMessage(logMessage *log, int n);
 #endif

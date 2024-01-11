@@ -517,7 +517,7 @@ DWORD newSituLoaded(void)
     resetInternalFlags();
 
     printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
-    printDebug(LL_INFO, "Let's wait ten seconds to get everyone ready, shall we?");
+    printDebug(LL_INFO, "Let's wait 2-3 seconds to get everyone ready, shall we?");
 
     freezeMSFS(1); // New Situ loaded, let's preventively freeze MSFS
     init_variables();

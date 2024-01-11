@@ -2,12 +2,9 @@
 #include <windows.h>
 #include "PSXMSFS.h"
 
+
 #define NB_LOGS 10
 
-struct resu {
-    logMessage **D;
-    char logmsg[8192];
-} *resu;
 
 DWORD WINAPI runLink(void *param)
 {
@@ -21,11 +18,11 @@ DWORD WINAPI printLogBuffer(void *Param)
 
     logMessage **D = (logMessage **)(Param);
 
-    static uint64_t printedLogs = 0;
+    static int printedLogs = 0;
     while (1) {
         for (size_t i = 0; i < NB_LOGS; i++) {
-            if (D[i]->Id > printedLogs) {
-                printf("Debug Id: %llu\tLog: %s\n", D[i]->Id, D[i]->message);
+            if (getlogID(D,i)> printedLogs) {
+                printf("Debug Id: %d\tLog: %s\n", getlogID(D,i), getLogMessage(*D,i));
                 printedLogs++;
             }
         }
@@ -59,7 +56,6 @@ int main(void)
 
     cleanup();
 
-    free(resu);
     printf("Normal exit. See you soon...\n");
     return 0;
 }

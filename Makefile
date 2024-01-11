@@ -34,5 +34,5 @@ hash:
 	md5sum PSXMSFS.exe > bin/PSXMSFS.MD5
 
 win:
-#	cp  *.cpp /home/stephan/NAS/TRANSFERT/pfpx/src
-#	cp  *.h /home/stephan/NAS/TRANSFERT/pfpx/src
+	cp  *.h /home/stephan/NAS/TRANSFERT/PSXMSFS/SRC
+	cp  *.cpp /home/stephan/NAS/TRANSFERT/PSXMSFS/SRC

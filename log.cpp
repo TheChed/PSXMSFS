@@ -81,3 +81,13 @@ void cleanupDebugBuffer(logMessage **D)
     }
     free(D);
 }
+
+int getlogID(logMessage **log, int n)
+{
+    return log[n]->Id;
+}
+char *getLogMessage(logMessage *log, int n)
+{
+
+    return log[n].message;
+}

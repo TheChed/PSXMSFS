@@ -1,12 +1,13 @@
+/*----------------------------------------------
+ * Header file to be included
+ * in all clients using the DLL
+ * --------------------------------------------*/
 #ifndef __PSXMSFS_H_
 #define __PSXMSFS_H_
 #include <windows.h>
 #include <cstdint>
 
-#define MAXLEN_DEBUG_MSG 8192
-
-struct flags {
-
+typedef struct flags {
     char *PSXMainServer;  // IP address of the PSX main server
     char *MSFSServer;     // IP address of the PSX boost server
     char *PSXBoostServer; // IP address of the MSFS server
@@ -17,16 +18,9 @@ struct flags {
     int ELEV_INJECT;        // 1 if MSFS elevation is injected into PSX. 0 otherwise
     int INHIB_CRASH_DETECT; // 1 if no crash detection in PSX when loading new situ. 0 otherwise
     int ONLINE;             // 1 if PSXMSFS is used on online on VATSIM,IVAO etc, 0 otherwise
-    int LOG_VERBOSITY;      // verbosity of the logs
+    int LOG_VERBOSITY;      // verbosity of the logs: 1 very verbose and 4 minimum verbosity
     int SLAVE;              // 0 if PSX is slave, 1 if MSFS is slave
-};
-
-struct logMessage {
-    uint64_t Id;
-    char message[MAXLEN_DEBUG_MSG];
-};
-
-typedef struct flags FLAGS;
+} FLAGS;
 typedef struct logMessage logMessage;
 
 /*---------------------------------
@@ -37,5 +31,11 @@ extern "C" __declspec(dllimport) DWORD initialize(const char *MSFSIP, const char
 extern "C" __declspec(dllimport) FLAGS *connectPSXMSFS(void);
 extern "C" __declspec(dllimport) DWORD WINAPI main_launch(void);
 extern "C" __declspec(dllimport) DWORD cleanup(void);
+
+/*----------------------------------
+ * Log related functions
+ * ---------------------------------*/
+extern "C" __declspec(dllimport) int getlogID(logMessage **log, int n);
 extern "C" __declspec(dllimport) logMessage **initDebugBuff(void);
+extern "C" __declspec(dllimport) char *getLogMessage(logMessage *log, int n);
 #endif
