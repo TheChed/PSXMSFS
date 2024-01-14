@@ -1,10 +1,10 @@
+#include <cstdint>
+#include <string.h>
 #include <stdio.h>
 #include <windows.h>
 #include "PSXMSFS.h"
 
-
-#define NB_LOGS 10
-
+#define NB_LOGS 20
 
 DWORD WINAPI runLink(void *param)
 {
@@ -16,13 +16,19 @@ DWORD WINAPI runLink(void *param)
 DWORD WINAPI printLogBuffer(void *Param)
 {
 
-    logMessage **D = (logMessage **)(Param);
+    logMessage *D = (logMessage *)Param;
 
-    static int printedLogs = 0;
+    static uint64_t printedLogs = 0;
+
+    uint64_t ID;
+    char mess[128];
+
     while (1) {
-        for (size_t i = 0; i < NB_LOGS; i++) {
-            if (getlogID(D,i)> printedLogs) {
-                printf("Debug Id: %d\tLog: %s\n", getlogID(D,i), getLogMessage(*D,i));
+        for (int i = 0; i < NB_LOGS; i++) {
+            ID = getLogID(D, i);
+            if (ID > printedLogs) {
+                strncpy(mess, getLogMessage(D, i), 128);
+                printf("Debug Id: %lld\tLog: %s\n", ID, mess);
                 printedLogs++;
             }
         }
@@ -35,8 +41,8 @@ int main(void)
     DWORD logthread, mainthread;
     HANDLE loghandle, mainhandle;
 
-    logMessage **debugBuff = initDebugBuff();
-    loghandle = CreateThread(NULL, 0, printLogBuffer, debugBuff, 0, &logthread);
+    logMessage *D = getLogBuffer();
+    loghandle = CreateThread(NULL, 0, printLogBuffer, D, 0, &logthread);
 
     if (initialize("127.0.0.1", "192.168.1.132", 10747, NULL, 10749) != 0) {
         printf("Quitting now\n");

@@ -1,6 +1,7 @@
 #ifndef __PSXMSFSLIB_H_
 #define __PSXMSFSLIB_H_
 #include <stdint.h>
+#include <windows.h>
 
 /*---------------------------------
  * usefull macros
@@ -55,8 +56,7 @@ struct INTERNALPSXflags {
 /*---------------------------------
  * Global variables
  *--------------------------------*/
-extern HANDLE mutex, mutexsitu;
-extern CONDITION_VARIABLE condNewSitu;
+extern HANDLE mutex;
 extern HANDLE hSimConnect;
 
 extern int quit;
@@ -73,17 +73,17 @@ extern DWORD TimeStart; // Timestamp when the simulation is started.
  * Functions to be exported in the DLL
  *------------------------------------------------------*/
 
-typedef struct logMessage logMessage;
-
 extern "C" __declspec(dllexport) int initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
 extern "C" __declspec(dllexport) FLAGS *connectPSXMSFS(void);
 extern "C" __declspec(dllexport) DWORD WINAPI main_launch(void);
 extern "C" __declspec(dllexport) int cleanup(void);
+
 /*----------------------------------
  * Log related functions
- *
  * ---------------------------------*/
-extern "C" __declspec(dllexport) logMessage **initDebugBuff(void);
-extern "C" __declspec(dllexport) DWORD getlogID(logMessage *log, int n);
-extern "C" __declspec(dllexport) char *getLogMessage(logMessage *log, int n);
+typedef struct logMessage logMessage;
+
+extern "C" __declspec(dllexport) logMessage *getLogBuffer(void);
+extern "C" __declspec(dllexport) char *getLogMessage(logMessage *D, int n);
+extern "C" __declspec(dllexport) uint64_t getLogID(logMessage *D, int n);
 #endif

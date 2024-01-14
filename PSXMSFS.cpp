@@ -74,7 +74,6 @@ void thread_launch(void)
      *---------------------------------------------------*/
     mutex = CreateMutex(NULL, FALSE, NULL);
     mutexsitu = CreateMutex(NULL, FALSE, NULL);
-    InitializeConditionVariable(&condNewSitu);
 
     /*---------------------------------------
      * Creating the 3 threads:

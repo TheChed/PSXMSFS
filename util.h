@@ -1,12 +1,4 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <windows.h>
-#include "PSXMSFSLIB.h"
 
-static inline DWORD elapsedMs(DWORD start_time)
-{
-    return GetTickCount() - start_time;
-}
 
 /* Geographical functions retunring distance between two points
  * and the coordinates given a bearing, distance and initial location

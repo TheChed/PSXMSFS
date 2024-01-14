@@ -1,13 +1,39 @@
+#include <cstdint>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdarg.h>
+#include "PSXMSFSLIB.h"
 #include "log.h"
-#include "util.h"
 
-int currCount = 0;
+#define MAXLEN_DEBUG_MSG 8192 // maximum debug message size
+#define NB_LOGS 20
 
-logMessage **D = NULL;
+
+static inline DWORD elapsedMs(DWORD start_time)
+{
+    return GetTickCount() - start_time;
+}
+
+typedef struct logMessage {
+    uint64_t Id;
+    char message[MAXLEN_DEBUG_MSG];
+} logMessage;
+
+logMessage logBuffer[NB_LOGS];
+
+static void logging(const char *msg)
+{
+    static int nblogs = 0;
+    int currCount;
+
+    currCount = nblogs % NB_LOGS;
+
+    logBuffer[currCount].Id = nblogs;
+    strncpy(logBuffer[currCount].message, msg, MAXLEN_DEBUG_MSG - 1);
+    nblogs++;
+    printf("Current log ID: %d\n", nblogs);
+}
 
 void printDebug(int level, const char *debugInfo, ...)
 {
@@ -34,60 +60,27 @@ void printDebug(int level, const char *debugInfo, ...)
         fflush(fdebug);
 
         // and also print on the console or in buffer
+        // if INFO or above level
         printf("%s\n", msg);
-        if (D != NULL && level >= LL_INFO) {
-            logging(D, msg);
+        if (level >= LL_INFO) {
+            logging(msg);
         }
     }
 
     fclose(fdebug);
 }
 
-logMessage **initDebugBuff(void)
+char *getLogMessage(logMessage *D, int n)
 {
-
-    logMessage **buffer = NULL;
-
-    buffer = (logMessage **)malloc(sizeof(logMessage *) * NB_LOGS);
-    if (buffer == NULL) {
-        return NULL;
-    }
-
-    for (int i = 0; i < NB_LOGS; i++) {
-        buffer[i] = (logMessage *)malloc(sizeof(logMessage));
-        buffer[i]->Id = 0;
-    }
-
-    D = buffer;
-
-    return buffer;
+    return D[n].message;
 }
 
-void logging(logMessage **D, const char *msg)
+uint64_t getLogID(logMessage *D, int n)
 {
-    static int nblogs = 1;
-
-    D[currCount]->Id = nblogs;
-    strncpy(D[currCount]->message, msg, MAXLEN_DEBUG_MSG - 1);
-    nblogs++;
-    currCount++;
-    currCount = currCount % NB_LOGS;
+    return D[n].Id;
 }
 
-void cleanupDebugBuffer(logMessage **D)
+logMessage *getLogBuffer(void)
 {
-    for (int i = 0; i < NB_LOGS; i++) {
-        free(D[i]);
-    }
-    free(D);
-}
-
-int getlogID(logMessage **log, int n)
-{
-    return log[n]->Id;
-}
-char *getLogMessage(logMessage *log, int n)
-{
-
-    return log[n].message;
+    return logBuffer;
 }

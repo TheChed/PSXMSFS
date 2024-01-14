@@ -1,8 +1,9 @@
 #include <stdio.h>
+#include <string.h>
 #include <winsock.h>
 #include <windows.h>
 #include "SimConnect.h"
-#include "util.h"
+#include "PSXMSFSLIB.h"
 #include "log.h"
 
 #ifndef __MINGW__
@@ -40,7 +41,7 @@ SOCKET init_connect_PSX(const char *hostname, int portno)
     }
 
     // Connect to PSX
-    bzero(&PSXmainserver, sizeof(PSXmainserver));
+    memset(&PSXmainserver,0, sizeof(PSXmainserver));
 
     PSXmainserver.sin_family = AF_INET;
     PSXmainserver.sin_port = htons(portno);

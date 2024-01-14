@@ -21,7 +21,6 @@ typedef struct flags {
     int LOG_VERBOSITY;      // verbosity of the logs: 1 very verbose and 4 minimum verbosity
     int SLAVE;              // 0 if PSX is slave, 1 if MSFS is slave
 } FLAGS;
-typedef struct logMessage logMessage;
 
 /*---------------------------------
  * Functions imported from the PSXMSFS DLL
@@ -35,7 +34,9 @@ extern "C" __declspec(dllimport) DWORD cleanup(void);
 /*----------------------------------
  * Log related functions
  * ---------------------------------*/
-extern "C" __declspec(dllimport) int getlogID(logMessage **log, int n);
-extern "C" __declspec(dllimport) logMessage **initDebugBuff(void);
-extern "C" __declspec(dllimport) char *getLogMessage(logMessage *log, int n);
+typedef struct logMessage logMessage;
+
+extern "C" __declspec(dllimport) logMessage *getLogBuffer(void);
+extern "C" __declspec(dllimport) char *getLogMessage(logMessage *D, int n);
+extern "C" __declspec(dllimport) uint64_t getLogID(logMessage *D, int n);
 #endif

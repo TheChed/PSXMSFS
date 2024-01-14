@@ -1,9 +1,8 @@
 /* File containing all UTIL functions such as coordinates calculations, time
  * related functions etc.
  */
-
+#include <stdio.h>
 #include <cmath>
-#include <math.h>
 #include <stdint.h>
 #include <time.h>
 #include "util.h"
@@ -14,13 +13,6 @@
 
 FILE *fdebug;
 
-double getTime()
-{
-    LARGE_INTEGER freq, val;
-    QueryPerformanceFrequency(&freq);
-    QueryPerformanceCounter(&val);
-    return (double)val.QuadPart / (double)freq.QuadPart;
-}
 
 int sendQPSX(const char *s)
 {
