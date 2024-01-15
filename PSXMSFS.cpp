@@ -136,6 +136,11 @@ int cleanup(void)
     return 0;
 }
 
+
+    /*---------------------------------------------
+     * This is the main entry function that is called
+     * at the initialization
+     * -------------------------------------------*/
 int initialize(const char *MSFSServer, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {
 

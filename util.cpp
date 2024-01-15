@@ -122,7 +122,7 @@ char *scan_ini(FILE *file, const char *key)
     return NULL;
 }
 
-FLAGS *create_flags_struct()
+FLAGS *create_flags_struct(void)
 {
 
     FLAGS *result = (FLAGS *)malloc(sizeof(FLAGS));

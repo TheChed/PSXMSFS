@@ -78,6 +78,7 @@ int open_connections(void)
     sPSX = init_connect_PSX(PSXflags.PSXMainServer, PSXflags.PSXPort);
     if (sPSX == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX socket. Exiting...");
+        quit=1;
         return 0;
     } else {
         printDebug(LL_INFO, "Connected to PSX main server.");

@@ -1,0 +1,24 @@
+initialize (PSXMSFS.cpp)
+        init_param(MSFSIP, PSXIP, BOOSTIP, Ports) (util.cpp)
+                create_flags_struct (util.cpp)
+                init_servers
+                init_flags
+
+connectPSXMSFS(void) (PSXMSFS.cpp)
+        open_connections (connect.cpp)
+                init_socket
+                init_connect_PSX
+                init_connect_MSFS
+
+        init_MS_Data (PSXMSFS.cpp)
+        init_pos (update.cpp)
+
+main_launch (PSXMSFS.cpp)
+    thread_launch
+        thread 1: ptDataFromPSX
+                getDataFromPSX (PSXDATA.cpp)
+        thread 2: ptDatafromBoost
+                getDataFromPSX (PSXDATA.cpp)
+        thread 3: ptDataFromMSFS
+
+            
