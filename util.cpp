@@ -11,9 +11,6 @@
 
 #define IP_LENGTH 128 // maximum lenght of IP address
 
-FILE *fdebug;
-
-
 int sendQPSX(const char *s)
 {
 

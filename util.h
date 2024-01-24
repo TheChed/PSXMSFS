@@ -1,5 +1,3 @@
-
-
 /* Geographical functions retunring distance between two points
  * and the coordinates given a bearing, distance and initial location
  */
