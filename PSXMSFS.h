@@ -7,10 +7,12 @@
 #include <windows.h>
 #include <cstdint>
 
+#define IP_LENGTH 15
+
 typedef struct flags {
-    char *PSXMainServer;  // IP address of the PSX main server
-    char *MSFSServer;     // IP address of the PSX boost server
-    char *PSXBoostServer; // IP address of the MSFS server
+    char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
+    char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
+    char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
     int PSXPort;          // Main PSX port
     int PSXBoostPort;     // PSX boot server port
 

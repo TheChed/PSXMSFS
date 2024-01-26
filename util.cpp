@@ -9,7 +9,7 @@
 #include "PSXMSFSLIB.h"
 #include "log.h"
 
-#define IP_LENGTH 128 // maximum lenght of IP address
+#define IP_LENGTH 15 // maximum lenght of IP address
 
 int sendQPSX(const char *s)
 {
@@ -144,7 +144,7 @@ FLAGS *create_flags_struct(void)
 void init_servers(FLAGS *ini, const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {
     /* Sensible default values for Main PSX server*/
-    if (PSXMainIP == NULL || strlen(PSXMainIP) > 15) {
+    if (PSXMainIP == NULL || strlen(PSXMainIP) > IP_LENGTH) {
 
         strcpy(ini->PSXMainServer, "127.0.0.1");
         ini->PSXPort = 10747;
@@ -154,7 +154,7 @@ void init_servers(FLAGS *ini, const char *MSFSServerIP, const char *PSXMainIP, i
     }
 
     /* Sensible default values for PSX Boost server*/
-    if (PSXBoostIP == NULL || strlen(PSXBoostIP) > 15) {
+    if (PSXBoostIP == NULL || strlen(PSXBoostIP) > IP_LENGTH) {
 
         strcpy(ini->PSXBoostServer, ini->PSXMainServer);
         ini->PSXBoostPort = 10749;
@@ -164,7 +164,7 @@ void init_servers(FLAGS *ini, const char *MSFSServerIP, const char *PSXMainIP, i
     }
 
     /* Sensible default values for MSFS server*/
-    if (MSFSServerIP == NULL || strlen(MSFSServerIP) > 15) {
+    if (MSFSServerIP == NULL || strlen(MSFSServerIP) > IP_LENGTH) {
         strcpy(ini->MSFSServer, "127.0.0.1");
     } else {
         strcpy(ini->MSFSServer, MSFSServerIP);
@@ -220,14 +220,15 @@ int init_flags(FLAGS *ini)
 int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {
 
-    int flags_ok = 0;
-    FLAGS *flags = create_flags_struct();
+    //int flags_ok = 0;
+    //FLAGS *flags = create_flags_struct();
 
-    if (flags == NULL) {
-        quit = 1;
-        return 1;
-    }
-    PSXflags = *flags;
+    //if (flags == NULL) {
+    //    quit = 1;
+    //    return 1;
+    //}
+    //PSXflags = *flags;
+    //PSXflags = *create_flags_struct();
     /*
      * Initialise server addresses from user input parameters
      * or default values
@@ -239,9 +240,9 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
      * or defaulted to what is in the flags structure
      *-------------------------------------------------*/
 
-    flags_ok = init_flags(&PSXflags);
+    int flags_ok = init_flags(&PSXflags);
 
-    free(flags);
+    //free(flags);
 
     return flags_ok;
 }
