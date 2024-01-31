@@ -1,19 +1,20 @@
-#include <cstdint>
-#include <string.h>
 #include <stdio.h>
-#include <windows.h>
+#include <string.h>
+#include <pthread.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include "PSXMSFS.h"
 
 #define NB_LOGS 20
 
-DWORD WINAPI runLink(void *param)
+void *runLink(void *param)
 {
     (void)param;
     main_launch();
-    return 0;
+    return NULL;
 }
 
-DWORD WINAPI printLogBuffer(void *Param)
+void *printLogBuffer(void *Param)
 {
 
     logMessage *D = (logMessage *)Param;
@@ -33,16 +34,13 @@ DWORD WINAPI printLogBuffer(void *Param)
             }
         }
     }
-    return 0;
 }
 
 int main(void)
 {
-    DWORD logthread, mainthread;
-    HANDLE loghandle, mainhandle;
 
+    pthread_t Tmain, Tlog;
     logMessage *D = initLogBuffer();
-    loghandle = CreateThread(NULL, 0, printLogBuffer, D, 0, &logthread);
 
     if (initialize("127.0.0.1", "192.168.1.132", 10747, NULL, 10749) != 0) {
         printf("Quitting now\n");
@@ -55,10 +53,10 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    mainhandle = CreateThread(NULL, 0, runLink, NULL, 0, &mainthread);
+    pthread_create(&Tmain, NULL, runLink,NULL);
+    pthread_create(&Tlog, NULL, printLogBuffer,NULL);
 
-    WaitForSingleObject(loghandle, INFINITE);
-    WaitForSingleObject(mainhandle, INFINITE);
+    pthread_join(Tmain,NULL);
 
     cleanup();
 

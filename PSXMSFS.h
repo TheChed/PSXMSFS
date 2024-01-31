@@ -4,8 +4,10 @@
  * --------------------------------------------*/
 #ifndef __PSXMSFS_H_
 #define __PSXMSFS_H_
-#include <windows.h>
+
 #include <cstdint>
+#include <windows.h>
+#define LIBIMPORT extern "C" __declspec(dllimport)
 
 #define IP_LENGTH 15
 
@@ -28,17 +30,28 @@ typedef struct flags {
  * Functions imported from the PSXMSFS DLL
  *--------------------------------*/
 
-extern "C" __declspec(dllimport) DWORD initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
-extern "C" __declspec(dllimport) FLAGS *connectPSXMSFS(void);
-extern "C" __declspec(dllimport) DWORD WINAPI main_launch(void);
-extern "C" __declspec(dllimport) DWORD cleanup(void);
+LIBIMPORT int initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
+LIBIMPORT FLAGS *connectPSXMSFS(void);
+LIBIMPORT int main_launch(void);
+LIBIMPORT int cleanup(void);
 
 /*----------------------------------
  * Log related functions
+ * logMessage is a buffer of 20 logmessages. 
+ *
+ * CLient needs to initialize the buffer via:
+ * logMessage *D = getLogBuffer();
+ *
+ * Each message has a unique ID and new 
+ * log messages keep been pushed on that buffer.
+ *
+ * Unique IDs can be retrieved with getLogID. 
+ * For example, getLogId(D, 6) will retrieve the unique ID of the 7th current log message.
+ * This can be used in a loop in the client to check whether a new log has been received
  * ---------------------------------*/
 typedef struct logMessage logMessage;
 
-extern "C" __declspec(dllimport) logMessage *getLogBuffer(void);
-extern "C" __declspec(dllimport) char *getLogMessage(logMessage *D, int n);
-extern "C" __declspec(dllimport) uint64_t getLogID(logMessage *D, int n);
+LIBIMPORT logMessage *initLogBuffer(void);
+LIBIMPORT char *getLogMessage(logMessage *D, int n);
+LIBIMPORT uint64_t getLogID(logMessage *D, int n);
 #endif

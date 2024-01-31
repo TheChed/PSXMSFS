@@ -32,7 +32,6 @@ static void logging(const char *msg)
     logBuffer[currCount].Id = nblogs;
     strncpy(logBuffer[currCount].message, msg, MAXLEN_DEBUG_MSG - 1);
     nblogs++;
-    printf("Current log ID: %d\n", nblogs);
 }
 
 void printDebug(int level, const char *debugInfo, ...)
@@ -59,9 +58,8 @@ void printDebug(int level, const char *debugInfo, ...)
         fprintf(fdebug, "\n");
         fflush(fdebug);
 
-        // and also print on the console or in buffer
-        // if INFO or above level
-        printf("%s\n", msg);
+        // and also print in buffer
+        
         if (level >= LL_INFO) {
             logging(msg);
         }
@@ -80,7 +78,7 @@ uint64_t getLogID(logMessage *D, int n)
     return D[n].Id;
 }
 
-logMessage *getLogBuffer(void)
+logMessage *initLogBuffer(void)
 {
     return logBuffer;
 }

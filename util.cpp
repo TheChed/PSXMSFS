@@ -9,7 +9,7 @@
 #include "PSXMSFSLIB.h"
 #include "log.h"
 
-#define IP_LENGTH 15 // maximum lenght of IP address
+#define IP_LENGTH 15 // maximum lenght of IP address: xxx.xxx.xxx.xxx
 
 int sendQPSX(const char *s)
 {
@@ -82,7 +82,7 @@ int write_ini_file(FLAGS *ini)
     fprintf(f, "\n");
 
     /* Switches */
-    fprintf(f, "#How much debug you want. DEBUG = 1, VERBOSE = 2, INFO = 3, ERROR = 4\n");
+    fprintf(f, "#How much debug info you want. INSANE: 1, A LOT: 2, BARE MINIMUM: 3, DONT BUG ME: 4\n");
     fprintf(f, "LOG_VERBOSITY=%d\n", ini->LOG_VERBOSITY);
     fprintf(f, "\n#Inject MSFS TCAS in PSX\n");
     fprintf(f, "TCAS_INJECT=%d\n", ini->TCAS_INJECT);
@@ -117,28 +117,6 @@ char *scan_ini(FILE *file, const char *key)
     }
 
     return NULL;
-}
-
-FLAGS *create_flags_struct(void)
-{
-
-    FLAGS *result = (FLAGS *)malloc(sizeof(FLAGS));
-
-    if (result == NULL) {
-        quit = 1;
-        return NULL;
-    }
-
-    result->PSXMainServer = (char *)malloc(IP_LENGTH);
-    result->PSXBoostServer = (char *)malloc(IP_LENGTH);
-    result->MSFSServer = (char *)malloc(IP_LENGTH);
-
-    if ((result->PSXMainServer == NULL) || (result->PSXBoostServer == NULL) || (result->MSFSServer == NULL)) {
-        quit = 1;
-        return NULL;
-    }
-
-    return result;
 }
 
 void init_servers(FLAGS *ini, const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
@@ -220,19 +198,6 @@ int init_flags(FLAGS *ini)
 int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {
 
-    //int flags_ok = 0;
-    //FLAGS *flags = create_flags_struct();
-
-    //if (flags == NULL) {
-    //    quit = 1;
-    //    return 1;
-    //}
-    //PSXflags = *flags;
-    //PSXflags = *create_flags_struct();
-    /*
-     * Initialise server addresses from user input parameters
-     * or default values
-     */
     init_servers(&PSXflags, MSFSServerIP, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);
 
     /*--------------------------------------------------
@@ -241,9 +206,6 @@ int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort,
      *-------------------------------------------------*/
 
     int flags_ok = init_flags(&PSXflags);
-
-    //free(flags);
-
     return flags_ok;
 }
 
