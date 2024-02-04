@@ -31,9 +31,9 @@
  * and to store various user defined flags
  *----------------------------------------*/
 typedef struct flags {
-    char *PSXMainServer;  // IP address of the PSX main server
-    char *MSFSServer;     // IP address of the PSX boost server
-    char *PSXBoostServer; // IP address of the MSFS server
+    char PSXMainServer[15];  // IP address of the PSX main server
+    char MSFSServer[15];     // IP address of the PSX boost server
+    char PSXBoostServer[15]; // IP address of the MSFS server
     int PSXPort;          // Main PSX port
     int PSXBoostPort;     // PSX boot server port
 
