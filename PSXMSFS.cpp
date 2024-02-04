@@ -190,7 +190,7 @@ FLAGS *connectPSXMSFS(void)
     return &PSXflags;
 }
 
-DWORD WINAPI main_launch()
+int main_launch()
 {
     thread_launch();
     return 0;
