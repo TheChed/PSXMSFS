@@ -96,7 +96,7 @@ LIBEXPORT int cleanup(void);
  * ---------------------------------*/
 typedef struct logMessage logMessage;
 
-LIBEXPORT logMessage *initLogBuffer(void);
+LIBEXPORT logMessage *getLogBuffer(void);
 LIBEXPORT char *getLogMessage(logMessage *D, int n);
 LIBEXPORT uint64_t getLogID(logMessage *D, int n);
 #endif

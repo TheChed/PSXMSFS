@@ -5,9 +5,13 @@
 #ifndef __PSXMSFS_H_
 #define __PSXMSFS_H_
 
+#ifdef __cplusplus
 #include <cstdint>
-#include <windows.h>
 #define LIBIMPORT extern "C" __declspec(dllimport)
+#else
+#include <stdint.h>
+#define LIBIMPORT __declspec(dllimport)
+#endif
 
 #define IP_LENGTH 15
 
@@ -51,7 +55,7 @@ LIBIMPORT int cleanup(void);
  * ---------------------------------*/
 typedef struct logMessage logMessage;
 
-LIBIMPORT logMessage *initLogBuffer(void);
+LIBIMPORT logMessage *getLogBuffer(void);
 LIBIMPORT char *getLogMessage(logMessage *D, int n);
 LIBIMPORT uint64_t getLogID(logMessage *D, int n);
 #endif

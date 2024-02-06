@@ -78,7 +78,7 @@ uint64_t getLogID(logMessage *D, int n)
     return D[n].Id;
 }
 
-logMessage *initLogBuffer(void)
+logMessage *getLogBuffer(void)
 {
     return logBuffer;
 }

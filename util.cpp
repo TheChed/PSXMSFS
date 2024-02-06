@@ -85,7 +85,6 @@ int write_ini_file(void)
     /* Switches */
     fprintf(f, "#How much debug you want. DEBUG = 1, VERBOSE = 2, INFO = 3, ERROR = 4\n");
     fprintf(f, "LOG_VERBOSITY=%d\n", PSXflags.LOG_VERBOSITY);
-    fprintf(f, "LOG_VERBOSITY=%d\n", ini->LOG_VERBOSITY);
     fprintf(f, "\n#Inject MSFS TCAS in PSX\n");
     fprintf(f, "TCAS_INJECT=%d\n", PSXflags.TCAS_INJECT);
     fprintf(f, "\n#If 0 then MSFS slave to PSX. If 1 then PSX slave to MSFS\n");
@@ -122,7 +121,6 @@ char *scan_ini(FILE *file, const char *key)
     return NULL;
 }
 
-<<<<<<< HEAD
 
 void init_servers(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
 {

@@ -8,7 +8,7 @@ OBJ = PSXDATA.o link.o PSXMSFS.o MSFS.o connect.o util.o update.o log.o
 LIBOBJ = PSXDATA.o MSFS.o connect.o util.o update.o PSXMSFS.o log.o
 OBJLINK = link.o
 
-all: lib link win
+all: lib
 rel: all hash
 
 comp: lib win
@@ -23,7 +23,7 @@ link: $(OBJLINK)
 
 %.o : %.cpp $(DEPS)
 	$(CC) $(CFLAGS) -D__MINGW__ -DVER=$(VER) -DCOMP="\"MINGW\"" -c $<
-	cp  $< /home/stephan/NAS/TRANSFERT/PSXMSFS/SRC
+	cp  $< /home/stephan/NAS/TRANSFERT/SRC/PSXMSFSDLL
 
 tex:
 	lualatex --shell-escape PSXMSFS.tex
@@ -34,5 +34,4 @@ hash:
 	md5sum PSXMSFS.exe > bin/PSXMSFS.MD5
 
 win:
-	cp  *.h /home/stephan/NAS/TRANSFERT/PSXMSFS/SRC
-	cp  *.cpp /home/stephan/NAS/TRANSFERT/PSXMSFS/SRC
+	cp  *.{h,cpp} /home/stephan/NAS/TRANSFERT/SRC/PSXMSFSDLL

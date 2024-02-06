@@ -41,7 +41,7 @@ int main(void)
     DWORD logthread, mainthread;
     HANDLE loghandle, mainhandle;
 
-    logMessage *D = initLogBuffer();
+    logMessage *D = getLogBuffer();
     loghandle = CreateThread(NULL, 0, printLogBuffer, D, 0, &logthread);
 
     if (initialize("127.0.0.1", "192.168.1.132", 10747, NULL, 10749) != 0) {
