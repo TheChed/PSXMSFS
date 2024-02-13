@@ -9,7 +9,6 @@
 #include "PSXMSFSLIB.h"
 #include "util.h"
 #include "update.h"
-#include "log.h"
 
 size_t bufboost_used = 0;
 size_t bufmain_used = 0;
@@ -179,11 +178,12 @@ void S392(char *s)
 void S78(const char *s)
 {
 
+
     if (strstr(s, "MSFS")) {
-        PSXflags.SLAVE = 1;
+    //    PSXflags.SLAVE = 1;
     } else {
         if (strstr(s, "PSX")) {
-            PSXflags.SLAVE = 0;
+      //      PSXflags.SLAVE = 0;
         }
     }
 }

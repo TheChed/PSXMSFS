@@ -1,4 +1,5 @@
 #include <cmath>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +9,6 @@
 #include "util.h"
 #include "update.h"
 #include "MSFS.h"
-#include "log.h"
 
 struct {
     int altitude;
@@ -236,7 +236,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_6_HZ: {
-            if (PSXflags.SLAVE) {
+            if (getSwitch(&PSXflags)&F_SLAVE) {
 
                 freezeMSFS(0);
                 Inject_MSFS_PSX();
@@ -247,7 +247,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             /*
              * TCAS injection every 4 seconds but only if TCAS switch is on
              */
-            if (PSXflags.TCAS_INJECT) {
+            if (getSwitch(&PSXflags)&F_TCAS) {
                 SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS,
                                                       TCAS_TRAFFIC_DATA, 40 * NM,
                                                       SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
@@ -262,8 +262,8 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
                 SimConnect_TransmitClientEvent(
                     hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
                     SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-                if (LL_ERROR) {
-                    if (!PSXflags.SLAVE) {
+                if (false) {
+                    if (getSwitch(&PSXflags)&F_SLAVE) {
                         sendQPSX("Qs419=");
                         printDebug(LL_INFO, "Injecting position to MSFS from PSX\n");
                     } else {

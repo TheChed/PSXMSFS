@@ -9,9 +9,8 @@
 #include "util.h"
 #include "update.h"
 #include "MSFS.h"
-#include "log.h"
 
-static struct BOOST PSXBoost;
+static BOOST PSXBoost;
 static struct MovingParts APos;
 static struct PSX PSXDATA;
 static struct SpeedStruct PSXSPEED;
@@ -45,7 +44,7 @@ void updatePSXBOOST(double altitude, double heading, double pitch, double bank, 
                 .onGround = onGround};
 }
 
-struct BOOST getPSXBoost(void)
+BOOST getPSXBoost(void)
 {
     return PSXBoost;
 }
@@ -79,7 +78,7 @@ void Qi198Update(int onGround, double elevation)
     QSentGround = intflags.Qi198Sentground;
     QSentFlight = intflags.Qi198SentFlight;
 
-    if (PSXflags.ELEV_INJECT && !intflags.updateNewSitu) {
+    if ((getSwitch(&PSXflags) & F_INJECT) && !intflags.updateNewSitu) {
         if (onGround || (elevation < 300)) {
             if (!QSentGround) {
                 printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation.");
@@ -230,7 +229,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
             oldctrcrz = ctrAltitude;
             intflags.oldcrz = 1;
         }
-        if (PSXflags.ONLINE) {
+        if (getSwitch(&PSXflags) & F_ONLINE) {
             oldctrcrz += offset / 100;
             FinalAltitude = oldctrcrz;
         }
@@ -268,7 +267,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
 void SetMSFSPos()
 {
 
-    struct BOOST PSX;
+    BOOST PSX;
     struct AcftMSFS MSFS;
     double latc, longc, groundAltitude;
 
@@ -510,7 +509,7 @@ void resetInternalFlags(void)
 DWORD newSituLoaded(void)
 {
 
-    if (PSXflags.INHIB_CRASH_DETECT) {
+    if (getSwitch(&PSXflags) & F_INHIB) {
         printDebug(LL_INFO, "No crash detection for 10 seconds");
         sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
     }
@@ -524,3 +523,9 @@ DWORD newSituLoaded(void)
 
     return GetTickCount();
 }
+
+struct BOOST getACFTInfo(void){
+
+    return getPSXBoost();
+}
+

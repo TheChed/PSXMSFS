@@ -4,7 +4,6 @@
 #include <windows.h>
 #include "SimConnect.h"
 #include "PSXMSFSLIB.h"
-#include "log.h"
 
 #ifndef __MINGW__
 #pragma comment(lib, "Ws2_32.lib")
@@ -62,36 +61,36 @@ int init_connect_MSFS(void)
     return (SUCCEEDED(hr== S_OK));
 }
 
-int open_connections(void)
+int open_connections(FLAGS *f)
 {
 
     // initialise Win32 socket library
     if (!init_socket()) {
         printDebug(LL_ERROR, "Could not initialize Windows sockets. Exiting...");
-        return 0;
+        return 1;
     }
 
     // connect to PSX main socket
 
-    printDebug(LL_INFO, "Connecting to PSX main server on: %s:%d", PSXflags.PSXMainServer, PSXflags.PSXPort);
+    printDebug(LL_INFO, "Connecting to PSX main server on: %s:%d", f->PSXMainServer, f->PSXPort);
 
-    sPSX = init_connect_PSX(PSXflags.PSXMainServer, PSXflags.PSXPort);
+    sPSX = init_connect_PSX(f->PSXMainServer, f->PSXPort);
     if (sPSX == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX socket. Exiting...");
         quit=1;
-        return 0;
+        return 1;
     } else {
         printDebug(LL_INFO, "Connected to PSX main server.");
     }
 
     // connect to boost socket
-    printDebug(LL_INFO, "Connecting to PSX boost server on: %s:%d", PSXflags.PSXBoostServer, PSXflags.PSXBoostPort);
+    printDebug(LL_INFO, "Connecting to PSX boost server on: %s:%d", f->PSXBoostServer, f->PSXBoostPort);
 
-    sPSXBOOST = init_connect_PSX(PSXflags.PSXBoostServer, PSXflags.PSXBoostPort);
+    sPSXBOOST = init_connect_PSX(f->PSXBoostServer, f->PSXBoostPort);
     if (sPSXBOOST == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX boost socket. Are you sure it is "
                              "running? Exiting...");
-        return 0;
+        return 1;
     } else {
         printDebug(LL_INFO, "Connected to PSX boost server.");
     }
@@ -99,9 +98,9 @@ int open_connections(void)
     // finally connect to MSFS socket via SimConnect
     if (!init_connect_MSFS()) {
         printDebug(LL_ERROR, "Could not connect to Simconnect.dll. Is MSFS running?");
-        return 0;
+        return 1;
     } else {
         printDebug(LL_INFO, "Connected to MSFS.");
-        return 1;
+        return 0;
     }
 }

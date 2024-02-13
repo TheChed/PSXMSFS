@@ -9,17 +9,6 @@
  *
  */
 
-struct BOOST {
-    // Updated by Boost server
-    double flightDeckAlt;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
-    int onGround;
-};
-
 struct MovingParts {
     double GearDown;
     double FlapsPosition;

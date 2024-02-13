@@ -5,7 +5,6 @@
 #include "MSFS.h"
 #include "util.h"
 #include "update.h"
-#include "log.h"
 #include "connect.h"
 
 /*----------------------------------------------
@@ -18,6 +17,7 @@ int getDataFromBoost(void);
 
 /*----------------------------------------
  * State flags read from PSXMSFS.ini file
+ * or input by client
  *---------------------------------------*/
 FLAGS PSXflags;
 
@@ -99,18 +99,16 @@ void thread_launch(void)
         quit = 1;
     }
 
-   // WaitForSingleObject(h1, INFINITE);
-   // WaitForSingleObject(h2, INFINITE);
-    WaitForSingleObject(h3, INFINITE);
-
-    CloseHandle(mutex);
-    CloseHandle(mutexsitu);
+    // WaitForSingleObject(h1, INFINITE);
+    // WaitForSingleObject(h2, INFINITE);
+    // WaitForSingleObject(h3, INFINITE);
 }
 
 int cleanup(void)
 {
-    quit = 1; // To force threads to close if not yet done
 
+    CloseHandle(mutex);
+    CloseHandle(mutexsitu);
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
 
@@ -120,6 +118,7 @@ int cleanup(void)
     /*-------------------------------------------------------------------------------
      * and gracefully try to close main and boost sockets
      * -----------------------------------------------------------------------------*/
+    quit = 1; // To force threads to close if not yet done
     printDebug(LL_INFO, "Closing PSX boost connection...");
     if (close_PSX_socket(sPSXBOOST)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
@@ -129,7 +128,7 @@ int cleanup(void)
         printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
     }
 
-    WSACleanup();   // CLose the Win32 sockets
+    WSACleanup(); // CLose the Win32 sockets
     printDebug(LL_INFO, "See you next time!");
     remove_debug(); // Remove DEBUG file if not in DEBUG mode
 
@@ -137,43 +136,48 @@ int cleanup(void)
 }
 
 
-    /*---------------------------------------------
-     * This is the main entry function that is called
-     * at the initialization
-     * -------------------------------------------*/
-int initialize(const char *MSFSServer, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort)
+int initialize(FLAGS *flags)
 {
 
-    int result_init;
+    /*---------------------------
+     * resetting to 0 in case
+     * we quit in a previous call
+     * -------------------------*/
+    quit = 0;            
 
     TimeStart = GetTickCount(); // Initialize the timer
+    /*---------------------------
+     * creating a PSXMSFS.ini file 
+     * if it is non existant, potentially
+     * with values passed by client in 
+     * the flags structure
+     * -------------------------*/
+    FILE *fini;
+    fini = fopen("PSXMSFS.ini", "r");
+    if (!fini) {
+        write_ini_file(flags);
+    } else fclose(fini);
 
-    /*---------------------------------------------
-     * Initialize internal flags and
-     * create default PSXMSFS.ini file if not present
-     * -------------------------------------------*/
-    result_init = init_param(MSFSServer, PSXMainIP, PSXMainPort, PSXBoostIP, PSXBoostPort);
+    /*----------------------------
+     * if we get flags passed as arguments,
+     * check if it is valid
+      ---------------------------*/
 
-    if (result_init == 1) {
-        printDebug(LL_ERROR, "Could not initialize various PSX internal flags. Exiting now...");
-        quit = 1;
-    }
-    if (result_init == 2) {
-        printDebug(LL_ERROR, "Could not open config file, will try to create one with educated guesses... Please restart the program");
-        quit = 1;
-    }
+    if(flags!=NULL) PSXflags=*flags;
 
-    return result_init;
+    return 0;
+
+
 }
 
-FLAGS *connectPSXMSFS(void)
+int connectPSXMSFS(FLAGS *flags)
 {
 
     /*
      * Initialise and connect all sockets: PSX, PSX Boost and Simconnect
      */
-    if (!open_connections()) {
-        return NULL;
+    if (open_connections(flags)) {
+        return 1;
     }
 
     // initialize the data to be received as well as all EVENTS
@@ -184,10 +188,9 @@ FLAGS *connectPSXMSFS(void)
     init_pos();
 
     printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
-    //printDebug(LL_INFO, "DLL built on %s",__DATE__);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
 
-    return &PSXflags;
+    return 0;
 }
 
 int main_launch()

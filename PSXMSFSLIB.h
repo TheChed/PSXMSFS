@@ -27,25 +27,67 @@
 #define VSSAMPLE 50           // number of samples used from boost string to calculate the vertical speed
 #define DELIM ";"
 
+#define IP_LENGTH 15
+
+/*-------------------------------------
+ * Internal switches
+ * -----------------------------------*/
+
+#define F_TCAS (1 << 0)
+#define F_INJECT (1 << 1)
+#define F_ONLINE (1 << 2)
+#define F_INHIB (1 << 3)
+#define F_SLAVE (1 << 4)
+
+
 /*-----------------------------------------
  * structure used at initialization
  * to get user info about PSX servers, MSFS
  * and to store various user defined flags
  *----------------------------------------*/
+typedef enum {
+    LL_DEBUG = 1,
+    LL_VERBOSE,
+    LL_INFO,
+    LL_ERROR
+} LOG_LEVELS;
+
+
 typedef struct flags {
-    char PSXMainServer[15];  // IP address of the PSX main server
-    char MSFSServer[15];     // IP address of the PSX boost server
-    char PSXBoostServer[15]; // IP address of the MSFS server
+    char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
+    char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
+    char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
     int PSXPort;          // Main PSX port
     int PSXBoostPort;     // PSX boot server port
 
-    int TCAS_INJECT;        // 1 if TCAS is injected to PSX, 0 otherwise
-    int ELEV_INJECT;        // 1 if MSFS elevation is injected into PSX. 0 otherwise
-    int INHIB_CRASH_DETECT; // 1 if no crash detection in PSX when loading new situ. 0 otherwise
-    int ONLINE;             // 1 if PSXMSFS is used on online on VATSIM,IVAO etc, 0 otherwise
     int LOG_VERBOSITY;      // verbosity of the logs: 1 very verbose and 4 minimum verbosity
-    int SLAVE;              // 0 if PSX is slave, 1 if MSFS is slave
+
+   /* -----------------------------------------------
+    * Internal switched combination of:
+    * F_TCAS, F_INJECT, F_ONLINE, F_INHIB and F_SLAVE
+    *-----------------------------------------------*/
+    unsigned int switches;
 } FLAGS;
+
+typedef struct servers {
+    char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
+    char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
+    char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
+    int PSXPort;          // Main PSX port
+    int PSXBoostPort;     // PSX boot server port
+} servers;
+
+
+typedef struct BOOST {
+    // Updated by Boost server
+    double flightDeckAlt;
+    double latitude;
+    double longitude;
+    double heading_true;
+    double pitch;
+    double bank;
+    int onGround;
+} BOOST;
 
 struct INTERNALPSXflags {
     int oldcrz;
@@ -71,14 +113,18 @@ extern FLAGS PSXflags;
 
 extern DWORD TimeStart; // Timestamp when the simulation is started.
 
+
+void printDebug(LOG_LEVELS level, const char *debugInfo, ...);
 /*--------------------------------------------------------
  * Functions to be exported in the DLL
  *------------------------------------------------------*/
 
-LIBEXPORT int initialize(const char *MSFSIP, const char *PSXIP, int PSXPort, const char *BoostIP, int BoostPort);
-LIBEXPORT FLAGS *connectPSXMSFS(void);
+LIBEXPORT int initialize(FLAGS *flags);
+LIBEXPORT int connectPSXMSFS(FLAGS *F);
 LIBEXPORT int main_launch(void);
 LIBEXPORT int cleanup(void);
+LIBEXPORT FLAGS* initFlags(void);
+LIBEXPORT int updateFromIni(FLAGS *flags);
 
 /*----------------------------------
  * Log related functions
@@ -96,7 +142,25 @@ LIBEXPORT int cleanup(void);
  * ---------------------------------*/
 typedef struct logMessage logMessage;
 
-LIBEXPORT logMessage *getLogBuffer(void);
+LIBEXPORT logMessage *getLogBuffer(int nblogs);
 LIBEXPORT char *getLogMessage(logMessage *D, int n);
 LIBEXPORT uint64_t getLogID(logMessage *D, int n);
+LIBEXPORT int getLogLevel(logMessage *D, int n);
+LIBEXPORT void freeLogBuffer(logMessage *D);
+
+
+/*----------------------------------------
+* Functions used to manipulate internal flags.
+* Setting and reading values
+* ---------------------------------------*/ 
+
+LIBEXPORT unsigned int getSwitch(FLAGS *f);
+LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
+LIBEXPORT int getLogVerbosity(FLAGS *f);
+LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
+LIBEXPORT servers getServersInfo(FLAGS *f); 
+LIBEXPORT  void setServersInfo(servers *S);
+LIBEXPORT BOOST getACFTInfo(void); 
 #endif
+
+

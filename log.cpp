@@ -4,11 +4,10 @@
 #include <time.h>
 #include <stdarg.h>
 #include "PSXMSFSLIB.h"
-#include "log.h"
 
 #define MAXLEN_DEBUG_MSG 8192 // maximum debug message size
-#define NB_LOGS 20
 
+static int NB_LOGS = 0;
 
 static inline DWORD elapsedMs(DWORD start_time)
 {
@@ -17,24 +16,27 @@ static inline DWORD elapsedMs(DWORD start_time)
 
 typedef struct logMessage {
     uint64_t Id;
+    int loglevel;
     char message[MAXLEN_DEBUG_MSG];
 } logMessage;
 
-logMessage logBuffer[NB_LOGS];
+logMessage *logBuffer=NULL;
 
-static void logging(const char *msg)
+static void logging(LOG_LEVELS level, const char *msg)
 {
-    static int nblogs = 0;
+    static uint64_t nblogs = 0;
     int currCount;
 
     currCount = nblogs % NB_LOGS;
-
-    logBuffer[currCount].Id = nblogs;
-    strncpy(logBuffer[currCount].message, msg, MAXLEN_DEBUG_MSG - 1);
-    nblogs++;
+    if (strlen(msg)) {
+        nblogs++;
+        logBuffer[currCount].Id = nblogs;
+        logBuffer[currCount].loglevel = level;
+        strncpy(logBuffer[currCount].message, msg, MAXLEN_DEBUG_MSG - 1);
+    }
 }
 
-void printDebug(int level, const char *debugInfo, ...)
+void printDebug(LOG_LEVELS level, const char *debugInfo, ...)
 {
     va_list ap;
     char msg[MAXLEN_DEBUG_MSG];
@@ -58,15 +60,13 @@ void printDebug(int level, const char *debugInfo, ...)
         fprintf(fdebug, "\n");
         fflush(fdebug);
 
-        // and also print in buffer
-        
-        if (level >= LL_INFO) {
-            logging(msg);
-        }
+        logging(level, msg);
     }
 
     fclose(fdebug);
 }
+
+
 
 char *getLogMessage(logMessage *D, int n)
 {
@@ -78,7 +78,21 @@ uint64_t getLogID(logMessage *D, int n)
     return D[n].Id;
 }
 
-logMessage *getLogBuffer(void)
+int getLogLevel(logMessage *D, int n)
 {
-    return logBuffer;
+    return D[n].loglevel;
+}
+
+logMessage *getLogBuffer(int nbLogs)
+{
+
+    logMessage *log = (logMessage *)malloc(sizeof(logMessage) *nbLogs);
+    NB_LOGS = nbLogs;
+    logBuffer=log;
+    return log;
+}
+
+void freeLogBuffer(logMessage *Log)
+{
+    free(Log);
 }
