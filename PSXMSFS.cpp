@@ -6,6 +6,7 @@
 #include "util.h"
 #include "update.h"
 #include "connect.h"
+#include "winnt.h"
 
 /*----------------------------------------------
  * Main thread functions used to get data from
@@ -33,10 +34,11 @@ DWORD TimeStart;
 
 DWORD WINAPI ptDataFromMSFS(void *thread_param)
 {
+    HRESULT hr;
     UNUSED(thread_param);
-
     while (!quit) {
-        SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
+         hr=SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
+        fprintf(stdout,"HR = %lx\n",hr);
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
 
@@ -135,7 +137,6 @@ int cleanup(void)
     return 0;
 }
 
-
 int initialize(FLAGS *flags)
 {
 
@@ -143,31 +144,31 @@ int initialize(FLAGS *flags)
      * resetting to 0 in case
      * we quit in a previous call
      * -------------------------*/
-    quit = 0;            
+    quit = 0;
 
     TimeStart = GetTickCount(); // Initialize the timer
     /*---------------------------
-     * creating a PSXMSFS.ini file 
+     * creating a PSXMSFS.ini file
      * if it is non existant, potentially
-     * with values passed by client in 
+     * with values passed by client in
      * the flags structure
      * -------------------------*/
     FILE *fini;
     fini = fopen("PSXMSFS.ini", "r");
     if (!fini) {
         write_ini_file(flags);
-    } else fclose(fini);
+    } else
+        fclose(fini);
 
     /*----------------------------
      * if we get flags passed as arguments,
      * check if it is valid
       ---------------------------*/
 
-    if(flags!=NULL) PSXflags=*flags;
+    if (flags != NULL)
+        PSXflags = *flags;
 
     return 0;
-
-
 }
 
 int connectPSXMSFS(FLAGS *flags)

@@ -4,6 +4,7 @@
 #include <windows.h>
 #include "SimConnect.h"
 #include "PSXMSFSLIB.h"
+#include "winerror.h"
 
 #ifndef __MINGW__
 #pragma comment(lib, "Ws2_32.lib")
@@ -40,7 +41,7 @@ SOCKET init_connect_PSX(const char *hostname, int portno)
     }
 
     // Connect to PSX
-    memset(&PSXmainserver,0, sizeof(PSXmainserver));
+    memset(&PSXmainserver, 0, sizeof(PSXmainserver));
 
     PSXmainserver.sin_family = AF_INET;
     PSXmainserver.sin_port = htons(portno);
@@ -55,10 +56,12 @@ SOCKET init_connect_PSX(const char *hostname, int portno)
 
 int init_connect_MSFS(void)
 {
-    HRESULT hr;
-    hr = SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0);
-    printDebug(LL_DEBUG, "Connected to MSFS Simconnect with return code %d",hr);
-    return (SUCCEEDED(hr== S_OK));
+    if (SUCCEEDED(SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0))) {
+        printDebug(LL_DEBUG, "Connected to MSFS Simconnect");
+        return 0;
+    } else {
+        return 1;
+    }
 }
 
 int open_connections(FLAGS *f)
@@ -77,7 +80,7 @@ int open_connections(FLAGS *f)
     sPSX = init_connect_PSX(f->PSXMainServer, f->PSXPort);
     if (sPSX == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX socket. Exiting...");
-        quit=1;
+        quit = 1;
         return 1;
     } else {
         printDebug(LL_INFO, "Connected to PSX main server.");
@@ -96,7 +99,7 @@ int open_connections(FLAGS *f)
     }
 
     // finally connect to MSFS socket via SimConnect
-    if (!init_connect_MSFS()) {
+    if (init_connect_MSFS()) {
         printDebug(LL_ERROR, "Could not connect to Simconnect.dll. Is MSFS running?");
         return 1;
     } else {

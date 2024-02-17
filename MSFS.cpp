@@ -188,6 +188,7 @@ void init_variables(void)
 
 void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext)
 {
+    fprintf(stdout,"In callback\n");
     UNUSED(cbData);
     UNUSED(pContext);
 
