@@ -39,7 +39,6 @@
 #define F_INHIB (1 << 3)
 #define F_SLAVE (1 << 4)
 
-
 /*-----------------------------------------
  * structure used at initialization
  * to get user info about PSX servers, MSFS
@@ -52,20 +51,19 @@ typedef enum {
     LL_ERROR
 } LOG_LEVELS;
 
-
 typedef struct flags {
     char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
     char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
     char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
-    int PSXPort;          // Main PSX port
-    int PSXBoostPort;     // PSX boot server port
+    int PSXPort;                    // Main PSX port
+    int PSXBoostPort;               // PSX boot server port
 
-    int LOG_VERBOSITY;      // verbosity of the logs: 1 very verbose and 4 minimum verbosity
+    int LOG_VERBOSITY; // verbosity of the logs: 1 very verbose and 4 minimum verbosity
 
-   /* -----------------------------------------------
-    * Internal switched combination of:
-    * F_TCAS, F_INJECT, F_ONLINE, F_INHIB and F_SLAVE
-    *-----------------------------------------------*/
+    /* -----------------------------------------------
+     * Internal switched combination of:
+     * F_TCAS, F_INJECT, F_ONLINE, F_INHIB and F_SLAVE
+     *-----------------------------------------------*/
     unsigned int switches;
 } FLAGS;
 
@@ -73,10 +71,15 @@ typedef struct servers {
     char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
     char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
     char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
-    int PSXPort;          // Main PSX port
-    int PSXBoostPort;     // PSX boot server port
+    int PSXPort;                    // Main PSX port
+    int PSXBoostPort;               // PSX boot server port
 } servers;
 
+typedef struct  {
+    int PSXsocket;
+    int BOOSTsocket;
+    int MSFSsocket;
+} sockets;
 
 typedef struct BOOST {
     // Updated by Boost server
@@ -113,7 +116,6 @@ extern FLAGS PSXflags;
 
 extern DWORD TimeStart; // Timestamp when the simulation is started.
 
-
 void printDebug(LOG_LEVELS level, const char *debugInfo, ...);
 /*--------------------------------------------------------
  * Functions to be exported in the DLL
@@ -122,21 +124,22 @@ void printDebug(LOG_LEVELS level, const char *debugInfo, ...);
 LIBEXPORT int initialize(FLAGS *flags);
 LIBEXPORT int connectPSXMSFS(FLAGS *F);
 LIBEXPORT int main_launch(void);
+LIBEXPORT void disconnect(void);
 LIBEXPORT int cleanup(void);
-LIBEXPORT FLAGS* initFlags(void);
+LIBEXPORT FLAGS *initFlags(void);
 LIBEXPORT int updateFromIni(FLAGS *flags);
 
 /*----------------------------------
  * Log related functions
- * logMessage is a buffer of 20 logmessages. 
+ * logMessage is a buffer of 20 logmessages.
  *
  * CLient needs to initialize the buffer via:
  * logMessage *D = getLogBuffer();
  *
- * Each message has a unique ID and new 
+ * Each message has a unique ID and new
  * log messages keep been pushed on that buffer.
  *
- * Unique IDs can be retrieved with getLogID. 
+ * Unique IDs can be retrieved with getLogID.
  * For example, getLogId(D, 6) will retrieve the unique ID of the 7th current log message.
  * This can be used in a loop in the client to check whether a new log has been received
  * ---------------------------------*/
@@ -148,19 +151,16 @@ LIBEXPORT uint64_t getLogID(logMessage *D, int n);
 LIBEXPORT int getLogLevel(logMessage *D, int n);
 LIBEXPORT void freeLogBuffer(logMessage *D);
 
-
 /*----------------------------------------
-* Functions used to manipulate internal flags.
-* Setting and reading values
-* ---------------------------------------*/ 
+ * Functions used to manipulate internal flags.
+ * Setting and reading values
+ * ---------------------------------------*/
 
 LIBEXPORT unsigned int getSwitch(FLAGS *f);
 LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBEXPORT int getLogVerbosity(FLAGS *f);
 LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
-LIBEXPORT servers getServersInfo(FLAGS *f); 
-LIBEXPORT  void setServersInfo(servers *S);
-LIBEXPORT BOOST getACFTInfo(void); 
+LIBEXPORT servers getServersInfo(FLAGS *f);
+LIBEXPORT void setServersInfo(servers *S);
+LIBEXPORT BOOST getACFTInfo(void);
 #endif
-
-

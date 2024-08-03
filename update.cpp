@@ -168,7 +168,7 @@ double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV
      * variable or not to PSX
      */
 
-    Qi198Update(onGround, PSXELEV);
+   // Qi198Update(onGround, PSXELEV);
 
     if (initalt) {
         delta = ctrAltitude - oldctr;

@@ -60,6 +60,7 @@ int init_connect_MSFS(void)
         printDebug(LL_DEBUG, "Connected to MSFS Simconnect");
         return 0;
     } else {
+        printDebug(LL_ERROR, "Could not connect to MSFS Simconnect. Exiting now...");
         return 1;
     }
 }
@@ -93,6 +94,7 @@ int open_connections(FLAGS *f)
     if (sPSXBOOST == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX boost socket. Are you sure it is "
                              "running? Exiting...");
+        quit=1;
         return 1;
     } else {
         printDebug(LL_INFO, "Connected to PSX boost server.");
@@ -101,6 +103,7 @@ int open_connections(FLAGS *f)
     // finally connect to MSFS socket via SimConnect
     if (init_connect_MSFS()) {
         printDebug(LL_ERROR, "Could not connect to Simconnect.dll. Is MSFS running?");
+        quit = 1;
         return 1;
     } else {
         printDebug(LL_INFO, "Connected to MSFS.");

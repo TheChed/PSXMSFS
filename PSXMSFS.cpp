@@ -36,19 +36,27 @@ DWORD WINAPI ptDataFromMSFS(void *thread_param)
 {
     HRESULT hr;
     UNUSED(thread_param);
+
     while (!quit) {
-         hr=SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
-        fprintf(stdout,"HR = %lx\n",hr);
+        hr = SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
+        if (hr == E_FAIL) {
+            exit(1);
+        }
+        if (!intflags.updateNewSitu) {
+            WaitForSingleObject(mutex, INFINITE);
+            SetMSFSPos();
+            ReleaseMutex(mutex);
+        }
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
 
-    return 0;
+return 0;
 }
 
 DWORD WINAPI ptDataFromBoost(void *)
 {
     while (!quit) {
-        getDataFromBoost();
+            getDataFromBoost();
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
@@ -58,7 +66,8 @@ DWORD WINAPI ptDataFromPSX(void *)
 {
 
     while (!quit) {
-        getDataFromPSX();
+        if (!intflags.updateNewSitu)
+            getDataFromPSX();
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
@@ -109,8 +118,7 @@ void thread_launch(void)
 int cleanup(void)
 {
 
-    CloseHandle(mutex);
-    CloseHandle(mutexsitu);
+    quit = 1; // To force threads to close if not yet done
     printDebug(LL_INFO, "Closing MSFS connection...");
     SimConnect_Close(hSimConnect);
 
@@ -120,7 +128,6 @@ int cleanup(void)
     /*-------------------------------------------------------------------------------
      * and gracefully try to close main and boost sockets
      * -----------------------------------------------------------------------------*/
-    quit = 1; // To force threads to close if not yet done
     printDebug(LL_INFO, "Closing PSX boost connection...");
     if (close_PSX_socket(sPSXBOOST)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
@@ -171,6 +178,14 @@ int initialize(FLAGS *flags)
     return 0;
 }
 
+void disconnect(void)
+{
+    CloseHandle(mutex);
+    CloseHandle(mutexsitu);
+    cleanup();
+    quit = 1;
+}
+
 int connectPSXMSFS(FLAGS *flags)
 {
 
@@ -196,6 +211,7 @@ int connectPSXMSFS(FLAGS *flags)
 
 int main_launch()
 {
+    quit = 0;
     thread_launch();
     return 0;
 }

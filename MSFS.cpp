@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include <assert.h>
 #include "PSXMSFSLIB.h"
 #include "SimConnect.h"
 #include "util.h"
@@ -181,14 +182,12 @@ void freezeMSFS(int freeze)
 
 void init_variables(void)
 {
-
     ground_altitude = -9999;
     MSFS_POS_avail = 0;
 }
 
 void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext)
 {
-    fprintf(stdout,"In callback\n");
     UNUSED(cbData);
     UNUSED(pContext);
 
@@ -367,11 +366,11 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
         // while (intflags.updateNewSitu) { }
-        if (!intflags.updateNewSitu) {
-            WaitForSingleObject(mutex, INFINITE);
-            SetMSFSPos();
-            ReleaseMutex(mutex);
-        }
+        //if (!intflags.updateNewSitu) {
+        //    WaitForSingleObject(mutex, INFINITE);
+        //    SetMSFSPos();
+        //    ReleaseMutex(mutex);
+       // }
     }
 
     break;
@@ -389,6 +388,8 @@ void init_MS_data(void)
      * It is VERY important that the order of those variables matches the order
      * in with the structures defined in PSXMSFSLIB.h
      */
+    assert(hSimConnect);
+
     SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
     SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");
     SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_STD_ALT, "INDICATED ALTITUDE", "feet");

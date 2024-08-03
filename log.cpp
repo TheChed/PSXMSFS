@@ -87,6 +87,11 @@ logMessage *getLogBuffer(int nbLogs)
 {
 
     logMessage *log = (logMessage *)malloc(sizeof(logMessage) *nbLogs);
+    if(log==NULL){
+        printDebug(LL_ERROR,"Could not initialize log buffer. Exiting now...");
+        quit=1;
+    }
+    bzero(log,sizeof(logMessage)*nbLogs);
     NB_LOGS = nbLogs;
     logBuffer=log;
     return log;

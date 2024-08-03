@@ -408,9 +408,9 @@ double calcVS(double alt, int ms)
 void Decodeboost(const char *strboost)
 {
 
-    double flightDeckAlt, heading_true, pitch, bank;
-    double latitude, longitude;
-    int onGround, ms;
+    double flightDeckAlt=0.0, heading_true=0.0, pitch=0.0, bank=0.0;
+    double latitude=0.0, longitude=0.0;
+    int onGround=1, ms=0;
     char *token, *ptr, *savptr;
     char *s = _strdup(strboost);
 
