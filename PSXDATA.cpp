@@ -574,7 +574,7 @@ int getDataFromPSX(void)
         return 0;
     }
 
-    int nbread = recv(sPSX, (char *)&bufmain[bufmain_used], (int)(bufmain_remain), 0);
+    int nbread = recv(PSXMSFS.PSXsocket, (char *)&bufmain[bufmain_used], (int)(bufmain_remain), 0);
 
     if (nbread == 0) {
         printDebug(LL_ERROR, "Main socket connection closed.");
@@ -639,7 +639,7 @@ int getDataFromBoost(void)
         return 0;
     }
 
-    int nbread = recv(sPSXBOOST, (char *)&bufboost[bufboost_used], (int)(bufboost_remain), 0);
+    int nbread = recv(PSXMSFS.BOOSTsocket, (char *)&bufboost[bufboost_used], (int)(bufboost_remain), 0);
     if (nbread == 0) {
         printDebug(LL_ERROR, "Boost connection closed.");
         quit = 1;

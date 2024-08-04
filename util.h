@@ -7,7 +7,6 @@
 double dist(double lat1, double lat2, double long1, double long2);
 void CalcCoord(double bearing, double lato, double longo, double *latr, double *longr);
 void remove_debug(void);
-void SetMSFSPos(void);
 
 /*
  * function used to send variables to PSX
@@ -22,5 +21,6 @@ void resetInternalFlags(void);
 
 int write_ini_file(FLAGS *flags);
 unsigned int getSwitch(FLAGS *f);
+unsigned int getVerbosityLevel(FLAGS *f);
 
 void setSwitch(FLAGS *f, unsigned int flagvalue);

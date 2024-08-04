@@ -51,12 +51,17 @@ typedef enum {
     LL_ERROR
 } LOG_LEVELS;
 
-typedef struct flags {
+ typedef struct flags {
     char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
     char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
     char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
     int PSXPort;                    // Main PSX port
     int PSXBoostPort;               // PSX boot server port
+
+
+    int PSXsocket;                  // PSX socket
+    int BOOSTsocket;                //PSXBoost server socket
+    HANDLE hSimConnect;                 // MSFS socket
 
     int LOG_VERBOSITY; // verbosity of the logs: 1 very verbose and 4 minimum verbosity
 
@@ -67,30 +72,6 @@ typedef struct flags {
     unsigned int switches;
 } FLAGS;
 
-typedef struct servers {
-    char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
-    char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
-    char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
-    int PSXPort;                    // Main PSX port
-    int PSXBoostPort;               // PSX boot server port
-} servers;
-
-typedef struct  {
-    int PSXsocket;
-    int BOOSTsocket;
-    int MSFSsocket;
-} sockets;
-
-typedef struct BOOST {
-    // Updated by Boost server
-    double flightDeckAlt;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
-    int onGround;
-} BOOST;
 
 struct INTERNALPSXflags {
     int oldcrz;
@@ -104,30 +85,29 @@ struct INTERNALPSXflags {
  * Global variables
  *--------------------------------*/
 extern HANDLE mutex;
-extern HANDLE hSimConnect;
-
 extern int quit;
-
 extern struct INTERNALPSXflags intflags;
-
-extern SOCKET sPSX;      // main PSX socket id
-extern SOCKET sPSXBOOST; // PSX boost socket id
-extern FLAGS PSXflags;
-
+extern FLAGS PSXMSFS;
 extern DWORD TimeStart; // Timestamp when the simulation is started.
+
+
+
 
 void printDebug(LOG_LEVELS level, const char *debugInfo, ...);
 /*--------------------------------------------------------
  * Functions to be exported in the DLL
  *------------------------------------------------------*/
 
-LIBEXPORT int initialize(FLAGS *flags);
-LIBEXPORT int connectPSXMSFS(FLAGS *F);
-LIBEXPORT int main_launch(void);
-LIBEXPORT void disconnect(void);
-LIBEXPORT int cleanup(void);
+/*-------------------------------------------------------
+ * Creates the flags structure used to connect
+ * -----------------------------------------------------*/
 LIBEXPORT FLAGS *initFlags(void);
 LIBEXPORT int updateFromIni(FLAGS *flags);
+LIBEXPORT int initialize(FLAGS *flags);
+LIBEXPORT int connectPSXMSFS(FLAGS *F);
+
+LIBEXPORT int main_launch(FLAGS *F);
+LIBEXPORT void cleanup(FLAGS *flags);
 
 /*----------------------------------
  * Log related functions
@@ -160,7 +140,4 @@ LIBEXPORT unsigned int getSwitch(FLAGS *f);
 LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBEXPORT int getLogVerbosity(FLAGS *f);
 LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
-LIBEXPORT servers getServersInfo(FLAGS *f);
-LIBEXPORT void setServersInfo(servers *S);
-LIBEXPORT BOOST getACFTInfo(void);
 #endif

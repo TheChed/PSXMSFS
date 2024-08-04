@@ -9,6 +9,8 @@
 #include "util.h"
 #include "PSXMSFSLIB.h"
 
+FLAGS PSXMSFS;
+
 int sendQPSX(const char *s)
 {
 
@@ -29,7 +31,7 @@ int sendQPSX(const char *s)
      * ------------------------------------*/
     if (!intflags.updateNewSitu) {
         printDebug(LL_DEBUG, "Sending %s to PSX", s);
-        nbsend = send(sPSX, dem, (int)(strlen(s) + 1), 0);
+        nbsend = send(PSXMSFS.PSXsocket, dem, (int)(strlen(s) + 1), 0);
         if (nbsend == 0) {
             printDebug(LL_ERROR, "Error sending variable %s to PSX", s);
         }
@@ -61,7 +63,7 @@ int write_ini_file(FLAGS *flags)
 {
     FILE *f;
 
-    unsigned int switches;
+    unsigned int switches=PSXMSFS.switches;
 
     f = fopen("PSXMSFS.ini", "w");
     if (!f) {
@@ -71,10 +73,8 @@ int write_ini_file(FLAGS *flags)
     }
 
     if (flags == NULL) {
-        flags = &PSXflags;
+//        flags = &PSXflags;
     }
-
-    switches=getSwitch(flags);
 
     /*PSX server addresses and port*/
     fprintf(f, "#Self Explanatory IP and port variables\n");
@@ -164,62 +164,26 @@ int updateFromIni(FLAGS *flags)
 FLAGS *initFlags(void)
 {
 
-    strcpy(PSXflags.PSXMainServer, "127.0.0.1");
-    strcpy(PSXflags.PSXBoostServer, "127.0.0.1");
-    strcpy(PSXflags.MSFSServer, "127.0.0.1");
-    PSXflags.PSXPort = 10747;
-    PSXflags.PSXBoostPort = 10749;
-    PSXflags.switches = (F_TCAS | F_INJECT);
-    PSXflags.LOG_VERBOSITY = LL_INFO;
+    /*-------------------------------------------*
+     * Assign default values to the flags        *
+     * ------------------------------------------*/
 
-    return &PSXflags;
+    strcpy(PSXMSFS.PSXMainServer, "127.0.0.1");
+    strcpy(PSXMSFS.PSXBoostServer, "127.0.0.1");
+    strcpy(PSXMSFS.MSFSServer, "127.0.0.1");
+    PSXMSFS.PSXPort = 10747;
+    PSXMSFS.PSXBoostPort = 10749;
+    PSXMSFS.switches = (F_TCAS | F_INJECT);
+    PSXMSFS.LOG_VERBOSITY = LL_INFO;
+
+
+    return &PSXMSFS;
 }
 
-void remove_debug()
+void remove_debug(void)
 {
-    if (PSXflags.LOG_VERBOSITY > 1) {
+    if (PSXMSFS.LOG_VERBOSITY>1) {
         remove("DEBUG.TXT");
     }
 }
 
-int getLogVerbosity(FLAGS *f)
-{
-    return f->LOG_VERBOSITY;
-}
-
-void setLogVerbosity(FLAGS *f, LOG_LEVELS level){
-    f->LOG_VERBOSITY=level;
-}
-
-unsigned int getSwitch(FLAGS *f)
-{
-    return f->switches;
-}
-
-void setFlags(FLAGS *f, unsigned int flagvalue)
-{
-    f->switches = flagvalue;
-}
-servers getServersInfo(FLAGS *f)
-{
-
-    servers S;
-
-    strncpy(S.PSXMainServer, f->PSXMainServer, IP_LENGTH);
-    strncpy(S.PSXBoostServer, f->PSXBoostServer, IP_LENGTH);
-    strncpy(S.MSFSServer, f->MSFSServer, IP_LENGTH);
-    S.PSXPort = f->PSXPort;
-    S.PSXBoostPort = f->PSXBoostPort;
-
-    return S;
-}
-void setServersInfo(servers *S)
-{
-
-    strncpy(PSXflags.PSXMainServer, S->PSXMainServer, IP_LENGTH);
-    strncpy(PSXflags.PSXBoostServer, S->PSXBoostServer, IP_LENGTH);
-    strncpy(PSXflags.MSFSServer, S->MSFSServer, IP_LENGTH);
-    PSXflags.PSXPort = S->PSXPort;
-    PSXflags.PSXBoostPort = S->PSXBoostPort;
-
-}

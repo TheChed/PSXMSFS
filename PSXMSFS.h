@@ -66,9 +66,8 @@ LIBIMPORT FLAGS *initFlags(void);
 LIBIMPORT int updateFromIni(FLAGS *flags);
 LIBIMPORT int initialize(FLAGS *flags);
 LIBIMPORT int connectPSXMSFS(FLAGS *flags);
-LIBIMPORT int main_launch(void);
-LIBIMPORT void disconnect(void);
-LIBIMPORT int cleanup(void);
+LIBIMPORT int main_launch(FLAGS *flags);
+LIBIMPORT void cleanup(FLAGS *flags);
 
 /*----------------------------------
  * Log related functions
@@ -100,7 +99,5 @@ LIBIMPORT unsigned int getSwitch(FLAGS *f);
 LIBIMPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBIMPORT int getLogVerbosity(FLAGS *f);
 LIBIMPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
-LIBIMPORT servers getServersInfo(FLAGS *f);
-LIBIMPORT void setServersInfo(servers *S);
 LIBIMPORT ACFT *getACFTInfo(void);
 #endif

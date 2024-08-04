@@ -169,13 +169,13 @@ void freezeMSFS(int freeze)
 
         printDebug(LL_VERBOSE, "Unfreezing Altitude, Attitude and Coordinates in MSFS.");
     }
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, freeze,
+    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT, freeze,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, freeze,
+    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ATT, freeze,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, freeze,
+    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_LAT_LONG, freeze,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
@@ -236,7 +236,7 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
         } break;
 
         case EVENT_6_HZ: {
-            if (getSwitch(&PSXflags)&F_SLAVE) {
+            if (PSXMSFS.switches & F_SLAVE) {
 
                 freezeMSFS(0);
                 Inject_MSFS_PSX();
@@ -247,8 +247,8 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             /*
              * TCAS injection every 4 seconds but only if TCAS switch is on
              */
-            if (getSwitch(&PSXflags)&F_TCAS) {
-                SimConnect_RequestDataOnSimObjectType(hSimConnect, DATA_REQUEST_TCAS,
+            if (PSXMSFS.switches & F_TCAS) {
+                SimConnect_RequestDataOnSimObjectType(PSXMSFS.hSimConnect, DATA_REQUEST_TCAS,
                                                       TCAS_TRAFFIC_DATA, 40 * NM,
                                                       SIMCONNECT_SIMOBJECT_TYPE_AIRCRAFT);
                 IA_update();
@@ -260,10 +260,10 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
             if (!key_press) {
                 key_press = 1;
                 SimConnect_TransmitClientEvent(
-                    hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
+                    PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_FREEZE_ALT_TOGGLE, 0,
                     SIMCONNECT_GROUP_PRIORITY_HIGHEST, SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
                 if (false) {
-                    if (getSwitch(&PSXflags)&F_SLAVE) {
+                    if (PSXMSFS.switches & F_SLAVE) {
                         sendQPSX("Qs419=");
                         printDebug(LL_INFO, "Injecting position to MSFS from PSX\n");
                     } else {
@@ -365,12 +365,6 @@ void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCo
 
     case SIMCONNECT_RECV_ID_EVENT_FRAME: {
 
-        // while (intflags.updateNewSitu) { }
-        //if (!intflags.updateNewSitu) {
-        //    WaitForSingleObject(mutex, INFINITE);
-        //    SetMSFSPos();
-        //    ReleaseMutex(mutex);
-       // }
     }
 
     break;
@@ -388,34 +382,34 @@ void init_MS_data(void)
      * It is VERY important that the order of those variables matches the order
      * in with the structures defined in PSXMSFSLIB.h
      */
-    assert(hSimConnect);
+    assert(PSXMSFS.hSimConnect);
 
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS_STD_ALT, "INDICATED ALTITUDE", "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE LATITUDE", "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE LONGITUDE", "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE HEADING DEGREES TRUE",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS_STD_ALT, "INDICATED ALTITUDE", "feet");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS, "PLANE LATITUDE", "radians");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS, "PLANE LONGITUDE", "radians");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS, "PLANE HEADING DEGREES TRUE",
                                    "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE PITCH DEGREES",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS, "PLANE PITCH DEGREES",
                                    "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, BOOST_TO_MSFS, "PLANE BANK DEGREES", "radians");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, BOOST_TO_MSFS, "PLANE BANK DEGREES", "radians");
 
     /*
      * Moving Surfaces: Ailerons, rudder , elevator
      *
      */
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "GEAR HANDLE POSITION",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_MOVING_SURFACES, "GEAR HANDLE POSITION",
                                    "percent over 100");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "FLAPS HANDLE INDEX",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_MOVING_SURFACES, "FLAPS HANDLE INDEX",
                                    "number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES,
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_MOVING_SURFACES,
                                    "SPOILERS HANDLE POSITION", "position 16K");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "RUDDER POSITION",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_MOVING_SURFACES, "RUDDER POSITION",
                                    "position 16K");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "ELEVATOR POSITION",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_MOVING_SURFACES, "ELEVATOR POSITION",
                                    "position 16K");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_MOVING_SURFACES, "AILERON POSITION",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_MOVING_SURFACES, "AILERON POSITION",
                                    "position 16K");
 
     /*
@@ -425,64 +419,64 @@ void init_MS_data(void)
      * switches cannot be synchronised.
      */
 
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:1", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:2", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:3", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LANDING:4", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:1", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:2", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT TAXI:3", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT NAV", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT STROBE", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT BEACON:1", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT BEACON:2", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT WING", "Number");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_LIGHT, "LIGHT LOGO", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT LANDING:1", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT LANDING:2", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT LANDING:3", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT LANDING:4", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT TAXI:1", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT TAXI:2", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT TAXI:3", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT NAV", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT STROBE", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT BEACON:1", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT BEACON:2", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT WING", "Number");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_LIGHT, "LIGHT LOGO", "Number");
 
     /* This is to get the ground altitude when positionning the aircraft at
      * initialization or once on ground */
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "GROUND ALTITUDE", "feet");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "PLANE ALT ABOVE GROUND",
                                    "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA,
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA,
                                    "PLANE ALT ABOVE GROUND MINUS CG", "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "INDICATED ALTITUDE", "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LATITUDE", "radians");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "INDICATED ALTITUDE", "feet");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "PLANE LATITUDE", "radians");
 
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE LONGITUDE", "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "PLANE LONGITUDE", "radians");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "PLANE PITCH DEGREES",
                                    "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "PLANE BANK DEGREES",
                                    "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "PLANE HEADING DEGREES TRUE",
                                    "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "VERTICAL SPEED",
                                    "feet per minute");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AMBIENT PRESSURE", "mmhg");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "SEA LEVEL PRESSURE", "hectopascal");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "BAROMETER PRESSURE", "hectopascal");
-    SimConnect_AddToDataDefinition(hSimConnect, MSFS_CLIENT_DATA, "AMBIENT TEMPERATURE", "celsius");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "AIRSPEED TRUE", "knots");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "PLANE ALTITUDE", "feet");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "AMBIENT PRESSURE", "mmhg");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "SEA LEVEL PRESSURE", "hectopascal");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "BAROMETER PRESSURE", "hectopascal");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, MSFS_CLIENT_DATA, "AMBIENT TEMPERATURE", "celsius");
 
     /*
      * Definition to store various speeds
      */
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "AIRSPEED INDICATED", "knots");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "AIRSPEED TRUE", "knots");
-    SimConnect_AddToDataDefinition(hSimConnect, DATA_SPEED, "VERTICAL SPEED", "feet per minute");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_SPEED, "AIRSPEED INDICATED", "knots");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_SPEED, "AIRSPEED TRUE", "knots");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, DATA_SPEED, "VERTICAL SPEED", "feet per minute");
 
-    SimConnect_RequestDataOnSimObject(hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
+    SimConnect_RequestDataOnSimObject(PSXMSFS.hSimConnect, DATA_REQUEST, MSFS_CLIENT_DATA,
                                       SIMCONNECT_OBJECT_ID_USER,
                                       SIMCONNECT_PERIOD_VISUAL_FRAME);
 
     // Request a simulation start event
 
-    SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_SIM_START, "SimStart");
-    SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_4_SEC, "4sec");
-    SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_ONE_SEC, "1sec");
-    SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_6_HZ, "6Hz");
-    SimConnect_SubscribeToSystemEvent(hSimConnect, EVENT_FRAME, "Frame");
+    SimConnect_SubscribeToSystemEvent(PSXMSFS.hSimConnect, EVENT_SIM_START, "SimStart");
+    SimConnect_SubscribeToSystemEvent(PSXMSFS.hSimConnect, EVENT_4_SEC, "4sec");
+    SimConnect_SubscribeToSystemEvent(PSXMSFS.hSimConnect, EVENT_ONE_SEC, "1sec");
+    SimConnect_SubscribeToSystemEvent(PSXMSFS.hSimConnect, EVENT_6_HZ, "6Hz");
+    SimConnect_SubscribeToSystemEvent(PSXMSFS.hSimConnect, EVENT_FRAME, "Frame");
 
     /* Mapping Events to the client*/
 
@@ -494,52 +488,52 @@ void init_MS_data(void)
      * EVENTS used to set the time
      */
 
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_DAY, "ZULU_DAY_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_HOURS, "ZULU_HOURS_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_MINUTES, "ZULU_MINUTES_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_ZULU_YEAR, "ZULU_YEAR_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_ZULU_DAY, "ZULU_DAY_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_ZULU_HOURS, "ZULU_HOURS_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_ZULU_MINUTES, "ZULU_MINUTES_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_ZULU_YEAR, "ZULU_YEAR_SET");
 
     /* Eventys used to freeze altitude, longitude, latitude and attitude*/
 
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ALT_TOGGLE,
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_FREEZE_ALT, "FREEZE_ALTITUDE_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_FREEZE_ALT_TOGGLE,
                                         "FREEZE_ALTITUDE_TOGGLE");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_ATT_TOGGLE,
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_FREEZE_ATT, "FREEZE_ATTITUDE_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_FREEZE_ATT_TOGGLE,
                                         "FREEZE_ATTITUDE_TOGGLE");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG,
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_FREEZE_LAT_LONG,
                                         "FREEZE_LATITUDE_LONGITUDE_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_FREEZE_LAT_LONG_TOGGLE,
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_FREEZE_LAT_LONG_TOGGLE,
                                         "FREEZE_LATITUDE_LONGITUDE_TOGGLE");
     /*
      * EVENT used to set the parking break
      */
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_PARKING, "PARKING_BRAKE_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_PARKING, "PARKING_BRAKE_SET");
 
     /*
      * EVENT used for steering wheel
      */
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_STEERING, "STEERING_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_STEERING, "STEERING_SET");
 
     /*
      * EVENT used for XPDR
      */
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_XPDR, "XPNDR_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_XPDR_IDENT, "XPNDR_IDENT_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_XPDR, "XPNDR_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_XPDR_IDENT, "XPNDR_IDENT_SET");
 
     /*
      * EVENT used for COMM & stdy COMM
      */
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM, "COM_RADIO_SET_HZ");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET_HZ");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_COM, "COM_RADIO_SET_HZ");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_COM_STDBY, "COM_STBY_RADIO_SET_HZ");
 
     /*
      * EVENT Barometer settings
      *
      */
 
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO, "KOHLSMAN_SET");
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_BARO_STD, "BAROMETRIC");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_BARO, "KOHLSMAN_SET");
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_BARO_STD, "BAROMETRIC");
 
     /* Custom EVENTS
      *
@@ -548,13 +542,13 @@ void init_MS_data(void)
      *
      */
 
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_P_PRESS, "My.CTRLP");
-    SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_P_PRESS, "p", EVENT_P_PRESS);
-    SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_P_PRESS);
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_P_PRESS, "My.CTRLP");
+    SimConnect_MapInputEventToClientEvent(PSXMSFS.hSimConnect, INPUT_P_PRESS, "p", EVENT_P_PRESS);
+    SimConnect_AddClientEventToNotificationGroup(PSXMSFS.hSimConnect, GROUP0, EVENT_P_PRESS);
 
-    SimConnect_MapClientEventToSimEvent(hSimConnect, EVENT_QUIT, "My.CTRLQ");
-    SimConnect_MapInputEventToClientEvent(hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
-    SimConnect_AddClientEventToNotificationGroup(hSimConnect, GROUP0, EVENT_QUIT);
+    SimConnect_MapClientEventToSimEvent(PSXMSFS.hSimConnect, EVENT_QUIT, "My.CTRLQ");
+    SimConnect_MapInputEventToClientEvent(PSXMSFS.hSimConnect, INPUT_QUIT, "q", EVENT_QUIT);
+    SimConnect_AddClientEventToNotificationGroup(PSXMSFS.hSimConnect, GROUP0, EVENT_QUIT);
 
     /*
      * TCAS EVENT INITIALIZATION
@@ -565,11 +559,11 @@ void init_MS_data(void)
      * PSX And will be used in the PSX TCAS
      */
 
-    SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE ALTITUDE", "feet");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, TCAS_TRAFFIC_DATA, "PLANE ALTITUDE", "feet");
 
-    SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LATITUDE", "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LONGITUDE",
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LATITUDE", "radians");
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, TCAS_TRAFFIC_DATA, "PLANE LONGITUDE",
                                    "radians");
-    SimConnect_AddToDataDefinition(hSimConnect, TCAS_TRAFFIC_DATA,
+    SimConnect_AddToDataDefinition(PSXMSFS.hSimConnect, TCAS_TRAFFIC_DATA,
                                    "PLANE HEADING DEGREES MAGNETIC", "radians");
 }

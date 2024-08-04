@@ -38,7 +38,7 @@ DWORD WINAPI ptDataFromMSFS(void *thread_param)
     UNUSED(thread_param);
 
     while (!quit) {
-        hr = SimConnect_CallDispatch(hSimConnect, SimmConnectProcess, NULL);
+        hr = SimConnect_CallDispatch(PSXMSFS.hSimConnect, SimmConnectProcess, NULL);
         if (hr == E_FAIL) {
             exit(1);
         }
@@ -50,13 +50,14 @@ DWORD WINAPI ptDataFromMSFS(void *thread_param)
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
 
-return 0;
+    return 0;
 }
 
-DWORD WINAPI ptDataFromBoost(void *)
+DWORD WINAPI ptDataFromBoost(void *param)
 {
+    UNUSED(param);
     while (!quit) {
-            getDataFromBoost();
+        getDataFromBoost();
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
@@ -73,7 +74,7 @@ DWORD WINAPI ptDataFromPSX(void *)
     return 0;
 }
 
-void thread_launch(void)
+void thread_launch(FLAGS *flags)
 {
     DWORD t1, t2, t3;
     HANDLE h1, h2, h3;
@@ -99,12 +100,12 @@ void thread_launch(void)
         quit = 1;
     }
 
-    h2 = CreateThread(NULL, 0, ptDataFromBoost, NULL, 0, &t2);
+    h2 = CreateThread(NULL, 0, ptDataFromBoost, flags, 0, &t2);
     if (h2 == NULL) {
         printDebug(LL_ERROR, "Error creating boost server thread. Quitting now.");
         quit = 1;
     }
-    h3 = CreateThread(NULL, 0, ptDataFromMSFS, NULL, 0, &t3);
+    h3 = CreateThread(NULL, 0, ptDataFromMSFS, flags, 0, &t3);
     if (h3 == NULL) {
         printDebug(LL_ERROR, "Error creating MSFS server thread. Quitting now.");
         quit = 1;
@@ -115,12 +116,12 @@ void thread_launch(void)
     // WaitForSingleObject(h3, INFINITE);
 }
 
-int cleanup(void)
+void cleanup(FLAGS *flags)
 {
 
     quit = 1; // To force threads to close if not yet done
     printDebug(LL_INFO, "Closing MSFS connection...");
-    SimConnect_Close(hSimConnect);
+    SimConnect_Close(PSXMSFS.hSimConnect);
 
     printDebug(LL_INFO, "MSFS closed.");
     sendQPSX("exit"); // Signal PSX that we are quitting
@@ -129,11 +130,11 @@ int cleanup(void)
      * and gracefully try to close main and boost sockets
      * -----------------------------------------------------------------------------*/
     printDebug(LL_INFO, "Closing PSX boost connection...");
-    if (close_PSX_socket(sPSXBOOST)) {
+    if (close_PSX_socket(PSXMSFS.BOOSTsocket)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
     }
     printDebug(LL_INFO, "Closing PSX main connection...");
-    if (close_PSX_socket(sPSX)) {
+    if (close_PSX_socket(PSXMSFS.PSXsocket)) {
         printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
     }
 
@@ -141,7 +142,15 @@ int cleanup(void)
     printDebug(LL_INFO, "See you next time!");
     remove_debug(); // Remove DEBUG file if not in DEBUG mode
 
-    return 0;
+    // Closing the mutexes
+    CloseHandle(mutex);
+    CloseHandle(mutexsitu);
+
+    // And free memory
+    free(flags);
+
+    // and forcing the quit on threads if not yet done so
+    quit = 1;
 }
 
 int initialize(FLAGS *flags)
@@ -178,14 +187,6 @@ int initialize(FLAGS *flags)
     return 0;
 }
 
-void disconnect(void)
-{
-    CloseHandle(mutex);
-    CloseHandle(mutexsitu);
-    cleanup();
-    quit = 1;
-}
-
 int connectPSXMSFS(FLAGS *flags)
 {
 
@@ -209,9 +210,9 @@ int connectPSXMSFS(FLAGS *flags)
     return 0;
 }
 
-int main_launch()
+int main_launch(FLAGS *flags)
 {
     quit = 0;
-    thread_launch();
+    thread_launch(flags);
     return 0;
 }

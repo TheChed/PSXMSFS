@@ -172,8 +172,7 @@ void setWeatherZone(int zone);
  * This function should be called in a frame change event in the callback function
  * and should not be called at will as it leads to some untraceable crashes
  */
-void SetMSFSPos(double flightDeckAlt, double heading, double latitude, double longitude,
-                double bank, double pitch);
+void SetMSFSPos(void);
 
 /*
  * Setting the correct altitude
@@ -195,3 +194,4 @@ void updateGear(double position);
  * Update gear position
  */
 void updateParkingBreak(int position);
+
