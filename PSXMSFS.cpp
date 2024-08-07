@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "PSXMSFSLIB.h"
 #include "MSFS.h"
+#include "handleapi.h"
 #include "util.h"
 #include "update.h"
 #include "connect.h"
@@ -74,7 +75,7 @@ DWORD WINAPI ptDataFromPSX(void *)
     return 0;
 }
 
-void thread_launch(FLAGS *flags)
+void thread_launch()
 {
     DWORD t1, t2, t3;
     HANDLE h1, h2, h3;
@@ -100,12 +101,12 @@ void thread_launch(FLAGS *flags)
         quit = 1;
     }
 
-    h2 = CreateThread(NULL, 0, ptDataFromBoost, flags, 0, &t2);
+    h2 = CreateThread(NULL, 0, ptDataFromBoost,NULL, 0, &t2);
     if (h2 == NULL) {
         printDebug(LL_ERROR, "Error creating boost server thread. Quitting now.");
         quit = 1;
     }
-    h3 = CreateThread(NULL, 0, ptDataFromMSFS, flags, 0, &t3);
+    h3 = CreateThread(NULL, 0, ptDataFromMSFS,NULL, 0, &t3);
     if (h3 == NULL) {
         printDebug(LL_ERROR, "Error creating MSFS server thread. Quitting now.");
         quit = 1;
@@ -116,7 +117,7 @@ void thread_launch(FLAGS *flags)
     // WaitForSingleObject(h3, INFINITE);
 }
 
-void cleanup(FLAGS *flags)
+void cleanup()
 {
 
     quit = 1; // To force threads to close if not yet done
@@ -145,9 +146,6 @@ void cleanup(FLAGS *flags)
     // Closing the mutexes
     CloseHandle(mutex);
     CloseHandle(mutexsitu);
-
-    // And free memory
-    free(flags);
 
     // and forcing the quit on threads if not yet done so
     quit = 1;
@@ -210,9 +208,18 @@ int connectPSXMSFS(FLAGS *flags)
     return 0;
 }
 
-int main_launch(FLAGS *flags)
+int main_launch()
 {
     quit = 0;
-    thread_launch(flags);
+    thread_launch();
     return 0;
 }
+
+void disconnect(void)
+{
+    CloseHandle(mutex);
+    CloseHandle(mutexsitu);
+    cleanup();
+    quit=1;
+}
+

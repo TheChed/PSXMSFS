@@ -187,3 +187,39 @@ void remove_debug(void)
     }
 }
 
+servers getServersInfo(FLAGS *f)
+{
+
+    servers S;
+
+    strncpy(S.PSXMainServer, f->PSXMainServer, IP_LENGTH);
+    strncpy(S.PSXBoostServer, f->PSXBoostServer, IP_LENGTH);
+    strncpy(S.MSFSServer, f->MSFSServer, IP_LENGTH);
+    S.PSXPort = f->PSXPort;
+    S.PSXBoostPort = f->PSXBoostPort;
+
+    return S;
+}
+
+unsigned int getSwitch(FLAGS *f)
+{
+    return f->switches;
+}
+int getLogVerbosity(FLAGS *f)
+{
+    return f->LOG_VERBOSITY;
+}
+
+void setLogVerbosity(FLAGS *f, LOG_LEVELS level){
+    f->LOG_VERBOSITY=level;
+}
+void setServersInfo(servers *S)
+{
+
+    strncpy(PSXMSFS.PSXMainServer, S->PSXMainServer, IP_LENGTH);
+    strncpy(PSXMSFS.PSXBoostServer, S->PSXBoostServer, IP_LENGTH);
+    strncpy(PSXMSFS.MSFSServer, S->MSFSServer, IP_LENGTH);
+    PSXMSFS.PSXPort = S->PSXPort;
+    PSXMSFS.PSXBoostPort = S->PSXBoostPort;
+
+}

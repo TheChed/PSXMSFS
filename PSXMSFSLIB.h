@@ -59,8 +59,8 @@ typedef enum {
     int PSXBoostPort;               // PSX boot server port
 
 
-    int PSXsocket;                  // PSX socket
-    int BOOSTsocket;                //PSXBoost server socket
+    SOCKET PSXsocket;                  // PSX socket
+    SOCKET BOOSTsocket;                //PSXBoost server socket
     HANDLE hSimConnect;                 // MSFS socket
 
     int LOG_VERBOSITY; // verbosity of the logs: 1 very verbose and 4 minimum verbosity
@@ -72,6 +72,13 @@ typedef enum {
     unsigned int switches;
 } FLAGS;
 
+typedef struct servers {
+    char PSXMainServer[IP_LENGTH];  // IP address of the PSX main server
+    char MSFSServer[IP_LENGTH];     // IP address of the PSX boost server
+    char PSXBoostServer[IP_LENGTH]; // IP address of the MSFS server
+    int PSXPort;                    // Main PSX port
+    int PSXBoostPort;               // PSX boot server port
+} servers;
 
 struct INTERNALPSXflags {
     int oldcrz;
@@ -80,6 +87,16 @@ struct INTERNALPSXflags {
     int Qi198SentFlight;
     DWORD NewSituTimeLoad;
 };
+typedef struct BOOST {
+    // Updated by Boost server
+    double flightDeckAlt;
+    double latitude;
+    double longitude;
+    double heading_true;
+    double pitch;
+    double bank;
+    int onGround;
+} BOOST;
 
 /*---------------------------------
  * Global variables
@@ -106,8 +123,8 @@ LIBEXPORT int updateFromIni(FLAGS *flags);
 LIBEXPORT int initialize(FLAGS *flags);
 LIBEXPORT int connectPSXMSFS(FLAGS *F);
 
-LIBEXPORT int main_launch(FLAGS *F);
-LIBEXPORT void cleanup(FLAGS *flags);
+LIBEXPORT int main_launch();
+LIBEXPORT void cleanup();
 
 /*----------------------------------
  * Log related functions
@@ -140,4 +157,8 @@ LIBEXPORT unsigned int getSwitch(FLAGS *f);
 LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBEXPORT int getLogVerbosity(FLAGS *f);
 LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
+LIBEXPORT void setServersInfo(servers *S);
+LIBEXPORT servers getServersInfo(FLAGS *f);
+LIBEXPORT BOOST getACFTInfo(void);
+LIBEXPORT void disconnect(void);
 #endif

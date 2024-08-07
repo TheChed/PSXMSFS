@@ -10,16 +10,7 @@
 #include "update.h"
 #include "MSFS.h"
 
-static struct {
-    // Updated by Boost server
-    double flightDeckAlt;
-    double latitude;
-    double longitude;
-    double heading_true;
-    double pitch;
-    double bank;
-    int onGround;
-} PSXBoost;
+static BOOST PSXBoost;
 
 // static BOOST PSXBoost;
 static struct MovingParts APos;
@@ -526,3 +517,13 @@ DWORD newSituLoaded(void)
 
     return GetTickCount();
 }
+
+BOOST getPSXBoost(void)
+{
+    return PSXBoost;
+}
+struct BOOST getACFTInfo(void){
+
+    return getPSXBoost();
+}
+

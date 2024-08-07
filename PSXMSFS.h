@@ -40,15 +40,14 @@ typedef enum {
  * by the client
  * ------------------------------------*/
 
-struct ACFT;
-//typedef struct {
-//    double Alt;
-//    double latitude;
-//    double longitude;
-//    double heading;
-//    double pitch;
-//    double bank;
-//} ACFT;
+typedef struct {
+    double Alt;
+    double latitude;
+    double longitude;
+    double heading;
+    double pitch;
+    double bank;
+} ACFT;
 
 typedef struct servers {
     char PSXIP[IP_LENGTH];   // IP address of the PSX main server
@@ -66,8 +65,8 @@ LIBIMPORT FLAGS *initFlags(void);
 LIBIMPORT int updateFromIni(FLAGS *flags);
 LIBIMPORT int initialize(FLAGS *flags);
 LIBIMPORT int connectPSXMSFS(FLAGS *flags);
-LIBIMPORT int main_launch(FLAGS *flags);
-LIBIMPORT void cleanup(FLAGS *flags);
+LIBIMPORT int main_launch();
+LIBIMPORT void cleanup();
 
 /*----------------------------------
  * Log related functions
@@ -99,5 +98,9 @@ LIBIMPORT unsigned int getSwitch(FLAGS *f);
 LIBIMPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBIMPORT int getLogVerbosity(FLAGS *f);
 LIBIMPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
-LIBIMPORT ACFT *getACFTInfo(void);
+LIBIMPORT unsigned int getSwitch(FLAGS *f);
+LIBIMPORT ACFT getACFTInfo(void);
+LIBIMPORT servers getServersInfo(FLAGS *f);
+LIBIMPORT void setServersInfo(servers *S);
+LIBIMPORT void disconnect(void);
 #endif

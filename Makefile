@@ -34,5 +34,6 @@ hash:
 	md5sum PSXMSFS.exe > bin/PSXMSFS.MD5
 
 win:
+	rm /home/stephan/NAS/TRANSFERT/SRC/PSXMSFSDLL/*.*
 	cp  *.{h,cpp} /home/stephan/NAS/TRANSFERT/SRC/PSXMSFSDLL
 	cp PSXMSFS.h ../PSXRAY
