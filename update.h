@@ -32,7 +32,8 @@ struct TATL {
     // 1: cruise
     // 2: descent
 
-    int phase;
+    //int phase;
+    enum phase {CLIMB,CRUISE,DESCENT};
 };
 /*
  * Structures used to update MSFS

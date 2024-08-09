@@ -4,15 +4,10 @@
 #include <windows.h>
 #include "SimConnect.h"
 #include "PSXMSFSLIB.h"
-#include "winerror.h"
 
 #ifndef __MINGW__
 #pragma comment(lib, "Ws2_32.lib")
 #endif // !__MINGW__
-
-HANDLE hSimConnect = NULL;
-SOCKET sPSX;      // main PSX socket id
-SOCKET sPSXBOOST; // PSX boost socket id
 
 int close_PSX_socket(SOCKET sockid)
 {
@@ -56,13 +51,15 @@ SOCKET init_connect_PSX(const char *hostname, int portno)
 
 HANDLE init_connect_MSFS(void)
 {
+    HANDLE hSimConnect = NULL;
+
     if (SUCCEEDED(SimConnect_Open(&hSimConnect, "PSX", NULL, 0, 0, 0))) {
         printDebug(LL_DEBUG, "Connected to MSFS Simconnect");
-        return hSimConnect;
     } else {
         printDebug(LL_ERROR, "Could not connect to MSFS Simconnect. Exiting now...");
-        return NULL;
     }
+
+    return hSimConnect;
 }
 
 int open_connections(FLAGS *f)

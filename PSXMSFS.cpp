@@ -6,7 +6,6 @@
 #include "handleapi.h"
 #include "util.h"
 #include "update.h"
-#include "connect.h"
 #include "winnt.h"
 
 /*----------------------------------------------
@@ -43,11 +42,9 @@ DWORD WINAPI ptDataFromMSFS(void *thread_param)
         if (hr == E_FAIL) {
             exit(1);
         }
-        if (!intflags.updateNewSitu) {
-            WaitForSingleObject(mutex, INFINITE);
-            SetMSFSPos();
-            ReleaseMutex(mutex);
-        }
+        WaitForSingleObject(mutex, INFINITE);
+        SetMSFSPos();
+        ReleaseMutex(mutex);
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
 
@@ -68,8 +65,7 @@ DWORD WINAPI ptDataFromPSX(void *)
 {
 
     while (!quit) {
-        if (!intflags.updateNewSitu)
-            getDataFromPSX();
+        getDataFromPSX();
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
@@ -101,20 +97,16 @@ void thread_launch()
         quit = 1;
     }
 
-    h2 = CreateThread(NULL, 0, ptDataFromBoost,NULL, 0, &t2);
+    h2 = CreateThread(NULL, 0, ptDataFromBoost, NULL, 0, &t2);
     if (h2 == NULL) {
         printDebug(LL_ERROR, "Error creating boost server thread. Quitting now.");
         quit = 1;
     }
-    h3 = CreateThread(NULL, 0, ptDataFromMSFS,NULL, 0, &t3);
+    h3 = CreateThread(NULL, 0, ptDataFromMSFS, NULL, 0, &t3);
     if (h3 == NULL) {
         printDebug(LL_ERROR, "Error creating MSFS server thread. Quitting now.");
         quit = 1;
     }
-
-    // WaitForSingleObject(h1, INFINITE);
-    // WaitForSingleObject(h2, INFINITE);
-    // WaitForSingleObject(h3, INFINITE);
 }
 
 void cleanup()
@@ -127,28 +119,29 @@ void cleanup()
     printDebug(LL_INFO, "MSFS closed.");
     sendQPSX("exit"); // Signal PSX that we are quitting
 
-    /*-------------------------------------------------------------------------------
-     * and gracefully try to close main and boost sockets
-     * -----------------------------------------------------------------------------*/
+    /*-----------------------------------------------------*
+     * and gracefully try to close main and boost sockets  *
+     * ----------------------------------------------------*/
     printDebug(LL_INFO, "Closing PSX boost connection...");
     if (close_PSX_socket(PSXMSFS.BOOSTsocket)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
     }
+
     printDebug(LL_INFO, "Closing PSX main connection...");
     if (close_PSX_socket(PSXMSFS.PSXsocket)) {
-        printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?...");
+        printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?");
     }
 
     WSACleanup(); // CLose the Win32 sockets
-    printDebug(LL_INFO, "See you next time!");
-    remove_debug(); // Remove DEBUG file if not in DEBUG mode
 
     // Closing the mutexes
     CloseHandle(mutex);
     CloseHandle(mutexsitu);
 
-    // and forcing the quit on threads if not yet done so
-    quit = 1;
+    remove_debug(); // Remove DEBUG file if not in DEBUG mode
+
+    // bye bye
+    printDebug(LL_INFO, "See you next time!");
 }
 
 int initialize(FLAGS *flags)
@@ -220,6 +213,5 @@ void disconnect(void)
     CloseHandle(mutex);
     CloseHandle(mutexsitu);
     cleanup();
-    quit=1;
+    quit = 1;
 }
-

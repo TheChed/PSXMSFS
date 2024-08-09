@@ -87,7 +87,7 @@ struct INTERNALPSXflags {
     int Qi198SentFlight;
     DWORD NewSituTimeLoad;
 };
-typedef struct BOOST {
+typedef struct {
     // Updated by Boost server
     double flightDeckAlt;
     double latitude;
@@ -108,6 +108,11 @@ extern FLAGS PSXMSFS;
 extern DWORD TimeStart; // Timestamp when the simulation is started.
 
 
+int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort);
+int init_socket(void);
+int close_PSX_socket(SOCKET socket);
+int open_connections(FLAGS *f);
+int init_connect_MSFS(HANDLE *p);
 
 
 void printDebug(LOG_LEVELS level, const char *debugInfo, ...);

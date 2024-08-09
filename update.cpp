@@ -522,8 +522,8 @@ BOOST getPSXBoost(void)
 {
     return PSXBoost;
 }
-struct BOOST getACFTInfo(void){
+BOOST getACFTInfo(void)
+{
 
     return getPSXBoost();
 }
-

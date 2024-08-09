@@ -3,7 +3,7 @@ CFLAGS = -std=c++20 -IInclude -Werror -Wall -Wextra -pedantic
 VER=$(shell date +"%y%m%d%H%M")
 LINK= -LInclude -lwsock32 -lSimConnect
 
-DEPS = PSXMSFSLIB.h util.h update.h MSFS.h connect.h
+DEPS = PSXMSFSLIB.h util.h update.h MSFS.h
 OBJ = PSXDATA.o link.o PSXMSFS.o MSFS.o connect.o util.o update.o log.o
 LIBOBJ = PSXDATA.o MSFS.o connect.o util.o update.o PSXMSFS.o log.o
 OBJLINK = link.o

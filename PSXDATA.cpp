@@ -5,7 +5,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
-#include <windows.h>
+//#include <windows.h>
 #include "PSXMSFSLIB.h"
 #include "util.h"
 #include "update.h"
@@ -209,7 +209,7 @@ void S448(char *s)
     }
     /* STD setting*/
     if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        stdbar = ((abs(strtod(token, NULL)) == 1) ? 0 : 1);
+        stdbar = ((fabs(strtod(token, NULL)) == 1) ? 0 : 1);
     }
     SetBARO(altimeter, stdbar);
 }
@@ -254,9 +254,9 @@ void S480(char *s)
         val[i] = (s[2 * i + 6] - '0') * 10 + (s[2 * i + 1 + 6] - '0');
     }
 
-    rudder = 16384 * ((val[8] + val[9]) / 2 - 32) / 32.0; // maximum deflection = 64
-    aileron = 16384 * (val[2] - 20) / 20.0;               // maximum deflection in PSX  = 40
-    elevator = 16384 * (val[6] - 21) / 21.0;              // maximum deflection in PSX = 42
+    rudder = 16384 * (double)((val[8] + val[9]) / 2.0 - 32.0) / 32.0; // maximum deflection = 64
+    aileron = 16384 * (double)(val[2] - 20) / 20.0;               // maximum deflection in PSX  = 40
+    elevator = 16384 * (double)(val[6] - 21) / 21.0;              // maximum deflection in PSX = 42
                                                           //
     S.Type = MOVING;
     S.UN.movingElements.rudder = rudder;
@@ -300,14 +300,12 @@ void S122(const char *s)
 void S443(const char *s)
 {
 
-    // int *light = (int *)malloc(14 * sizeof(int));
     int light[14];
 
     for (int i = 0; i < 14; i++) {
         light[i] = (int)(s[i + 6] - '0') < 5 ? 0 : 1;
     }
     updateLights(light);
-    // free(light);
 }
 
 void I240(const char *s)
