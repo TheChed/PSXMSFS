@@ -124,7 +124,7 @@ void SetAcftElevation(double elevation);
 void init_pos(void);
 double getElevation(void);
 int getFlightPhase(void);
-DWORD newSituLoaded(void);
+DWORD newSituLoaded(FLAGS *flags);
 void getTATL(int *TA, int *TL);
 /*
  * Function used to update the state inflight<->onground
@@ -173,7 +173,7 @@ void setWeatherZone(int zone);
  * This function should be called in a frame change event in the callback function
  * and should not be called at will as it leads to some untraceable crashes
  */
-void SetMSFSPos(void);
+void SetMSFSPos(FLAGS *flags);
 
 /*
  * Setting the correct altitude

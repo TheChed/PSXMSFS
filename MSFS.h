@@ -107,15 +107,15 @@ struct Struct_MSFS {
     double baro;        // ambiant pressure
     double temperature; // ambiant temperature
 };
-void init_MS_data(void);
+void init_MS_data(HANDLE hSim);
 double getGroundAltitude(void);
 double getMSL_pressure(void);
 double getMSFS_baro(void);
 double getMSL_temperature(void);
 double getIndAltitude(void);
 int isGroundAltitudeAvailable(void);
-void CALLBACK SimmConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext);
-void freezeMSFS(int);
+void CALLBACK SimConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext);
+void freezeMSFS(int freeze, HANDLE sSimConnect);
 void init_variables(void);
 
 #endif

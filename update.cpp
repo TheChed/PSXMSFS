@@ -259,7 +259,7 @@ double SetAltitude(int onLinHack, int onGround, double altfltdeck, double pitch,
     return FinalAltitude;
 }
 
-void SetMSFSPos()
+void SetMSFSPos(FLAGS *f)
 {
 
     struct AcftMSFS MSFS;
@@ -277,10 +277,10 @@ void SetMSFSPos()
      */
 
     groundAltitude = getGroundAltitude();
-    if (PSXMSFS.switches & F_INJECT)
+    if (f->switches & F_INJECT)
         Qi198Update(PSXBoost.onGround, PSXDATA.acftelev);
     MSFS.altitude =
-        SetAltitude(PSXMSFS.switches & F_ONLINE, PSXBoost.onGround, PSXBoost.flightDeckAlt, -PSXBoost.pitch, PSXDATA.acftelev, groundAltitude);
+        SetAltitude(f->switches & F_ONLINE, PSXBoost.onGround, PSXBoost.flightDeckAlt, -PSXBoost.pitch, PSXDATA.acftelev, groundAltitude);
     MSFS.latitude = latc;
     MSFS.longitude = longc;
     MSFS.pitch = PSXBoost.pitch;
@@ -294,12 +294,12 @@ void SetMSFSPos()
      * main callback function
      */
 
-    SimConnect_SetDataOnSimObject(PSXMSFS.hSimConnect, BOOST_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+    SimConnect_SetDataOnSimObject(f->hSimConnect, BOOST_TO_MSFS, SIMCONNECT_OBJECT_ID_USER, 0, 0,
                                   sizeof(MSFS), &MSFS);
 
-    SimConnect_SetDataOnSimObject(PSXMSFS.hSimConnect, DATA_SPEED, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+    SimConnect_SetDataOnSimObject(f->hSimConnect, DATA_SPEED, SIMCONNECT_OBJECT_ID_USER, 0, 0,
                                   sizeof(PSXSPEED), &PSXSPEED);
-    SimConnect_SetDataOnSimObject(PSXMSFS.hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+    SimConnect_SetDataOnSimObject(f->hSimConnect, DATA_MOVING_SURFACES, SIMCONNECT_OBJECT_ID_USER, 0, 0,
                                   sizeof(APos), &APos);
 }
 
@@ -373,7 +373,7 @@ void updateLights(int *L)
     }
 
     // Finally update in MSFS the lights
-    SimConnect_SetDataOnSimObject(PSXMSFS.hSimConnect, DATA_LIGHT, SIMCONNECT_OBJECT_ID_USER, 0, 0,
+    SimConnect_SetDataOnSimObject(hSimConnect, DATA_LIGHT, SIMCONNECT_OBJECT_ID_USER, 0, 0,
                                   sizeof(Lights), &Lights);
 }
 
@@ -390,10 +390,10 @@ void setWeather(int zone, double QNH)
 void SetXPDR(int XPDR, int IDENT)
 {
 
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, XPDR,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR, XPDR,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, IDENT,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_XPDR_IDENT, IDENT,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
@@ -438,7 +438,7 @@ void init_pos(void)
 void updateSteeringWheel(DWORD wheelangle)
 {
 
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, wheelangle,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_STEERING, wheelangle,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
@@ -446,7 +446,7 @@ void updateSteeringWheel(DWORD wheelangle)
 void updateParkingBreak(int position)
 {
 
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, position,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_PARKING, position,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
@@ -454,26 +454,26 @@ void updateParkingBreak(int position)
 void SetUTCTime(int hour, int minute, int day, int year)
 {
 
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, hour,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_HOURS, hour,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_MINUTES,
                                    minute, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, day,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_DAY, day,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, year,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_ZULU_YEAR, year,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 void SetCOMM(int COM1, int COM2)
 {
 
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, COM1,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM, COM1,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, COM2,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_COM_STDBY, COM2,
                                    SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
@@ -481,14 +481,14 @@ void SetCOMM(int COM1, int COM2)
 void SetBARO(DWORD altimeter, int standard)
 {
 
-    SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
+    SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
                                    altimeter * 16, SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     if (standard) {
-        SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO_STD, 1,
                                        SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                        SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
-        SimConnect_TransmitClientEvent(PSXMSFS.hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
+        SimConnect_TransmitClientEvent(hSimConnect, SIMCONNECT_OBJECT_ID_USER, EVENT_BARO,
                                        (DWORD)(1013.25 * 16.0), SIMCONNECT_GROUP_PRIORITY_HIGHEST,
                                        SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
     }
@@ -500,9 +500,9 @@ void resetInternalFlags(void)
     intflags.updateNewSitu = 1;
 }
 
-DWORD newSituLoaded(void)
+DWORD newSituLoaded(FLAGS *f)
 {
-    int crashInhibit = (PSXMSFS.switches & F_INHIB);
+    int crashInhibit = (f->switches & F_INHIB);
     if (crashInhibit) {
         printDebug(LL_INFO, "No crash detection for 10 seconds");
         sendQPSX("Qi198=-9999910"); // no crash detection fort 10 seconds
@@ -512,7 +512,7 @@ DWORD newSituLoaded(void)
     printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
     printDebug(LL_INFO, "Let's wait 2-3 seconds to get everyone ready, shall we?");
 
-    freezeMSFS(1); // New Situ loaded, let's preventively freeze MSFS
+    freezeMSFS(1,f->hSimConnect); // New Situ loaded, let's preventively freeze MSFS
     init_variables();
 
     return GetTickCount();

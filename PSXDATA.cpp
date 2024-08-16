@@ -5,7 +5,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
-//#include <windows.h>
+// #include <windows.h>
 #include "PSXMSFSLIB.h"
 #include "util.h"
 #include "update.h"
@@ -15,12 +15,49 @@ size_t bufmain_used = 0;
 char bufboost[256];
 char bufmain[4096];
 
+char *extractnth(const char *s, size_t n)
+{
+    char *result, *fin, *ini;
+    size_t i = 1;
+
+    // some basic checks
+    if (n == 0 || strlen(s) == 0)
+        return NULL;
+
+    if ((result = (char *)strchr(s, '=')))
+        result++;
+    else
+        result = (char *)s;
+
+    // if only one token
+    if (strchr(s, ';') == NULL) {
+        return _strdup(result);
+    }
+
+    if (n > 1) {
+        while ((result = strchr(result, ';'))) {
+            result++;
+            i++;
+            if (i == n)
+                break;
+        }
+    }
+    // We are at the nth token, just need to chop off what comes after
+
+    if (result == NULL)
+        return NULL;
+    ini = _strdup(result);
+    if ((fin = strchr(ini, ';')) != NULL) {
+        ini[fin - ini] = '\0';
+    }
+    return ini;
+}
 /* MSFS SDK: The gear handle position, where
  * 0 means the handle is retracted and 1 is the handle fully applied.
  *
  * in PSX, 1 = up, 2 = off and 3 = down
  */
-void H170(char *s)
+void H170(const char *s)
 {
     int gearpos;
     struct SurfaceUpdate S;
@@ -80,15 +117,12 @@ void H426(const char *s)
  *  Speedbrake lever variable
  *  Qh388="SpdBrkLever"; Mode=ECON; Min=0; Max=800;
  */
-void H388(char *s)
+void H388(const char *s)
 {
-    double SpeedBrakelevel = 0;
+    float SpeedBrakelevel = 0;
     struct SurfaceUpdate S;
-    char *token, *savptr;
 
-    if ((token = strtok_s(s + 6, DELIM, &savptr)) != NULL) {
-        SpeedBrakelevel = 16384 * strtol(token, NULL, 10) / 800.0;
-    }
+    SpeedBrakelevel = 16384.0f * strtol(strrchr(s, '=') + 1, NULL, 10) / 800.0f;
 
     /*
      * Since SpeedBrakeLEvel is set as a position 16K
@@ -105,22 +139,17 @@ void H388(char *s)
 
 /*
  * Qs121="PiBaHeAlTas"; Mode=ECON; Min=9; Max=200;
+ *
  */
-void S121(char *s)
+void S121(const char *s)
 {
 
-    char *token, *savptr;
     struct SpeedUpdate SU;
+    char *token;
     double speed = 0;
 
-    token = strtok_s(s + 6, DELIM, &savptr);
-    token = strtok_s(NULL, DELIM, &savptr);
-    token = strtok_s(NULL, DELIM, &savptr);
-    token = strtok_s(NULL, DELIM, &savptr);
-    // TAS is the 5th token
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        speed = (double)strtoul(token, NULL, 10) / 1000.0;
-    }
+    token = extractnth(s, 5);
+    speed = (double)strtoul(token, NULL, 10) / 1000.0;
 
     speed = (speed < 0) ? 0 : speed;
     speed = (speed > 530) ? 530 : speed;
@@ -129,61 +158,57 @@ void S121(char *s)
     SU.Speed.TAS = speed;
 
     SetSpeed(&SU);
+    free(token);
 }
 
-void S483(char *s)
+void S483(const char *s)
 {
-    char *token, *ptr;
     struct SpeedUpdate SU;
+    char *token;
     double speed = 0;
 
-    if ((token = strtok_s(s + 6, DELIM, &ptr)) != NULL) {
-        speed = strtol(token, NULL, 10) / 10.0;
-    }
-
+    token = extractnth(s, 1);
+    speed = strtol(token, NULL, 10) / 10.0;
     speed = (speed < 0) ? 0 : speed;
 
     SU.Speed.IAS = speed;
     SU.Type = IAS;
     SetSpeed(&SU);
+    free(token);
 }
 
-void S392(char *s)
+void S392(const char *s)
 {
-    char *token, *savptr;
     int TA = 0, TL = 0;
-    int flightPhase;
-
-    // TA and TL are the 2nd and 3rd token
-    token = strtok_s(s, DELIM, &savptr);
+    char *flightPhase, *tokenTA, *tokenTL;
 
     /*
      * We now try to get the flight phase
      */
+    flightPhase = extractnth(s, 1);
 
-    flightPhase = token[9] - '0';
-
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        TA = (int)strtoul(token, NULL, 10);
-    }
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        TL = (int)strtoul(token, NULL, 10);
-    }
+    // TA and TL are the 2nd and 3rd token
+    tokenTA = extractnth(s, 2);
+    tokenTL = extractnth(s, 3);
+    TA = (int)strtoul(tokenTA, NULL, 10);
+    TL = (int)strtoul(tokenTL, NULL, 10);
 
     TL = (TL < 0) ? 0 : TL;
     TA = (TA < 0) ? 0 : TA;
 
-    updateFlightPhase(flightPhase, TA, TL);
+    updateFlightPhase(flightPhase[3] - '0', TA, TL);
+    free(flightPhase);
+    free(tokenTA);
+    free(tokenTL);
 }
 void S78(const char *s)
 {
 
-
     if (strstr(s, "MSFS")) {
-    //    PSXflags.SLAVE = 1;
+        //    PSXflags.SLAVE = 1;
     } else {
         if (strstr(s, "PSX")) {
-      //      PSXflags.SLAVE = 0;
+            //      PSXflags.SLAVE = 0;
         }
     }
 }
@@ -191,27 +216,22 @@ void S78(const char *s)
 void S448(char *s)
 {
 
-    char *token, *ptr, *savptr;
+    char *tokenALT, *tokenSTD;
     int stdbar = 0;
-    long altimeter = 0;
+    int altimeter = 0;
 
-    /* get the first token
-     * Altimeter setting is the 4th token
+    /* Altimeter setting is the 4th token
      * 5th token is STD setting
      */
+    tokenALT = extractnth(s, 4);
+    tokenSTD = extractnth(s, 5);
 
-    token = strtok_s(s + 6, DELIM, &savptr);
-    token = strtok_s(NULL, DELIM, &savptr);
-    token = strtok_s(NULL, DELIM, &savptr);
+    altimeter = strtol(tokenALT, NULL, 10) / 100;
+    stdbar = ((fabs(strtod(tokenSTD, NULL)) == 1) ? 0 : 1);
 
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        altimeter = strtol(token, &ptr, 10) / 100;
-    }
-    /* STD setting*/
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        stdbar = ((fabs(strtod(token, NULL)) == 1) ? 0 : 1);
-    }
     SetBARO(altimeter, stdbar);
+    free(tokenSTD);
+    free(tokenALT);
 }
 
 void S458(char *s)
@@ -255,9 +275,9 @@ void S480(char *s)
     }
 
     rudder = 16384 * (double)((val[8] + val[9]) / 2.0 - 32.0) / 32.0; // maximum deflection = 64
-    aileron = 16384 * (double)(val[2] - 20) / 20.0;               // maximum deflection in PSX  = 40
-    elevator = 16384 * (double)(val[6] - 21) / 21.0;              // maximum deflection in PSX = 42
-                                                          //
+    aileron = 16384 * (double)(val[2] - 20) / 20.0;                   // maximum deflection in PSX  = 40
+    elevator = 16384 * (double)(val[6] - 21) / 21.0;                  // maximum deflection in PSX = 42
+                                                                      //
     S.Type = MOVING;
     S.UN.movingElements.rudder = rudder;
     S.UN.movingElements.ailerons = aileron;
@@ -347,29 +367,22 @@ void I219(const char *s)
     SetAcftElevation(acftelev); // we got a fresh elevation
 }
 
-void Qsweather(char *s)
+void Qsweather(const char *s)
 {
 
-    char *token, *savptr;
     int zone;
     double QNH;
-    char sav[128];
 
     /* Get the active zone */
 
     zone = (int)strtoul(s + 2, NULL, 10) - 328; // Because the first zone is Qs328
 
-    if ((token = strtok_s(s + 6, DELIM, &savptr)) != NULL) {
-
-        // last token is the QNH, need to save a copy before it is set to NULL
-        while (token) {
-            strcpy(sav, token);
-            token = strtok_s(NULL, DELIM, &savptr);
-        }
-    }
-
     if (zone >= 0 && zone < 8) {
-        QNH = strtoul(sav, NULL, 10);
+
+        // convert the last 4 digits as the string
+        // is in format : QSxxx=xxxxxxxxxxxxxxxxxxxxxx;3021
+
+        QNH = strtoul(strrchr(s, ';') + 1, NULL, 10);
         setWeather(zone, QNH);
     }
 }
@@ -406,47 +419,45 @@ double calcVS(double alt, int ms)
 void Decodeboost(const char *strboost)
 {
 
-    double flightDeckAlt=0.0, heading_true=0.0, pitch=0.0, bank=0.0;
-    double latitude=0.0, longitude=0.0;
-    int onGround=1, ms=0;
-    char *token, *ptr, *savptr;
-    char *s = _strdup(strboost);
+    double flightDeckAlt = 0.0, heading_true = 0.0, pitch = 0.0, bank = 0.0;
+    double latitude = 0.0, longitude = 0.0;
+    int onGround = 1, ms = 0;
+    char *token;
 
     struct SpeedUpdate SU;
 
     /* get the first token */
-    if ((token = strtok_s(s, DELIM, &savptr)) != NULL) {
-        onGround = (strcmp(token, "G") == 0 ? 1 : 0);
-    }
+    token = extractnth(strboost, 1);
+    onGround = (strcmp(token, "G") == 0 ? 1 : 0);
+    free(token);
 
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
+    token = extractnth(strboost, 2);
+    flightDeckAlt = strtol(token, NULL, 10) / 100;
+    free(token);
 
-        flightDeckAlt = strtol(token, &ptr, 10) / 100;
-    }
+    token = extractnth(strboost, 3);
+    heading_true = strtol(token, NULL, 10) / 100.0 * DEG2RAD;
+    free(token);
 
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        heading_true = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-    }
+    token = extractnth(strboost, 4);
+    pitch = -strtol(token, NULL, 10) / 100.0 * DEG2RAD;
+    free(token);
 
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        pitch = -strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-    }
+    token = extractnth(strboost, 5);
+    bank = strtol(token, NULL, 10) / 100.0 * DEG2RAD;
+    free(token);
 
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        bank = strtol(token, &ptr, 10) / 100.0 * DEG2RAD;
-    }
+    token = extractnth(strboost, 6);
+    latitude = strtod(token, NULL) * DEG2RAD; // Boost gives lat & long in degrees
+    free(token);
 
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        latitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees
-    }
+    token = extractnth(strboost, 7);
+    longitude = strtod(token, NULL) * DEG2RAD; // Boost gives lat & long in degrees;
+    free(token);
 
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        longitude = strtod(token, &ptr) * DEG2RAD; // Boost gives lat & long in degrees;
-    }
-
-    if ((token = strtok_s(NULL, DELIM, &savptr)) != NULL) {
-        ms = strtol(token, NULL, 10);
-    }
+    token = extractnth(strboost, 8);
+    ms = strtol(token, NULL, 10);
+    free(token);
 
     /*
      * We update the speed via the speed structure
@@ -455,10 +466,8 @@ void Decodeboost(const char *strboost)
     SU.Speed.VS = calcVS(flightDeckAlt, ms);
 
     SetSpeed(&SU);
-
     updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
 
-    free(s);
 }
 
 void Decode(char *s)
@@ -560,7 +569,7 @@ void Decode(char *s)
     }
 }
 
-int getDataFromPSX(void)
+int getDataFromPSX(FLAGS *flags)
 {
     char *line_start = bufmain;
     char *line_end;
@@ -572,7 +581,7 @@ int getDataFromPSX(void)
         return 0;
     }
 
-    int nbread = recv(PSXMSFS.PSXsocket, (char *)&bufmain[bufmain_used], (int)(bufmain_remain), 0);
+    int nbread = recv(flags->PSXsocket, (char *)&bufmain[bufmain_used], (int)(bufmain_remain), 0);
 
     if (nbread == 0) {
         printDebug(LL_ERROR, "Main socket connection closed.");
@@ -601,7 +610,7 @@ int getDataFromPSX(void)
         // New situ loaded
         if (strstr(line_start, "load3")) {
             printDebug(LL_DEBUG, "Loading new situ file");
-            intflags.NewSituTimeLoad = newSituLoaded();
+            intflags.NewSituTimeLoad = newSituLoaded(flags);
         }
 
         // we are still loading a new situ
@@ -627,7 +636,7 @@ int getDataFromPSX(void)
     return nbread;
 }
 
-int getDataFromBoost(void)
+int getDataFromBoost(SOCKET sPSXBOOST)
 {
 
     size_t bufboost_remain = sizeof(bufboost) - bufboost_used;
@@ -637,7 +646,7 @@ int getDataFromBoost(void)
         return 0;
     }
 
-    int nbread = recv(PSXMSFS.BOOSTsocket, (char *)&bufboost[bufboost_used], (int)(bufboost_remain), 0);
+    int nbread = recv(sPSXBOOST, (char *)&bufboost[bufboost_used], (int)(bufboost_remain), 0);
     if (nbread == 0) {
         printDebug(LL_ERROR, "Boost connection closed.");
         quit = 1;

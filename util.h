@@ -6,7 +6,6 @@
 
 double dist(double lat1, double lat2, double long1, double long2);
 void CalcCoord(double bearing, double lato, double longo, double *latr, double *longr);
-void remove_debug(void);
 
 /*
  * function used to send variables to PSX
@@ -24,3 +23,5 @@ unsigned int getSwitch(FLAGS *f);
 unsigned int getVerbosityLevel(FLAGS *f);
 
 void setSwitch(FLAGS *f, unsigned int flagvalue);
+
+int getPSXsocket(FLAGS *f);

@@ -3,18 +3,16 @@
 #include <windows.h>
 #include "PSXMSFSLIB.h"
 #include "MSFS.h"
-#include "handleapi.h"
 #include "util.h"
 #include "update.h"
-#include "winnt.h"
 
 /*----------------------------------------------
  * Main thread functions used to get data from
  * PSX and Boost servers.
  * Defined in PSXDATA.cpp
  * --------------------------------------------*/
-int getDataFromPSX(void);
-int getDataFromBoost(void);
+int getDataFromPSX(FLAGS *flags);
+int getDataFromBoost(SOCKET sPSXBOOST);
 
 /*----------------------------------------
  * State flags read from PSXMSFS.ini file
@@ -34,16 +32,12 @@ DWORD TimeStart;
 
 DWORD WINAPI ptDataFromMSFS(void *thread_param)
 {
-    HRESULT hr;
-    UNUSED(thread_param);
+    FLAGS *flags = (FLAGS *)thread_param;
 
     while (!quit) {
-        hr = SimConnect_CallDispatch(PSXMSFS.hSimConnect, SimmConnectProcess, NULL);
-        if (hr == E_FAIL) {
-            exit(1);
-        }
+        SimConnect_CallDispatch(flags->hSimConnect, SimConnectProcess,flags);
         WaitForSingleObject(mutex, INFINITE);
-        SetMSFSPos();
+        SetMSFSPos(flags);
         ReleaseMutex(mutex);
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
@@ -53,25 +47,26 @@ DWORD WINAPI ptDataFromMSFS(void *thread_param)
 
 DWORD WINAPI ptDataFromBoost(void *param)
 {
-    UNUSED(param);
+    FLAGS *flags = (FLAGS *)param;
+
     while (!quit) {
-        getDataFromBoost();
+        getDataFromBoost(flags->BOOSTsocket);
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
 }
 
-DWORD WINAPI ptDataFromPSX(void *)
+DWORD WINAPI ptDataFromPSX(void *param)
 {
-
+    FLAGS *f = (FLAGS *)(param);
     while (!quit) {
-        getDataFromPSX();
+        getDataFromPSX(f);
         Sleep(1); // We sleep for 1 ms to avoid heavy polling
     }
     return 0;
 }
 
-void thread_launch()
+void thread_launch(FLAGS *flags)
 {
     DWORD t1, t2, t3;
     HANDLE h1, h2, h3;
@@ -91,30 +86,30 @@ void thread_launch()
      * Thread 3: callback function in MSFS
      *---------------------------------------*/
 
-    h1 = CreateThread(NULL, 0, ptDataFromPSX, NULL, 0, &t1);
+    h1 = CreateThread(NULL, 0, ptDataFromPSX, flags, 0, &t1);
     if (h1 == NULL) {
         printDebug(LL_ERROR, "Error creating PSX main server thread. Quitting now.");
         quit = 1;
     }
 
-    h2 = CreateThread(NULL, 0, ptDataFromBoost, NULL, 0, &t2);
+    h2 = CreateThread(NULL, 0, ptDataFromBoost,flags, 0, &t2);
     if (h2 == NULL) {
         printDebug(LL_ERROR, "Error creating boost server thread. Quitting now.");
         quit = 1;
     }
-    h3 = CreateThread(NULL, 0, ptDataFromMSFS, NULL, 0, &t3);
+    h3 = CreateThread(NULL, 0, ptDataFromMSFS, flags, 0, &t3);
     if (h3 == NULL) {
         printDebug(LL_ERROR, "Error creating MSFS server thread. Quitting now.");
         quit = 1;
     }
 }
 
-void cleanup()
+void cleanup(FLAGS *flags)
 {
 
     quit = 1; // To force threads to close if not yet done
     printDebug(LL_INFO, "Closing MSFS connection...");
-    SimConnect_Close(PSXMSFS.hSimConnect);
+    SimConnect_Close(flags->hSimConnect);
 
     printDebug(LL_INFO, "MSFS closed.");
     sendQPSX("exit"); // Signal PSX that we are quitting
@@ -123,22 +118,20 @@ void cleanup()
      * and gracefully try to close main and boost sockets  *
      * ----------------------------------------------------*/
     printDebug(LL_INFO, "Closing PSX boost connection...");
-    if (close_PSX_socket(PSXMSFS.BOOSTsocket)) {
+    if (close_PSX_socket(flags->BOOSTsocket)) {
         printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
     }
 
     printDebug(LL_INFO, "Closing PSX main connection...");
-    if (close_PSX_socket(PSXMSFS.PSXsocket)) {
+    if (close_PSX_socket(flags->PSXsocket)) {
         printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?");
     }
 
     WSACleanup(); // CLose the Win32 sockets
 
-    // Closing the mutexes
-    CloseHandle(mutex);
-    CloseHandle(mutexsitu);
-
-    remove_debug(); // Remove DEBUG file if not in DEBUG mode
+    // Remove DEBUG file if not in DEBUG mode
+    if (flags->LOG_VERBOSITY > 1)
+        remove("DEBUG.TXT");
 
     // bye bye
     printDebug(LL_INFO, "See you next time!");
@@ -184,12 +177,12 @@ int connectPSXMSFS(FLAGS *flags)
     /*
      * Initialise and connect all sockets: PSX, PSX Boost and Simconnect
      */
-    if (open_connections(flags)) {
+    if (open_connections(flags) != 0) {
         return 1;
     }
 
     // initialize the data to be received as well as all EVENTS
-    init_MS_data();
+    init_MS_data(flags->hSimConnect);
 
     /*
     Initialize position at LFPG*/
@@ -201,17 +194,17 @@ int connectPSXMSFS(FLAGS *flags)
     return 0;
 }
 
-int main_launch()
+int main_launch(FLAGS *flags)
 {
     quit = 0;
-    thread_launch();
+    thread_launch(flags);
     return 0;
 }
 
-void disconnect(void)
+void disconnect(FLAGS *flags)
 {
     CloseHandle(mutex);
     CloseHandle(mutexsitu);
-    cleanup();
+    cleanup(flags);
     quit = 1;
 }

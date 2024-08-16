@@ -63,7 +63,7 @@ typedef enum {
     SOCKET BOOSTsocket;                //PSXBoost server socket
     HANDLE hSimConnect;                 // MSFS socket
 
-    int LOG_VERBOSITY; // verbosity of the logs: 1 very verbose and 4 minimum verbosity
+    LOG_LEVELS LOG_VERBOSITY; // verbosity of the logs: 1 very verbose and 4 minimum verbosity
 
     /* -----------------------------------------------
      * Internal switched combination of:
@@ -104,8 +104,10 @@ typedef struct {
 extern HANDLE mutex;
 extern int quit;
 extern struct INTERNALPSXflags intflags;
-extern FLAGS PSXMSFS;
+//extern FLAGS PSXMSFS;
 extern DWORD TimeStart; // Timestamp when the simulation is started.
+extern HANDLE hSimConnect;
+extern LOG_LEVELS VERBOSITY; 
 
 
 int init_param(const char *MSFSServerIP, const char *PSXMainIP, int PSXMainPort, const char *PSXBoostIP, int PSXBoostPort);
@@ -128,8 +130,8 @@ LIBEXPORT int updateFromIni(FLAGS *flags);
 LIBEXPORT int initialize(FLAGS *flags);
 LIBEXPORT int connectPSXMSFS(FLAGS *F);
 
-LIBEXPORT int main_launch();
-LIBEXPORT void cleanup();
+LIBEXPORT int main_launch(FLAGS *flags);
+LIBEXPORT void disconnect(FLAGS *flags);
 
 /*----------------------------------
  * Log related functions
@@ -162,8 +164,7 @@ LIBEXPORT unsigned int getSwitch(FLAGS *f);
 LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBEXPORT int getLogVerbosity(FLAGS *f);
 LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
-LIBEXPORT void setServersInfo(servers *S);
+LIBEXPORT void setServersInfo(servers *S, FLAGS *f);
 LIBEXPORT servers getServersInfo(FLAGS *f);
 LIBEXPORT BOOST getACFTInfo(void);
-LIBEXPORT void disconnect(void);
 #endif

@@ -9,36 +9,9 @@
 #include "util.h"
 #include "PSXMSFSLIB.h"
 
-FLAGS PSXMSFS;
+//FLAGS PSXMSFS;
 
-int sendQPSX(const char *s)
-{
-
-    int nbsend = 0;
-    char *dem = (char *)malloc((1 + strlen(s)) * sizeof(char));
-
-    if (dem == NULL) {
-        printDebug(LL_ERROR, "Could not create PSX variable: PSX will not be updated.");
-        return -1;
-    }
-
-    strncpy(dem, s, strlen(s));
-    dem[strlen(s)] = 10;
-
-    /*-------------------------------------
-     * Send a Q variable to PSX if we are not
-     * just reloading a situ.
-     * ------------------------------------*/
-    if (!intflags.updateNewSitu) {
-        printDebug(LL_DEBUG, "Sending %s to PSX", s);
-        nbsend = send(PSXMSFS.PSXsocket, dem, (int)(strlen(s) + 1), 0);
-        if (nbsend == 0) {
-            printDebug(LL_ERROR, "Error sending variable %s to PSX", s);
-        }
-    }
-    free(dem);
-    return nbsend;
-}
+LOG_LEVELS VERBOSITY = LL_INFO; 
 
 void CalcCoord(double heading, double lato, double longo, double *latr, double *longr)
 {
@@ -63,17 +36,12 @@ int write_ini_file(FLAGS *flags)
 {
     FILE *f;
 
-    unsigned int switches=PSXMSFS.switches;
 
     f = fopen("PSXMSFS.ini", "w");
     if (!f) {
         printDebug(LL_ERROR, "Cannot create PSXMSFS.ini file. Exiting now.");
         quit = 1;
         return 1;
-    }
-
-    if (flags == NULL) {
-//        flags = &PSXflags;
     }
 
     /*PSX server addresses and port*/
@@ -91,15 +59,15 @@ int write_ini_file(FLAGS *flags)
     fprintf(f, "#How much debug you want. DEBUG = 1, VERBOSE = 2, INFO = 3, ERROR = 4\n");
     fprintf(f, "LOG_VERBOSITY=%d\n", flags->LOG_VERBOSITY);
     fprintf(f, "\n#Inject MSFS TCAS in PSX if equal to 1.\n");
-    fprintf(f, "TCAS_INJECT=%d\n", switches & F_TCAS);
+    fprintf(f, "TCAS_INJECT=%d\n", flags->switches & F_TCAS);
     fprintf(f, "\n#If 0 then MSFS slave to PSX. If 1 then PSX slave to MSFS\n");
-    fprintf(f, "SLAVE=%d\n", (switches & F_SLAVE) >> 4);
+    fprintf(f, "SLAVE=%d\n", (flags->switches & F_SLAVE) >> 4);
     fprintf(f, "\n#If 1 then inject PSX elevations to MSFS. If 0 the other way round. Best results with 1\n");
-    fprintf(f, "ELEV_INJECT=%d\n", (switches & F_INJECT) >> 1);
+    fprintf(f, "ELEV_INJECT=%d\n", (flags->switches & F_INJECT) >> 1);
     fprintf(f, "\n#If 1 inhibits PSX crash detections for 10 seconds when loading a situ. If 0 crashes are not inhibited\n");
-    fprintf(f, "INHIB_CRASH_DETECT=%d\n", (switches & F_INHIB) >> 3);
+    fprintf(f, "INHIB_CRASH_DETECT=%d\n", (flags->switches & F_INHIB) >> 3);
     fprintf(f, "\n#If 1 reports proper FL on networks such as IVAO, VATSIM, etc. If 0 no correction is made\n");
-    fprintf(f, "ONLINE=%d\n", (switches & F_ONLINE) >> 2);
+    fprintf(f, "ONLINE=%d\n", (flags->switches & F_ONLINE) >> 2);
 
     fclose(f);
     return 0;
@@ -137,9 +105,9 @@ int updateFromIni(FLAGS *flags)
     if (!fini)
         return 1;
 
-    strcpy(flags->PSXMainServer, scan_ini(fini, "PSXMainServer"));
-    strcpy(flags->PSXBoostServer, scan_ini(fini, "PSXBoostServer"));
-    strcpy(flags->MSFSServer, scan_ini(fini, "MSFSServer"));
+    strncpy(flags->PSXMainServer, scan_ini(fini, "PSXMainServer"),IP_LENGTH);
+    strncpy(flags->PSXBoostServer, scan_ini(fini, "PSXBoostServer"),IP_LENGTH);
+    strncpy(flags->MSFSServer, scan_ini(fini, "MSFSServer"),IP_LENGTH);
 
     if ((value = scan_ini(fini, "SLAVE")))
         switches = switches | (strtol(value, &stop, 10) << 4);
@@ -152,9 +120,10 @@ int updateFromIni(FLAGS *flags)
     if ((value = scan_ini(fini, "ONLINE")))
         switches = switches | (strtol(value, &stop, 10) << 2);
     if ((value = scan_ini(fini, "LOG_VERBOSITY")))
-        flags->LOG_VERBOSITY = (int)strtol(value, &stop, 10);
+        flags->LOG_VERBOSITY = (LOG_LEVELS)strtol(value, &stop, 10);
 
     flags->switches = switches;
+    VERBOSITY=flags->LOG_VERBOSITY;
 
     free(value);
     fclose(fini);
@@ -168,24 +137,24 @@ FLAGS *initFlags(void)
      * Assign default values to the flags        *
      * ------------------------------------------*/
 
-    strcpy(PSXMSFS.PSXMainServer, "127.0.0.1");
-    strcpy(PSXMSFS.PSXBoostServer, "127.0.0.1");
-    strcpy(PSXMSFS.MSFSServer, "127.0.0.1");
-    PSXMSFS.PSXPort = 10747;
-    PSXMSFS.PSXBoostPort = 10749;
-    PSXMSFS.switches = (F_TCAS | F_INJECT);
-    PSXMSFS.LOG_VERBOSITY = LL_INFO;
-
-
-    return &PSXMSFS;
-}
-
-void remove_debug(void)
-{
-    if (PSXMSFS.LOG_VERBOSITY>1) {
-        remove("DEBUG.TXT");
+    FLAGS *PSXMSFS =(FLAGS*) malloc(sizeof(FLAGS));
+    if(PSXMSFS==NULL){
+        printDebug(LL_ERROR,"Error creating flags structure. Exiting now!");
+        quit=1;
     }
+        
+    strcpy(PSXMSFS->PSXMainServer, "127.0.0.1");
+    strcpy(PSXMSFS->PSXBoostServer, "127.0.0.1");
+    strcpy(PSXMSFS->MSFSServer, "127.0.0.1");
+    PSXMSFS->PSXPort = 10747;
+    PSXMSFS->PSXBoostPort = 10749;
+    PSXMSFS->switches = (F_TCAS | F_INJECT);
+    PSXMSFS->LOG_VERBOSITY = LL_INFO;
+
+
+    return PSXMSFS;
 }
+
 
 servers getServersInfo(FLAGS *f)
 {
@@ -213,13 +182,13 @@ int getLogVerbosity(FLAGS *f)
 void setLogVerbosity(FLAGS *f, LOG_LEVELS level){
     f->LOG_VERBOSITY=level;
 }
-void setServersInfo(servers *S)
+void setServersInfo(servers *S, FLAGS *f)
 {
 
-    strncpy(PSXMSFS.PSXMainServer, S->PSXMainServer, IP_LENGTH);
-    strncpy(PSXMSFS.PSXBoostServer, S->PSXBoostServer, IP_LENGTH);
-    strncpy(PSXMSFS.MSFSServer, S->MSFSServer, IP_LENGTH);
-    PSXMSFS.PSXPort = S->PSXPort;
-    PSXMSFS.PSXBoostPort = S->PSXBoostPort;
+    strncpy(f->PSXMainServer, S->PSXMainServer, IP_LENGTH);
+    strncpy(f->PSXBoostServer, S->PSXBoostServer, IP_LENGTH);
+    strncpy(f->MSFSServer, S->MSFSServer, IP_LENGTH);
+    f->PSXPort = S->PSXPort;
+    f->PSXBoostPort = S->PSXBoostPort;
 
 }
