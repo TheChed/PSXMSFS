@@ -102,6 +102,7 @@ int connectPSXMSFS(FLAGS *flags)
      * Initialise and connect all sockets: PSX, PSX Boost and Simconnect
      */
     if (open_connections(flags) != 0) {
+        printDebug(LL_ERROR,"Please check your PSXMSFS.ini config file");
         return 1;
     }
 

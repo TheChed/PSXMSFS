@@ -35,6 +35,8 @@ static int write_ini_file(FLAGS *flags)
         quit = 1;
         return 1;
     }
+    printDebug(LL_INFO, "Creating PSXMSFS.ini file with default values.");
+    printDebug(LL_INFO, "Trying to connect...");
 
     /*PSX server addresses and port*/
     fprintf(f, "#Self Explanatory IP and port variables\n");
@@ -88,7 +90,6 @@ void cleanup(FLAGS *flags)
     }
 
     WSACleanup(); // CLose the Win32 sockets
-
 
     // bye bye
     printDebug(LL_INFO, "See you next time!\n");
@@ -165,7 +166,6 @@ double dist(double lat1, double lat2, double long1, double long2)
 {
     return 2 * EARTH_RAD * asin((sqrt(pow(sin((lat2 - lat1) / 2), 2) + cos(lat1) * cos(lat2) * pow(sin((long2 - long1) / 2), 2))));
 }
-
 
 char *scan_ini(FILE *file, const char *key)
 {
@@ -248,8 +248,7 @@ FLAGS *createFlagsPSXMSFS(void)
     PSXMSFS->BOOSTsocket = -1;
     PSXMSFS->hSimConnect = NULL;
 
-    if (updateFromIni(PSXMSFS) == 1)
-        printDebug(LL_INFO, "File PSXMSFS.ini does not exist");
+    updateFromIni(PSXMSFS);
 
     return PSXMSFS;
 }
@@ -284,8 +283,8 @@ void setLogVerbosity(FLAGS *f, LOG_LEVELS level)
 int setServersInfo(servers *S, FLAGS *f)
 {
 
-    if(f==NULL){
-        printDebug(LL_ERROR,"Could not initialize servers. Exiting");
+    if (f == NULL) {
+        printDebug(LL_ERROR, "Could not initialize servers. Exiting");
         return 1;
     }
 
