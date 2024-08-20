@@ -115,23 +115,19 @@ int init_socket(void);
 int close_PSX_socket(SOCKET socket);
 int open_connections(FLAGS *f);
 int init_connect_MSFS(HANDLE *p);
-
-
 void printDebug(LOG_LEVELS level, const char *debugInfo, ...);
+
 /*--------------------------------------------------------
  * Functions to be exported in the DLL
  *------------------------------------------------------*/
 
-/*-------------------------------------------------------
- * Creates the flags structure used to connect
- * -----------------------------------------------------*/
-LIBEXPORT FLAGS *initFlags(void);
-LIBEXPORT int updateFromIni(FLAGS *flags);
-LIBEXPORT int initialize(FLAGS *flags);
-LIBEXPORT int connectPSXMSFS(FLAGS *F);
-
-LIBEXPORT int main_launch(FLAGS *flags);
-LIBEXPORT void disconnect(FLAGS *flags);
+LIBEXPORT FLAGS *createFlagsPSXMSFS(void);
+LIBEXPORT int initializePSXMSFS(FLAGS *flags);
+LIBEXPORT int connectPSXMSFS(FLAGS *flags);
+LIBEXPORT int launchPSXMSFS(FLAGS *flags);
+LIBEXPORT int disconnectPSXMSFS(FLAGS *flags);
+LIBEXPORT int setServersInfo(servers *S, FLAGS *f);
+LIBEXPORT servers getServersInfo(FLAGS *f);
 
 /*----------------------------------
  * Log related functions
@@ -164,7 +160,5 @@ LIBEXPORT unsigned int getSwitch(FLAGS *f);
 LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBEXPORT int getLogVerbosity(FLAGS *f);
 LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
-LIBEXPORT void setServersInfo(servers *S, FLAGS *f);
-LIBEXPORT servers getServersInfo(FLAGS *f);
 LIBEXPORT BOOST getACFTInfo(void);
 #endif

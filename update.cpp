@@ -398,7 +398,7 @@ void SetXPDR(int XPDR, int IDENT)
                                    SIMCONNECT_EVENT_FLAG_GROUPID_IS_PRIORITY);
 }
 
-void init_pos(void)
+void resetPSXDATA(void)
 {
 
     /*
@@ -518,12 +518,8 @@ DWORD newSituLoaded(FLAGS *f)
     return GetTickCount();
 }
 
-BOOST getPSXBoost(void)
-{
-    return PSXBoost;
-}
 BOOST getACFTInfo(void)
 {
 
-    return getPSXBoost();
+    return PSXBoost;
 }

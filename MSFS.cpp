@@ -383,7 +383,6 @@ void init_MS_data(HANDLE hSim)
      * It is VERY important that the order of those variables matches the order
      * in with the structures defined in PSXMSFSLIB.h
      */
-    assert(hSim);
 
     SimConnect_AddToDataDefinition(hSim, BOOST_TO_MSFS_ALT, "PLANE ALTITUDE", "feet");
     SimConnect_AddToDataDefinition(hSim, BOOST_TO_MSFS, "PLANE ALTITUDE", "feet");

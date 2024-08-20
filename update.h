@@ -121,7 +121,7 @@ void SetCOMM(int COM1, int COM2);
 void SetBARO(DWORD altimeter, int stdbar);
 void SetXPDR(int XPDR, int IDENT);
 void SetAcftElevation(double elevation);
-void init_pos(void);
+void resetPSXDATA(void);
 double getElevation(void);
 int getFlightPhase(void);
 DWORD newSituLoaded(FLAGS *flags);
@@ -131,6 +131,7 @@ void getTATL(int *TA, int *TL);
  */
 void SetOnGround(int onGround);
 
+void resetPSXDATA(void);
 int GetOnGround(void);
 
 /*

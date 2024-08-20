@@ -63,11 +63,6 @@ HANDLE init_connect_MSFS(void)
     return hSimConnect;
 }
 
-SOCKET getPSXsocket(FLAGS *f)
-{
-    return f->PSXsocket;
-}
-
 int open_connections(FLAGS *f)
 {
 

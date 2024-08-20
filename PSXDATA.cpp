@@ -576,7 +576,7 @@ int getDataFromPSX(FLAGS *flags)
     size_t bufmain_remain = sizeof(bufmain) - bufmain_used;
 
     if (bufmain_remain == 0) {
-        printDebug(LL_DEBUG, "PSX buffer overflow! Discarding input. Buffer starts with %.10s", bufmain);
+        printDebug(LL_DEBUG, "PSXMSFS buffer overflow: discarding input. Buffer starts with %.10s...", bufmain);
         bufmain_used = 0;
         return 0;
     }

@@ -18,10 +18,7 @@ int sendQPSX(const char *s);
  */
 void resetInternalFlags(void);
 
-int write_ini_file(FLAGS *flags);
 unsigned int getSwitch(FLAGS *f);
 unsigned int getVerbosityLevel(FLAGS *f);
 
 void setSwitch(FLAGS *f, unsigned int flagvalue);
-
-int getPSXsocket(FLAGS *f);
