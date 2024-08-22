@@ -70,23 +70,24 @@ void cleanup(FLAGS *flags)
 {
 
     quit = 1; // To force threads to close if not yet done
-    printDebug(LL_INFO, "Closing MSFS connection...");
-    SimConnect_Close(flags->hSimConnect);
+    if (flags->hSimConnect != NULL) {
+        SimConnect_Close(flags->hSimConnect);
+        printDebug(LL_INFO, "MSFS connection closed.");
+    }
 
-    printDebug(LL_INFO, "MSFS closed.");
     sendQPSX("exit"); // Signal PSX that we are quitting
 
     /*-----------------------------------------------------*
      * and gracefully try to close main and boost sockets  *
      * ----------------------------------------------------*/
-    printDebug(LL_INFO, "Closing PSX boost connection...");
-    if (close_PSX_socket(flags->BOOSTsocket)) {
-        printDebug(LL_ERROR, "Could not close boost PSX socket... You might want to check PSX");
+    if (flags->BOOSTsocket != static_cast<SOCKET>(-1)) {
+        close_PSX_socket(flags->BOOSTsocket);
+        printDebug(LL_INFO, "PSX boost connection closed.");
     }
 
-    printDebug(LL_INFO, "Closing PSX main connection...");
-    if (close_PSX_socket(flags->PSXsocket)) {
-        printDebug(LL_ERROR, "Could not close main PSX socket...But does it matter now?");
+    if (flags->PSXsocket!= static_cast<SOCKET>(-1)) {
+        close_PSX_socket(flags->PSXsocket);
+        printDebug(LL_INFO, "PSX connection closed.");
     }
 
     WSACleanup(); // CLose the Win32 sockets
@@ -231,26 +232,27 @@ FLAGS *createFlagsPSXMSFS(void)
      * Assign default values                     *
      * ------------------------------------------*/
 
-    FLAGS *PSXMSFS = (FLAGS *)malloc(sizeof(FLAGS));
-    if (PSXMSFS == NULL) {
+    FLAGS *f = (FLAGS *)malloc(sizeof(FLAGS));
+    if (f == NULL) {
         printDebug(LL_ERROR, "Error creating flags structure. Exiting now!");
         return NULL;
     }
 
-    strcpy(PSXMSFS->PSXMainServer, "127.0.0.1");
-    strcpy(PSXMSFS->PSXBoostServer, "127.0.0.1");
-    strcpy(PSXMSFS->MSFSServer, "127.0.0.1");
-    PSXMSFS->PSXPort = 10747;
-    PSXMSFS->PSXBoostPort = 10749;
-    PSXMSFS->switches = (F_TCAS | F_INJECT);
-    PSXMSFS->LOG_VERBOSITY = LL_INFO;
-    PSXMSFS->PSXsocket = -1;
-    PSXMSFS->BOOSTsocket = -1;
-    PSXMSFS->hSimConnect = NULL;
+    strcpy(f->PSXMainServer, "127.0.0.1");
+    strcpy(f->PSXBoostServer, "127.0.0.1");
+    strcpy(f->MSFSServer, "127.0.0.1");
+    f->PSXPort = 10747;
+    f->PSXBoostPort = 10749;
+    f->switches = (F_TCAS | F_INJECT);
+    f->LOG_VERBOSITY = LL_INFO;
+    f->PSXsocket = -1;
+    f->BOOSTsocket = -1;
+    f->hSimConnect = NULL;
+    f->connected = 0;
 
-    updateFromIni(PSXMSFS);
+    updateFromIni(f);
 
-    return PSXMSFS;
+    return f;
 }
 
 servers getServersInfo(FLAGS *f)

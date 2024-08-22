@@ -70,6 +70,7 @@ typedef enum {
      * F_TCAS, F_INJECT, F_ONLINE, F_INHIB and F_SLAVE
      *-----------------------------------------------*/
     unsigned int switches;
+    int connected;
 } FLAGS;
 
 typedef struct servers {

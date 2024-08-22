@@ -75,7 +75,7 @@ void Qi198Update(int onGround, double elevation)
     QSentGround = intflags.Qi198Sentground;
     QSentFlight = intflags.Qi198SentFlight;
 
-    if (!intflags.updateNewSitu) {
+    if (GetTickCount() > intflags.NewSituTimeLoad + 20000) {
         if (onGround || (elevation < 300)) {
             if (!QSentGround) {
                 printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation.");
@@ -512,7 +512,7 @@ DWORD newSituLoaded(FLAGS *f)
     printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
     printDebug(LL_INFO, "Let's wait 2-3 seconds to get everyone ready, shall we?");
 
-    freezeMSFS(1,f->hSimConnect); // New Situ loaded, let's preventively freeze MSFS
+    freezeMSFS(1, f->hSimConnect); // New Situ loaded, let's preventively freeze MSFS
     init_variables();
 
     return GetTickCount();

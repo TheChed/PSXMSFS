@@ -65,9 +65,9 @@ HANDLE init_connect_MSFS(void)
 
 int open_connections(FLAGS *f)
 {
-
+    f->connected = 0;
     // initialise Win32 socket library
-    if (init_socket()!=0) {
+    if (init_socket() != 0) {
         printDebug(LL_ERROR, "Could not initialize Windows sockets. Exiting...");
         return 1;
     }
@@ -77,7 +77,7 @@ int open_connections(FLAGS *f)
     printDebug(LL_INFO, "Connecting to PSX main server on: %s:%d", f->PSXMainServer, f->PSXPort);
 
     f->PSXsocket = init_connect_PSX(f->PSXMainServer, f->PSXPort);
-    sPSX=f->PSXsocket;
+    sPSX = f->PSXsocket;
 
     if (f->PSXsocket == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX socket. Exiting...");
@@ -91,23 +91,24 @@ int open_connections(FLAGS *f)
     printDebug(LL_INFO, "Connecting to PSX boost server on: %s:%d", f->PSXBoostServer, f->PSXBoostPort);
 
     f->BOOSTsocket = init_connect_PSX(f->PSXBoostServer, f->PSXBoostPort);
-    if (f->BOOSTsocket== INVALID_SOCKET) {
+    if (f->BOOSTsocket == INVALID_SOCKET) {
         printDebug(LL_ERROR, "Error connecting to the PSX boost socket. Are you sure it is "
                              "running? Exiting...");
-        quit=1;
+        quit = 1;
         return 1;
     } else {
         printDebug(LL_INFO, "Connected to PSX boost server.");
     }
 
     // finally connect to MSFS socket via SimConnect
-    if ((f->hSimConnect=init_connect_MSFS())==NULL) {
+    if ((f->hSimConnect = init_connect_MSFS()) == NULL) {
         printDebug(LL_ERROR, "Could not connect to Simconnect.dll. Is MSFS running?");
         quit = 1;
         return 1;
     } else {
         printDebug(LL_INFO, "Connected to MSFS.");
-        hSimConnect=f->hSimConnect;
+        hSimConnect = f->hSimConnect;
+        f->connected = 1;
         return 0;
     }
 }
