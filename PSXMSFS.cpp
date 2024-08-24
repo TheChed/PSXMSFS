@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "PSXMSFSLIB.h"
 #include "MSFS.h"
+#include "synchapi.h"
 #include "util.h"
 #include "update.h"
 
@@ -13,8 +14,6 @@
  * --------------------------------------------*/
 int getDataFromPSX(FLAGS *flags);
 int getDataFromBoost(SOCKET sPSXBOOST);
-
-
 
 int quit = 0;
 DWORD TimeStart;
@@ -86,14 +85,13 @@ void thread_launch(FLAGS *flags)
     /*----------------------------------------------------
      * with 3 seconds before launching the MSMS thread
      * --------------------------------------------------*/
-    Sleep(3000);
+    // Sleep(3000);
     h3 = CreateThread(NULL, 0, ptDataFromMSFS, flags, 0, &t3);
     if (h3 == NULL) {
         printDebug(LL_ERROR, "Error creating MSFS server thread. Quitting now.");
         quit = 1;
     }
 }
-
 
 int connectPSXMSFS(FLAGS *flags)
 {
@@ -102,13 +100,12 @@ int connectPSXMSFS(FLAGS *flags)
      * Initialise and connect all sockets: PSX, PSX Boost and Simconnect
      */
     if (open_connections(flags) != 0) {
-        printDebug(LL_ERROR,"Please check your PSXMSFS.ini config file");
+        printDebug(LL_ERROR, "Please check your PSXMSFS.ini config file");
         return 1;
     }
 
     // initialize the data to be received as well as all EVENTS
     init_MS_data(flags->hSimConnect);
-
 
     printDebug(LL_INFO, "This is PSXMSFS version: %lld", VER);
     printDebug(LL_INFO, "Please disable all crash detection in MSFS");
@@ -122,4 +119,3 @@ int launchPSXMSFS(FLAGS *flags)
     thread_launch(flags);
     return 0;
 }
-

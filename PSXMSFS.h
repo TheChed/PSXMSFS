@@ -62,6 +62,7 @@ typedef struct servers {
  *--------------------------------*/
 
 LIBIMPORT FLAGS *createFlagsPSXMSFS(void);
+LIBIMPORT void deleteFlagsPSXMSFS(FLAGS *flags);
 LIBIMPORT int initializePSXMSFS(FLAGS *flags);
 LIBIMPORT int connectPSXMSFS(FLAGS *flags);
 LIBIMPORT int launchPSXMSFS(FLAGS *flags);

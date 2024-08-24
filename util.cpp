@@ -6,6 +6,7 @@
 #include <cmath>
 #include <stdint.h>
 #include <time.h>
+//#include "handleapi.h"
 #include "util.h"
 #include "PSXMSFSLIB.h"
 #include "SimConnect.h"
@@ -22,7 +23,7 @@ FLAGS PSXflags;
  * Handles for mutexes used in
  * various threads
  *-------------------------------------------*/
-HANDLE mutex, mutexsitu;
+HANDLE mutex, mutexsitu, semaphore;
 CONDITION_VARIABLE condNewSitu;
 
 static int write_ini_file(FLAGS *flags)
@@ -85,7 +86,7 @@ void cleanup(FLAGS *flags)
         printDebug(LL_INFO, "PSX boost connection closed.");
     }
 
-    if (flags->PSXsocket!= static_cast<SOCKET>(-1)) {
+    if (flags->PSXsocket != static_cast<SOCKET>(-1)) {
         close_PSX_socket(flags->PSXsocket);
         printDebug(LL_INFO, "PSX connection closed.");
     }
@@ -95,9 +96,9 @@ void cleanup(FLAGS *flags)
     // bye bye
     printDebug(LL_INFO, "See you next time!\n");
 
-    // Remove DEBUG file if not in DEBUG mode
-    if (flags->LOG_VERBOSITY > 1)
-        remove("DEBUG.TXT");
+    // Remove LOG file if not in DEBUG mode
+    if (flags->LOG_VERBOSITY > LL_DEBUG)
+        remove("LOG.TXT");
 }
 
 int initializePSXMSFS(FLAGS *flags)
@@ -146,6 +147,7 @@ int initializePSXMSFS(FLAGS *flags)
      *---------------------------------------------------*/
     mutex = CreateMutex(NULL, FALSE, NULL);
     mutexsitu = CreateMutex(NULL, FALSE, NULL);
+    semaphore = CreateSemaphore(NULL, 0, 1, NULL);
 
     return 0;
 }
@@ -222,6 +224,12 @@ static int updateFromIni(FLAGS *flags)
     free(value);
     fclose(fini);
     return 0;
+}
+
+void deleteFlagsPSXMSFS(FLAGS *flags)
+{
+
+    free(flags);
 }
 
 FLAGS *createFlagsPSXMSFS(void)
@@ -303,6 +311,7 @@ int disconnectPSXMSFS(FLAGS *flags)
 {
     CloseHandle(mutex);
     CloseHandle(mutexsitu);
+    CloseHandle(semaphore);
     cleanup(flags);
     quit = 1;
     return 0;

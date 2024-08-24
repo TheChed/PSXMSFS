@@ -67,7 +67,8 @@ double getIndAltitude(void)
 }
 int isGroundAltitudeAvailable(void)
 {
-    return (ground_altitude != -9999 ? 1 : 0);
+    return (ground_altitude ? 1 : 0);
+
 }
 void Inject_MSFS_PSX(void)
 {
@@ -224,7 +225,7 @@ void CALLBACK SimConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCon
          * rendering engines.
          */
 
-        freezeMSFS(1,f->hSimConnect);
+        freezeMSFS(1, f->hSimConnect);
     } break;
 
     case SIMCONNECT_RECV_ID_EVENT: {
@@ -239,7 +240,7 @@ void CALLBACK SimConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pCon
         case EVENT_6_HZ: {
             if (f->switches & F_SLAVE) {
 
-                freezeMSFS(0,f->hSimConnect);
+                freezeMSFS(0, f->hSimConnect);
                 Inject_MSFS_PSX();
             }
         } break;

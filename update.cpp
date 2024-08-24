@@ -1,11 +1,13 @@
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
+#include <filesystem>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 #include "PSXMSFSLIB.h"
+#include "sysinfoapi.h"
 #include "util.h"
 #include "update.h"
 #include "MSFS.h"
@@ -71,11 +73,19 @@ void Qi198Update(int onGround, double elevation)
 
     int QSentGround, QSentFlight;
     char sQi198[128];
+    int groundAltitude;
+    static long int lastSent;
 
     QSentGround = intflags.Qi198Sentground;
     QSentFlight = intflags.Qi198SentFlight;
 
-    if (GetTickCount() > intflags.NewSituTimeLoad + 20000) {
+    /*-----------------------------------------------------------
+     * While repositionning the aircraft or during new situ load
+     * MSFS needs around 10 seconds to load the ground elevation
+     * Thus we do not send Qi198 during that amount of time
+     * --------------------------------------------------------*/
+
+    if (GetTickCount() - TimeStart > 10000 || (intflags.NewSituTimeLoad && (GetTickCount() > intflags.NewSituTimeLoad + 10000))) {
         if (onGround || (elevation < 300)) {
             if (!QSentGround) {
                 printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation.");
@@ -83,11 +93,13 @@ void Qi198Update(int onGround, double elevation)
                 QSentFlight = 0;
             }
 
-            if (GetTickCount() > intflags.NewSituTimeLoad + 10000) {
-                if (isGroundAltitudeAvailable()) {
-                    // wait 10 seconds after new situ loaded to send elevation
-                    sprintf(sQi198, "Qi198=%d", (int)(getGroundAltitude() * 100));
+            if (isGroundAltitudeAvailable()) {
+                groundAltitude = getGroundAltitude() * 100;
+                sprintf(sQi198, "Qi198=%d", groundAltitude);
+                //Qi198 is onl;y processed in PSX at 20 Hz max (=50 ms)
+                if (GetTickCount() - lastSent > 50) {
                     sendQPSX(sQi198);
+                    lastSent = GetTickCount();
                 }
             }
         } else {

@@ -467,7 +467,6 @@ void Decodeboost(const char *strboost)
 
     SetSpeed(&SU);
     updatePSXBOOST(flightDeckAlt, heading_true, pitch, bank, latitude, longitude, onGround);
-
 }
 
 void Decode(char *s)
@@ -607,6 +606,7 @@ int getDataFromPSX(FLAGS *flags)
                 (char *)memchr((void *)line_start, '\n', bufmain_used - (line_start - bufmain)))) {
         *line_end = 0;
 
+        WaitForSingleObject(mutex, INFINITE);
         // New situ loaded
         if (strstr(line_start, "load3")) {
             printDebug(LL_DEBUG, "Loading new situ file");
@@ -623,12 +623,11 @@ int getDataFromPSX(FLAGS *flags)
 
         if (line_start[0] == 'Q') {
 
-            WaitForSingleObject(mutex, INFINITE);
             Decode(line_start);
-            ReleaseMutex(mutex);
         }
 
         line_start = line_end + 1;
+        ReleaseMutex(mutex);
     }
     /* Shift buffer down so the unprocessed data is at the start */
     bufmain_used -= (line_start - bufmain);

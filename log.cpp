@@ -20,7 +20,7 @@ typedef struct logMessage {
     char message[MAXLEN_DEBUG_MSG];
 } logMessage;
 
-logMessage *logBuffer=NULL;
+logMessage *logBuffer = NULL;
 
 static void logging(LOG_LEVELS level, const char *msg)
 {
@@ -46,9 +46,10 @@ void printDebug(LOG_LEVELS level, const char *debugInfo, ...)
     struct tm date = *localtime(&t);
     FILE *fdebug;
 
-    fdebug = fopen("DEBUG.TXT", "a");
+    fdebug = fopen("LOG.TXT", "a");
     if (!fdebug)
         return;
+
 
     va_start(ap, debugInfo);
     vsnprintf(msg, sizeof(msg), debugInfo, ap);
@@ -65,8 +66,6 @@ void printDebug(LOG_LEVELS level, const char *debugInfo, ...)
 
     fclose(fdebug);
 }
-
-
 
 char *getLogMessage(logMessage *D, int n)
 {
@@ -86,14 +85,14 @@ int getLogLevel(logMessage *D, int n)
 logMessage *getLogBuffer(int nbLogs)
 {
 
-    logMessage *log = (logMessage *)malloc(sizeof(logMessage) *nbLogs);
-    if(log==NULL){
-        printDebug(LL_ERROR,"Could not initialize log buffer. Exiting now...");
-        quit=1;
+    logMessage *log = (logMessage *)malloc(sizeof(logMessage) * nbLogs);
+    if (log == NULL) {
+        printDebug(LL_ERROR, "Could not initialize log buffer. Exiting now...");
+        quit = 1;
     }
-    bzero(log,sizeof(logMessage)*nbLogs);
+    bzero(log, sizeof(logMessage) * nbLogs);
     NB_LOGS = nbLogs;
-    logBuffer=log;
+    logBuffer = log;
     return log;
 }
 

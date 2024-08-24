@@ -1,8 +1,9 @@
 #ifndef __PSXMSFSLIB_H_
 #define __PSXMSFSLIB_H_
 
-#include <cstdint>
 #include <windows.h>
+#include <cstdint>
+#include <stdbool.h>
 #define LIBEXPORT extern "C" __declspec(dllexport)
 
 /*---------------------------------
@@ -14,7 +15,7 @@
 
 /*---------------------------------
  * various constant definitions
- * used in the variosu modules
+ * used in the various modules
  *-------------------------------*/
 #define MSFSHEIGHT 15.13 // altitude offset in feet of the default 747 in MSFS when on ground
 #define M_PI 3.14159265358979323846f
@@ -70,7 +71,7 @@ typedef enum {
      * F_TCAS, F_INJECT, F_ONLINE, F_INHIB and F_SLAVE
      *-----------------------------------------------*/
     unsigned int switches;
-    int connected;
+    bool connected;
 } FLAGS;
 
 typedef struct servers {
@@ -105,6 +106,7 @@ typedef struct {
 extern HANDLE mutex;
 extern int quit;
 extern struct INTERNALPSXflags intflags;
+extern HANDLE semaphore;
 //extern FLAGS PSXMSFS;
 extern DWORD TimeStart; // Timestamp when the simulation is started.
 extern HANDLE hSimConnect;
@@ -123,6 +125,7 @@ void printDebug(LOG_LEVELS level, const char *debugInfo, ...);
  *------------------------------------------------------*/
 
 LIBEXPORT FLAGS *createFlagsPSXMSFS(void);
+LIBEXPORT void deleteFlagsPSXMSFS(FLAGS *flags);
 LIBEXPORT int initializePSXMSFS(FLAGS *flags);
 LIBEXPORT int connectPSXMSFS(FLAGS *flags);
 LIBEXPORT int launchPSXMSFS(FLAGS *flags);
