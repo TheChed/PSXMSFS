@@ -11,7 +11,7 @@ static int NB_LOGS = 0;
 
 static inline DWORD elapsedMs(DWORD start_time)
 {
-    return GetTickCount() - start_time;
+    return GetTickCount64() - start_time;
 }
 
 typedef struct logMessage {

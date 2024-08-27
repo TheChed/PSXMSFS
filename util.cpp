@@ -6,7 +6,7 @@
 #include <cmath>
 #include <stdint.h>
 #include <time.h>
-//#include "handleapi.h"
+// #include "handleapi.h"
 #include "util.h"
 #include "PSXMSFSLIB.h"
 #include "SimConnect.h"
@@ -23,8 +23,7 @@ FLAGS PSXflags;
  * Handles for mutexes used in
  * various threads
  *-------------------------------------------*/
-HANDLE mutex, mutexsitu, semaphore;
-CONDITION_VARIABLE condNewSitu;
+HANDLE mutex;
 
 static int write_ini_file(FLAGS *flags)
 {
@@ -63,6 +62,14 @@ static int write_ini_file(FLAGS *flags)
     fprintf(f, "INHIB_CRASH_DETECT=%d\n", (flags->switches & F_INHIB) >> 3);
     fprintf(f, "\n#If 1 reports proper FL on networks such as IVAO, VATSIM, etc. If 0 no correction is made\n");
     fprintf(f, "ONLINE=%d\n", (flags->switches & F_ONLINE) >> 2);
+    fprintf(f, "\n#################################################################################\n");
+    fprintf(f, "#You don't want to mess with the following switches. Change at your own risk\n");
+    fprintf(f, "#################################################################################\n");
+    fprintf(f, "\n#OK, this one should be harmless and self explanatory\n");
+    fprintf(f, "DELETELOGFILE=%d\n", flags->deleteLogFile);
+    fprintf(f, "\n#MSFS delay. Amount of seconds before we send the elevation to PSX, to account for the fact that MSFS takes\n");
+    fprintf(f, "#around 10 seconds to load the current elevation\n");
+    fprintf(f, "MSFSDELAY=%d\n", flags->MSFSdelay);
 
     fclose(f);
     return 0;
@@ -73,6 +80,7 @@ void cleanup(FLAGS *flags)
     quit = 1; // To force threads to close if not yet done
     if (flags->hSimConnect != NULL) {
         SimConnect_Close(flags->hSimConnect);
+
         printDebug(LL_INFO, "MSFS connection closed.");
     }
 
@@ -118,7 +126,7 @@ int initializePSXMSFS(FLAGS *flags)
     /*---------------------------
      * Initialize the timer
      * ------------------------*/
-    TimeStart = GetTickCount();
+    TimeStart = GetTickCount64();
 
     /*---------------------------
      * creating a PSXMSFS.ini file
@@ -143,11 +151,8 @@ int initializePSXMSFS(FLAGS *flags)
     /*----------------------------------------------------
      * Create a thread mutex so that two threads cannot
      * change simulataneously the position of the aircraft
-     * And create a condition mutex while loading a situ
      *---------------------------------------------------*/
     mutex = CreateMutex(NULL, FALSE, NULL);
-    mutexsitu = CreateMutex(NULL, FALSE, NULL);
-    semaphore = CreateSemaphore(NULL, 0, 1, NULL);
 
     return 0;
 }
@@ -217,6 +222,10 @@ static int updateFromIni(FLAGS *flags)
         switches = switches | (strtol(value, &stop, 10) << 2);
     if ((value = scan_ini(fini, "LOG_VERBOSITY")))
         flags->LOG_VERBOSITY = (LOG_LEVELS)strtol(value, &stop, 10);
+    if ((value = scan_ini(fini, "DELETELOGFILE")))
+        flags->deleteLogFile = strtol(value, &stop, 10);
+    if ((value = scan_ini(fini, "MSFSDELAY")))
+        flags->MSFSdelay = strtol(value, &stop, 10);
 
     flags->switches = switches;
     VERBOSITY = flags->LOG_VERBOSITY;
@@ -257,6 +266,8 @@ FLAGS *createFlagsPSXMSFS(void)
     f->BOOSTsocket = -1;
     f->hSimConnect = NULL;
     f->connected = 0;
+    f->deleteLogFile = 1;
+    f->MSFSdelay = 10;
 
     updateFromIni(f);
 
@@ -281,6 +292,21 @@ unsigned int getSwitch(FLAGS *f)
 {
     return f->switches;
 }
+int getMSFSdelay(FLAGS *f)
+{
+    return f->MSFSdelay;
+}
+void setMSFSdelay(FLAGS *f, int delay)
+{
+    if (delay < 0)
+        delay = 0;
+    f->MSFSdelay = delay;
+    return;
+}
+int deleteLogFile(FLAGS *f)
+{
+    return f->deleteLogFile;
+}
 int getLogVerbosity(FLAGS *f)
 {
     return f->LOG_VERBOSITY;
@@ -289,6 +315,7 @@ int getLogVerbosity(FLAGS *f)
 void setLogVerbosity(FLAGS *f, LOG_LEVELS level)
 {
     f->LOG_VERBOSITY = level;
+    VERBOSITY=level;
 }
 int setServersInfo(servers *S, FLAGS *f)
 {
@@ -310,8 +337,6 @@ int setServersInfo(servers *S, FLAGS *f)
 int disconnectPSXMSFS(FLAGS *flags)
 {
     CloseHandle(mutex);
-    CloseHandle(mutexsitu);
-    CloseHandle(semaphore);
     cleanup(flags);
     quit = 1;
     return 0;

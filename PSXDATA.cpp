@@ -609,13 +609,12 @@ int getDataFromPSX(FLAGS *flags)
         WaitForSingleObject(mutex, INFINITE);
         // New situ loaded
         if (strstr(line_start, "load3")) {
-            printDebug(LL_DEBUG, "Loading new situ file");
             intflags.NewSituTimeLoad = newSituLoaded(flags);
         }
 
         // we are still loading a new situ
         if (intflags.updateNewSitu) {
-            if (GetTickCount() > intflags.NewSituTimeLoad + 2500) {
+            if (GetTickCount64() > intflags.NewSituTimeLoad + 2500) {
                 intflags.updateNewSitu = 0;
                 printDebug(LL_INFO, "We are good to go: resuming normal operations");
             }

@@ -72,6 +72,9 @@ typedef enum {
      *-----------------------------------------------*/
     unsigned int switches;
     bool connected;
+
+    int deleteLogFile;
+    int MSFSdelay;
 } FLAGS;
 
 typedef struct servers {
@@ -106,7 +109,6 @@ typedef struct {
 extern HANDLE mutex;
 extern int quit;
 extern struct INTERNALPSXflags intflags;
-extern HANDLE semaphore;
 //extern FLAGS PSXMSFS;
 extern DWORD TimeStart; // Timestamp when the simulation is started.
 extern HANDLE hSimConnect;
@@ -165,4 +167,7 @@ LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBEXPORT int getLogVerbosity(FLAGS *f);
 LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
 LIBEXPORT BOOST getACFTInfo(void);
+LIBEXPORT int deleteLogFile(FLAGS *f);
+LIBEXPORT int getMSFSdelay(FLAGS *f);
+LIBEXPORT void setMSFSdelay(FLAGS *f, int delay);
 #endif

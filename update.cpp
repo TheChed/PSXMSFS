@@ -68,7 +68,7 @@ void getTATL(int *TA, int *TL)
     *TL = PSXDATA.TL;
 }
 
-void Qi198Update(int onGround, double elevation)
+void Qi198Update(double elevation, int delay)
 {
 
     int QSentGround, QSentFlight;
@@ -79,14 +79,17 @@ void Qi198Update(int onGround, double elevation)
     QSentGround = intflags.Qi198Sentground;
     QSentFlight = intflags.Qi198SentFlight;
 
+    if (!lastSent) {
+        lastSent = GetTickCount64();
+    }
     /*-----------------------------------------------------------
      * While repositionning the aircraft or during new situ load
      * MSFS needs around 10 seconds to load the ground elevation
      * Thus we do not send Qi198 during that amount of time
      * --------------------------------------------------------*/
 
-    if (GetTickCount() - TimeStart > 10000 || (intflags.NewSituTimeLoad && (GetTickCount() > intflags.NewSituTimeLoad + 10000))) {
-        if (onGround || (elevation < 300)) {
+    if (elevation < 300) {
+        if (intflags.NewSituTimeLoad && (GetTickCount64() > intflags.NewSituTimeLoad + 1000 * delay)) {
             if (!QSentGround) {
                 printDebug(LL_INFO, "Below 300 ft AGL => using MSFS elevation.");
                 QSentGround = 1;
@@ -96,21 +99,19 @@ void Qi198Update(int onGround, double elevation)
             if (isGroundAltitudeAvailable()) {
                 groundAltitude = getGroundAltitude() * 100;
                 sprintf(sQi198, "Qi198=%d", groundAltitude);
-                //Qi198 is onl;y processed in PSX at 20 Hz max (=50 ms)
-                if (GetTickCount() - lastSent > 50) {
+                // Qi198 is only processed in PSX at 20 Hz max (=50 ms)
+                if (GetTickCount64() - lastSent > 50) {
                     sendQPSX(sQi198);
-                    lastSent = GetTickCount();
+                    lastSent = GetTickCount64();
                 }
             }
-        } else {
-
-            if (!QSentFlight) {
-
-                printDebug(LL_INFO, "Above 300 ft AGL => using PSX elevation.");
-                sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
-                QSentFlight = 1;
-                QSentGround = 0;
-            }
+        }
+    } else {
+        if (!QSentFlight) {
+            printDebug(LL_INFO, "Above 300 ft AGL => using PSX elevation.");
+            sendQPSX("Qi198=-9999999"); // if airborne, use PSX elevation data
+            QSentFlight = 1;
+            QSentGround = 0;
         }
     }
 
@@ -290,7 +291,7 @@ void SetMSFSPos(FLAGS *f)
 
     groundAltitude = getGroundAltitude();
     if (f->switches & F_INJECT)
-        Qi198Update(PSXBoost.onGround, PSXDATA.acftelev);
+        Qi198Update(PSXDATA.acftelev, f->MSFSdelay);
     MSFS.altitude =
         SetAltitude(f->switches & F_ONLINE, PSXBoost.onGround, PSXBoost.flightDeckAlt, -PSXBoost.pitch, PSXDATA.acftelev, groundAltitude);
     MSFS.latitude = latc;
@@ -527,7 +528,7 @@ DWORD newSituLoaded(FLAGS *f)
     freezeMSFS(1, f->hSimConnect); // New Situ loaded, let's preventively freeze MSFS
     init_variables();
 
-    return GetTickCount();
+    return GetTickCount64();
 }
 
 BOOST getACFTInfo(void)

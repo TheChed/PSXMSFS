@@ -131,7 +131,6 @@ void getTATL(int *TA, int *TL);
  */
 void SetOnGround(int onGround);
 
-void resetPSXDATA(void);
 int GetOnGround(void);
 
 /*

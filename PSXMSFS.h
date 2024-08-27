@@ -102,4 +102,7 @@ LIBIMPORT unsigned int getSwitch(FLAGS *f);
 LIBIMPORT ACFT getACFTInfo(void);
 LIBIMPORT servers getServersInfo(FLAGS *f);
 LIBIMPORT int setServersInfo(servers *S, FLAGS *f);
+LIBIMPORT int deleteLogFile(FLAGS *f);
+LIBIMPORT int getMSFSdelay(FLAGS *f);
+LIBIMPORT void setMSFSdelay(FLAGS *f, int delay);
 #endif

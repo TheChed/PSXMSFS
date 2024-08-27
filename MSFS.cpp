@@ -185,6 +185,8 @@ void init_variables(void)
 {
     ground_altitude = -9999;
     MSFS_POS_avail = 0;
+    intflags.Qi198Sentground=0;
+    intflags.Qi198SentFlight=0;
 }
 
 void CALLBACK SimConnectProcess(SIMCONNECT_RECV *pData, DWORD cbData, void *pContext)
