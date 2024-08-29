@@ -105,7 +105,7 @@ void cleanup(FLAGS *flags)
     printDebug(LL_INFO, "See you next time!\n");
 
     // Remove LOG file if not in DEBUG mode
-    if (flags->LOG_VERBOSITY > LL_DEBUG)
+    if (flags->deleteLogFile)
         remove("LOG.TXT");
 }
 
@@ -312,10 +312,30 @@ int getLogVerbosity(FLAGS *f)
     return f->LOG_VERBOSITY;
 }
 
+void setOnlineHack(FLAGS *f, unsigned int hack)
+{
+    f->switches = (f->switches & ~F_ONLINE) | (hack << 2);
+}
+void setPSXslave(FLAGS *f, unsigned int slave)
+{
+    f->switches = (f->switches & ~F_SLAVE) | (slave << 4);
+}
+void setCrashInhib(FLAGS *f, unsigned int crash)
+{
+    f->switches = (f->switches & ~F_INHIB) | (crash << 3);
+}
+void setElevationInject(FLAGS *f, unsigned int elev)
+{
+    f->switches = (f->switches & ~F_INJECT) | (elev << 1);
+}
+void setTCASinject(FLAGS *f, unsigned int TCAS)
+{
+    f->switches = (f->switches & ~F_TCAS) | (TCAS << 0);
+}
 void setLogVerbosity(FLAGS *f, LOG_LEVELS level)
 {
     f->LOG_VERBOSITY = level;
-    VERBOSITY=level;
+    VERBOSITY = level;
 }
 int setServersInfo(servers *S, FLAGS *f)
 {

@@ -179,7 +179,7 @@ void SetMSFSPos(FLAGS *flags);
  * Setting the correct altitude
  * plus some hacks to make the transition ground<->flight smooth in MSFS
  */
-double SetAltitude(int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt);
+//double SetAltitude(int onlinehack, double altfltdeck, double pitch, double PSXELEV, double groundalt);
 
 /*
  * Function used to update the PSXBOOST structure as soon as we got info from PSX

@@ -119,7 +119,7 @@ void Qi198Update(double elevation, int delay)
     intflags.Qi198SentFlight = QSentFlight;
 }
 
-double SetAltitude(int onLinHack, int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt)
+double SetAltitude(int onLineHack, int onGround, double altfltdeck, double pitch, double PSXELEV, double groundalt)
 {
 
     double FinalAltitude;
@@ -143,7 +143,7 @@ double SetAltitude(int onLinHack, int onGround, double altfltdeck, double pitch,
      * PSXELEV = -999 when we just launched PSXMSFS
      */
 
-    if (PSXELEV == -999 || intflags.updateNewSitu) {
+    if (PSXELEV == -999 ) {
         /*we have a new situ
          * lets reset the static variables
          */
@@ -237,7 +237,7 @@ double SetAltitude(int onLinHack, int onGround, double altfltdeck, double pitch,
             oldctrcrz = ctrAltitude;
             intflags.oldcrz = 1;
         }
-        if (onLinHack & F_ONLINE) {
+        if (onLineHack) {
             oldctrcrz += offset / 100;
             FinalAltitude = oldctrcrz;
         }
@@ -510,7 +510,6 @@ void SetBARO(DWORD altimeter, int standard)
 void resetInternalFlags(void)
 {
     intflags.oldcrz = 0;
-    intflags.updateNewSitu = 1;
 }
 
 DWORD newSituLoaded(FLAGS *f)
@@ -523,7 +522,7 @@ DWORD newSituLoaded(FLAGS *f)
     resetInternalFlags();
 
     printDebug(LL_INFO, "New situ loaded. Resetting some parameters...");
-    printDebug(LL_INFO, "Let's wait 2-3 seconds to get everyone ready, shall we?");
+    //printDebug(LL_INFO, "Let's wait 2-3 seconds to get everyone ready, shall we?");
 
     freezeMSFS(1, f->hSimConnect); // New Situ loaded, let's preventively freeze MSFS
     init_variables();

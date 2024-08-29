@@ -87,7 +87,6 @@ typedef struct servers {
 
 struct INTERNALPSXflags {
     int oldcrz;
-    int updateNewSitu;
     int Qi198Sentground;
     int Qi198SentFlight;
     DWORD NewSituTimeLoad;
@@ -166,6 +165,11 @@ LIBEXPORT unsigned int getSwitch(FLAGS *f);
 LIBEXPORT void setSwitch(FLAGS *f, unsigned int flagvalue);
 LIBEXPORT int getLogVerbosity(FLAGS *f);
 LIBEXPORT void setLogVerbosity(FLAGS *f, LOG_LEVELS level);
+LIBEXPORT void setOnlineHack(FLAGS *f, unsigned int hack);
+LIBEXPORT void setTCASinject(FLAGS *f, unsigned int TCAS);
+LIBEXPORT void setElevationInject(FLAGS *f, unsigned int elev);
+LIBEXPORT void setPSXslave(FLAGS *f, unsigned int slave);
+LIBEXPORT void setCrashInhib(FLAGS *f, unsigned int crash);
 LIBEXPORT BOOST getACFTInfo(void);
 LIBEXPORT int deleteLogFile(FLAGS *f);
 LIBEXPORT int getMSFSdelay(FLAGS *f);

@@ -314,7 +314,6 @@ void S122(const char *s)
     if (reposition) {
         sendQPSX("bang");
         printDebug(LL_DEBUG, "PSX repositionned");
-        intflags.updateNewSitu = 1;
     }
 }
 void S443(const char *s)
@@ -612,13 +611,6 @@ int getDataFromPSX(FLAGS *flags)
             intflags.NewSituTimeLoad = newSituLoaded(flags);
         }
 
-        // we are still loading a new situ
-        if (intflags.updateNewSitu) {
-            if (GetTickCount64() > intflags.NewSituTimeLoad + 2500) {
-                intflags.updateNewSitu = 0;
-                printDebug(LL_INFO, "We are good to go: resuming normal operations");
-            }
-        }
 
         if (line_start[0] == 'Q') {
 
